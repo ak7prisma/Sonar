@@ -1,0 +1,93 @@
+import { z } from "zod";
+
+export const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid university or personal email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password cannot exceed 128 characters."),
+});
+
+export const registerSchema = loginSchema.extend({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Full name must be at least 2 characters.")
+    .max(100, "Full name must be under 100 characters."),
+  studyProgram: z
+    .string()
+    .trim()
+    .max(120, "Study program must be under 120 characters.")
+    .optional(),
+});
+
+export const courseCreateSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(2, "Course code must be at least 2 characters.")
+    .max(24, "Course code must be under 24 characters.")
+    .regex(/^[A-Za-z0-9-]+$/, "Course code may only contain letters, numbers, and hyphens."),
+  title: z
+    .string()
+    .trim()
+    .min(3, "Course title must be at least 3 characters.")
+    .max(160, "Course title must be under 160 characters."),
+  discipline: z
+    .string()
+    .trim()
+    .min(2, "Discipline is required.")
+    .max(80, "Discipline must be under 80 characters."),
+  description: z.string().trim().max(1000).optional(),
+});
+
+export const documentUploadMetaSchema = z.object({
+  courseId: z.string().uuid("Select a valid course."),
+  title: z
+    .string()
+    .trim()
+    .min(2, "Document title must be at least 2 characters.")
+    .max(200, "Document title must be under 200 characters."),
+  language: z.enum(["en", "id"]).default("en"),
+});
+
+export const blockUpdateSchema = z.object({
+  contentText: z
+    .string()
+    .trim()
+    .min(1, "Block content cannot be empty.")
+    .max(50000, "Block content exceeds maximum length."),
+  spokenText: z.string().trim().max(50000).optional(),
+  markVerified: z.boolean().default(true),
+  reviewNote: z.string().trim().max(2000).optional(),
+  latex: z.string().trim().max(4000).optional(),
+});
+
+export const reviewSubmitSchema = z.object({
+  status: z.enum(["in_review", "needs_revision", "verified"]),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export const documentShareSchema = z.object({
+  sharedWithEmail: z.string().trim().email("Enter a valid recipient email address."),
+  permission: z.enum(["view", "comment", "edit"]).default("view"),
+});
+
+export const accessibilityPreferencesSchema = z.object({
+  readingFont: z.enum(["atkinson", "inter", "lexend"]),
+  fontSizePx: z.number().int().min(14).max(28),
+  lineHeight: z.number().min(1.3).max(2.4),
+  letterSpacingEm: z.number().min(0).max(0.12),
+  readingWidth: z.enum(["narrow", "comfortable", "wide"]),
+  contrastMode: z.enum(["standard", "high"]),
+  readingSurface: z.enum(["default", "warm"]),
+  narrationSpeed: z.number().min(0.5).max(2.5),
+  motionPreference: z.enum(["system", "reduce"]),
+  language: z.enum(["en", "id"]),
+});
+
+export const chatRequestSchema = z.object({
+  documentId: z.string().uuid("A valid documentId is required for grounded Q&A."),
+  language: z.enum(["en", "id"]).default("en"),
+  messages: z.array(z.unknown()).min(1, "At least one message is required.").max(40),
+});

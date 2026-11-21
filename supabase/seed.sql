@@ -1,0 +1,19 @@
+-- ============================================================================
+-- SONAR Seed Data (Run only in local/staging environments after user signup)
+-- Note: Courses require an existing profile ID for created_by. Replace the UUID
+-- below with an admin profile ID from auth.users when seeding a local project.
+-- ============================================================================
+
+-- Example idempotent seed (uncomment and set admin UUID for local dev):
+-- DO $$
+-- DECLARE
+--   v_admin_id UUID := '00000000-0000-0000-0000-000000000001';
+-- BEGIN
+--   INSERT INTO public.courses (code, title, discipline, description, created_by)
+--   VALUES
+--     ('MATH-101', 'Calculus & Analytical Geometry', 'Mathematics & Engineering', 'Integrals, derivatives, limits, and series.', v_admin_id),
+--     ('BIO-204', 'Cell Biology & Quantitative Physiology', 'Life Sciences', 'Cellular signaling, microscopy diagrams, and metabolic tables.', v_admin_id),
+--     ('ECON-110', 'Microeconomic Analysis', 'Economics & Social Science', 'Supply-demand curves, elasticity equations, and tabular datasets.', v_admin_id)
+--   ON CONFLICT (code) DO NOTHING;
+-- END
+-- $$;

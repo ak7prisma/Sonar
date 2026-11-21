@@ -1,0 +1,241 @@
+import { NextResponse } from "next/server";
+import { nanoid } from "nanoid";
+import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
+import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/lib/env";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/ai/rate-limit";
+import { documentUploadMetaSchema } from "@/lib/validation/schemas";
+import { validatePdfBuffer } from "@/features/pdf-processing/validator";
+import { dispatchDocumentProcessingJob } from "@/features/pdf-processing/job-dispatcher";
+
+export async function POST(req: Request) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      { error: "Supabase credentials are not configured yet." },
+      { status: 503 }
+    );
+  }
+
+  const { supabase, auth } = await getAuthenticatedContext();
+  if (!supabase || !auth) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  const rate = checkRateLimit({
+    key: `doc-upload:${auth.userId}`,
+    limit: 12,
+    windowMs: 60_000,
+  });
+
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Upload rate limit reached. Try again in one minute." },
+      { status: 429 }
+    );
+  }
+
+  const formData = await req.formData();
+  const file = formData.get("file");
+  const courseId = String(formData.get("courseId") ?? "");
+  const title = String(formData.get("title") ?? "");
+  const language = String(formData.get("language") ?? "en");
+
+  const parsedMeta = documentUploadMetaSchema.safeParse({
+    courseId,
+    title,
+    language,
+  });
+
+  if (!parsedMeta.success) {
+    return NextResponse.json(
+      { error: "Invalid document metadata.", details: parsedMeta.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  if (!(file instanceof File)) {
+    return NextResponse.json(
+      { error: "Select a PDF file before submitting." },
+      { status: 400 }
+    );
+  }
+
+  // Ensure user belongs to the selected course
+  const { data: membership } = await supabase
+    .from("course_members")
+    .select("id")
+    .eq("course_id", parsedMeta.data.courseId)
+    .eq("user_id", auth.userId)
+    .maybeSingle();
+
+  if (!membership && !auth.roles.includes("admin")) {
+    return NextResponse.json(
+      { error: "You are not enrolled in the selected course." },
+      { status: 403 }
+    );
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const validation = validatePdfBuffer({
+    buffer,
+    filename: file.name,
+    mimeType: file.type,
+  });
+
+  if (!validation.valid) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
+  }
+
+  // Duplicate detection inside the course
+  const { data: duplicate } = await supabase
+    .from("documents")
+    .select("id, title, review_status")
+    .eq("course_id", parsedMeta.data.courseId)
+    .eq("file_hash", validation.fileHash)
+    .maybeSingle();
+
+  if (duplicate) {
+    return NextResponse.json(
+      {
+        duplicate: true,
+        documentId: duplicate.id,
+        title: duplicate.title,
+        reviewStatus: duplicate.review_status,
+        message:
+          "This exact PDF has already been processed for this course. Redirecting to the existing accessible version.",
+      },
+      { status: 200 }
+    );
+  }
+
+  const safeSlug = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storagePath = `${parsedMeta.data.courseId}/${nanoid(12)}-${safeSlug}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("course-documents")
+    .upload(storagePath, buffer, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return NextResponse.json(
+      { error: `Storage upload failed: ${uploadError.message}` },
+      { status: 500 }
+    );
+  }
+
+  const dbClient = isSupabaseAdminConfigured()
+    ? (createAdminSupabaseClient() ?? supabase)
+    : supabase;
+
+  const { data: createdDoc, error: docErr } = await dbClient
+    .from("documents")
+    .insert({
+      course_id: parsedMeta.data.courseId,
+      uploaded_by: auth.userId,
+      title: parsedMeta.data.title,
+      original_filename: file.name,
+      storage_path: storagePath,
+      file_hash: validation.fileHash,
+      file_size_bytes: validation.sizeBytes,
+      language: parsedMeta.data.language,
+      processing_status: "queued",
+      review_status: "unreviewed",
+    })
+    .select("id")
+    .single();
+
+  if (docErr || !createdDoc) {
+    return NextResponse.json(
+      { error: docErr?.message ?? "Failed to create document record." },
+      { status: 500 }
+    );
+  }
+
+  const { data: version, error: verErr } = await dbClient
+    .from("document_versions")
+    .insert({
+      document_id: createdDoc.id,
+      version_number: 1,
+      source_storage_path: storagePath,
+      change_summary: "Initial PDF upload",
+      created_by: auth.userId,
+    })
+    .select("id")
+    .single();
+
+  if (verErr || !version) {
+    return NextResponse.json(
+      { error: verErr?.message ?? "Failed to create initial document version." },
+      { status: 500 }
+    );
+  }
+
+  await dbClient
+    .from("documents")
+    .update({ current_version_id: version.id })
+    .eq("id", createdDoc.id);
+
+  const { data: job, error: jobErr } = await dbClient
+    .from("processing_jobs")
+    .insert({
+      document_id: createdDoc.id,
+      version_id: version.id,
+      status: "queued",
+      current_stage: "validate",
+      progress_percent: 5,
+      logs: [
+        {
+          timestamp: new Date().toISOString(),
+          stage: "validate",
+          status: "queued",
+          message: "PDF validated and queued for background accessibility conversion.",
+        },
+      ],
+    })
+    .select("id")
+    .single();
+
+  if (jobErr || !job) {
+    return NextResponse.json(
+      { error: jobErr?.message ?? "Failed to register processing job." },
+      { status: 500 }
+    );
+  }
+
+  const dispatchResult = await dispatchDocumentProcessingJob({
+    documentId: createdDoc.id,
+    versionId: version.id,
+    jobId: job.id,
+    courseId: parsedMeta.data.courseId,
+    storagePath,
+    language: parsedMeta.data.language,
+    uploadedBy: auth.userId,
+  });
+
+  await dbClient.from("audit_logs").insert({
+    actor_id: auth.userId,
+    action: "document.uploaded",
+    entity_type: "document",
+    entity_id: createdDoc.id,
+    metadata: {
+      courseId: parsedMeta.data.courseId,
+      sizeBytes: validation.sizeBytes,
+      dispatchMode: dispatchResult.mode,
+    },
+  });
+
+  return NextResponse.json(
+    {
+      documentId: createdDoc.id,
+      versionId: version.id,
+      jobId: job.id,
+      dispatched: dispatchResult.dispatched,
+      mode: dispatchResult.mode,
+    },
+    { status: 201 }
+  );
+}

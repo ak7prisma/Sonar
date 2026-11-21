@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "skills": {
+    "21st-ai": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-ai/SKILL.md",
+      "computedHash": "2d90844c998c9886146456867e94745e2f8e7550e41f491f439bd45c2773442b"
+    },
+    "21st-cli-use": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-cli-use/SKILL.md",
+      "computedHash": "fb952c5b23baf451a9c761975749182e6c61aa536db2a6e16eb4d216b7f21785"
+    },
+    "21st-design-sync": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-design-sync/SKILL.md",
+      "computedHash": "772994f730253487a53347053a0a67a0ab88db333515497deec588e654add733"
+    },
+    "21st-registry": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-registry/SKILL.md",
+      "computedHash": "d9cb09e9e598fe7be7700b3e7c5fccadd67c3f36a1cdfdb75b819c4c12468010"
+    },
+    "21st-ui-build": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-ui-build/SKILL.md",
+      "computedHash": "7aa40652b310b802ab3aaa6db88bb445849c6cc40285a119c9ed1e121ffbba54"
+    },
+    "21st-ui-explore": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-ui-explore/SKILL.md",
+      "computedHash": "e7694b0a4adedd3a27c7b8cd9398ea73e8c983d0728251e568afe62e35babbc6"
+    },
+    "21st-ui-review": {
+      "source": "21st-dev/skill",
+      "commit": "15c7436c41dc88c54094f1be93ce53bda456b114",
+      "sourceType": "github",
+      "skillPath": "skills/21st-ui-review/SKILL.md",
+      "computedHash": "550350ee3e4f1e59299632e9a1a785839ec22077064a1e0e4774ab185815eda0"
+    },
+    "accessibility-engineering": {
+      "source": "addyosmani/agent-skills",
+      "commit": "8c99fa36d90068c82d547f7c12a9d67a3e95f4ee",
+      "sourceType": "github",
+      "skillPath": "skills/accessibility-engineering/SKILL.md",
+      "computedHash": "de5908a027e301f24ad81489207853d9889ccd5ff58140f5ddcd3d4afeecfc27"
+    },
+    "frontend-accessibility-best-practices": {
+      "source": "sergiodxa/agent-skills",
+      "commit": "40e21b46189d5c7de6610b68a25280af863f8775",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-accessibility-best-practices/SKILL.md",
+      "computedHash": "e967b71ca54deb2c4544f401144cb84ce4a9c9bdfe1cc78d613f089ed02fccc1"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92"
+    }
+  }
+}

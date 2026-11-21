@@ -1,0 +1,315 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-subtle: var(--surface-subtle);
+  --font-sans: var(--font-poppins), var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-ui: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-subheading: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-atkinson: var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif;
+  --font-reader: var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-teal-text: var(--accent-teal-text);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.75);
+}
+
+/* ==========================================================================
+   SONAR Brand Palette & WCAG 2.2 AA Design Tokens
+   Source of truth: public/brand/sonar-logo-master.png
+   - Deep Teal Symbol:  #025952 (8.22:1 on #FEFEFE)
+   - Bright Aqua Wave:  #19B1A4 (7.15:1 on #091214; paired with #0B7A71 5.12:1 on #FEFEFE)
+   - Near-Black Ink:    #0E191C (17.68:1 on #FEFEFE)
+   - Pure Light Canvas: #FEFEFE
+   ========================================================================== */
+:root {
+  --radius: 0.625rem;
+
+  --background: #fefefe;
+  --surface-subtle: #f4f8f8;
+  --foreground: #0e191c;
+
+  --card: #ffffff;
+  --card-foreground: #0e191c;
+
+  --popover: #ffffff;
+  --popover-foreground: #0e191c;
+
+  --primary: #025952;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e8f3f2;
+  --secondary-foreground: #0b3c38;
+
+  --muted: #eef4f4;
+  --muted-foreground: #41555a;
+
+  --accent: #e1f4f2;
+  --accent-foreground: #024943;
+
+  --accent-teal: #19b1a4;
+  --accent-teal-text: #0b7a71;
+
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+
+  --success: #0d6b4a;
+  --success-foreground: #ffffff;
+
+  --warning: #8a5300;
+  --warning-foreground: #ffffff;
+
+  --info: #0e627c;
+  --info-foreground: #ffffff;
+
+  --border: #d0dfde;
+  --input: #b8cdcb;
+  --ring: #025952;
+
+  --chart-1: #025952;
+  --chart-2: #0b7a71;
+  --chart-3: #19b1a4;
+  --chart-4: #24484d;
+  --chart-5: #5b787d;
+
+  --sidebar: #f6fafa;
+  --sidebar-foreground: #0e191c;
+  --sidebar-primary: #025952;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e1f4f2;
+  --sidebar-accent-foreground: #024943;
+  --sidebar-border: #d7e4e3;
+  --sidebar-ring: #025952;
+
+  /* Dynamic Document Reader Tokens (updated by AccessibilityProvider) */
+  --reader-font-size: 1.0625rem;
+  --reader-line-height: 1.72;
+  --reader-letter-spacing: 0em;
+  --reader-max-width: 68ch;
+  --reader-font-family: var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif;
+}
+
+.dark {
+  --background: #091214;
+  --surface-subtle: #0e1a1e;
+  --foreground: #f0f7f7;
+
+  --card: #101f24;
+  --card-foreground: #f0f7f7;
+
+  --popover: #112228;
+  --popover-foreground: #f0f7f7;
+
+  --primary: #19b1a4;
+  --primary-foreground: #061312;
+
+  --secondary: #162c32;
+  --secondary-foreground: #dff4f2;
+
+  --muted: #14252a;
+  --muted-foreground: #9fb7bc;
+
+  --accent: #163338;
+  --accent-foreground: #7eece2;
+
+  --accent-teal: #27cabd;
+  --accent-teal-text: #4be0d3;
+
+  --destructive: #f97066;
+  --destructive-foreground: #190605;
+
+  --success: #32d583;
+  --success-foreground: #041d11;
+
+  --warning: #fdb022;
+  --warning-foreground: #1c1000;
+
+  --info: #38bdf8;
+  --info-foreground: #061822;
+
+  --border: #20373d;
+  --input: #2b474f;
+  --ring: #2fd6c7;
+
+  --chart-1: #27cabd;
+  --chart-2: #5eead4;
+  --chart-3: #0b7a71;
+  --chart-4: #9fb7bc;
+  --chart-5: #38bdf8;
+
+  --sidebar: #0c171a;
+  --sidebar-foreground: #f0f7f7;
+  --sidebar-primary: #19b1a4;
+  --sidebar-primary-foreground: #061312;
+  --sidebar-accent: #163338;
+  --sidebar-accent-foreground: #7eece2;
+  --sidebar-border: #1b3136;
+  --sidebar-ring: #2fd6c7;
+}
+
+/* Warm Dyslexia-Friendly Reading Canvas */
+html[data-surface="warm"]:not(.dark) {
+  --background: #faf6ee;
+  --surface-subtle: #f3ede0;
+  --card: #fcf9f2;
+  --popover: #fcf9f2;
+  --muted: #ece5d6;
+  --border: #d5ccb9;
+  --sidebar: #f4efe3;
+}
+
+/* High Contrast Mode (Light) */
+html[data-contrast="high"]:not(.dark) {
+  --background: #ffffff;
+  --surface-subtle: #f2f5f5;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --muted-foreground: #1a282b;
+  --primary: #004741;
+  --primary-foreground: #ffffff;
+  --accent-teal-text: #004741;
+  --border: #4a6361;
+  --input: #1e3130;
+  --ring: #004741;
+}
+
+/* High Contrast Mode (Dark) */
+html.dark[data-contrast="high"] {
+  --background: #000000;
+  --surface-subtle: #081012;
+  --foreground: #ffffff;
+  --card: #081214;
+  --card-foreground: #ffffff;
+  --muted-foreground: #d8e6e8;
+  --primary: #4be8da;
+  --primary-foreground: #000000;
+  --accent-teal-text: #6bf3e7;
+  --border: #7ea3a6;
+  --input: #95b8bb;
+  --ring: #6bf3e7;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground;
+  }
+
+  /* High-visibility keyboard focus indicator across every interactive element */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Skip Link: visually hidden until keyboard focus */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 100;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  box-shadow: 0 8px 24px rgba(2, 89, 82, 0.25);
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 1rem;
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Accessible Document Reader Surface Typography */
+.sonar-reader-prose {
+  font-family: var(--reader-font-family);
+  font-size: var(--reader-font-size);
+  line-height: var(--reader-line-height);
+  letter-spacing: var(--reader-letter-spacing);
+  max-width: var(--reader-max-width);
+}
+
+/* Respect Reduced Motion both via OS media query and explicit user toggle */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
