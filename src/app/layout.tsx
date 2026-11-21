@@ -11,6 +11,7 @@ import { SkipLink } from "@/components/accessibility/SkipLink";
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
   variable: "--font-plus-jakarta",
   display: "swap",
 });
@@ -42,8 +43,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fefefe" },
-    { media: "(prefers-color-scheme: dark)", color: "#081415" },
+    { media: "(prefers-color-scheme: light)", color: "#faf8f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1918" },
   ],
 };
 

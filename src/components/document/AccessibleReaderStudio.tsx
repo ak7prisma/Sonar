@@ -692,7 +692,7 @@ export function AccessibleReaderStudio({
                   onClick={() => handleQuickAction("equation")}
                   className="text-xs h-7 px-2.5 border-primary/30 hover:bg-primary/10 font-semibold"
                 >
-                  <Lightbulb className="size-3 mr-1 text-amber-600" />
+                  <Lightbulb className="size-3 mr-1 text-warning" />
                   Jelaskan Rumus BF(v)
                 </Button>
                 <Button

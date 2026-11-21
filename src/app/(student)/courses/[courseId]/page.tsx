@@ -119,12 +119,12 @@ async function CourseDetailBody({
               >
                 {/* Newer Source Version Warning (if applicable) */}
                 {mat.hasNewerSourceVersion && (
-                  <div className="rounded-xl border border-amber-300/80 bg-amber-50 p-4 text-amber-900 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-200 space-y-1">
-                    <div className="flex items-center gap-2 font-bold font-ui text-xs text-amber-950 dark:text-amber-100">
-                      <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                  <div className="rounded-xl border border-brand-gold bg-tint-gold p-4 text-brand-ink space-y-1">
+                    <div className="flex items-center gap-2 font-bold font-ui text-xs text-brand-ink">
+                      <AlertTriangle className="size-4 text-brand-ink shrink-0" aria-hidden="true" />
                       <span>Peringatan Versi Sumber Dokumen: Versi Baru Terdeteksi!</span>
                     </div>
-                    <p className="text-xs leading-relaxed font-sans">
+                    <p className="text-xs leading-relaxed font-sans text-brand-ink/90">
                       {mat.versionNotice}
                     </p>
                   </div>

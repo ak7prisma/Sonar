@@ -118,10 +118,10 @@ export function InteractiveSandbox() {
       </div>
 
       <Tabs defaultValue="equations" className="mt-6">
-        <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-flex">
-          <TabsTrigger value="equations">Math Narration</TabsTrigger>
-          <TabsTrigger value="tables">Semantic Table</TabsTrigger>
-          <TabsTrigger value="figures">Layered Figure</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-3 sm:inline-flex sm:h-9 sm:w-auto">
+          <TabsTrigger value="equations" className="text-xs sm:text-sm">Math Narration</TabsTrigger>
+          <TabsTrigger value="tables" className="text-xs sm:text-sm">Semantic Table</TabsTrigger>
+          <TabsTrigger value="figures" className="text-xs sm:text-sm">Layered Figure</TabsTrigger>
         </TabsList>
 
         <TabsContent value="equations" className="mt-6 space-y-5">

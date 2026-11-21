@@ -6,45 +6,45 @@ export interface AccessibleImage {
 }
 
 export const APP_IMAGES = {
-  heroStudent: {
-    src: "/images/hero_student.jpg",
-    alt: "Mahasiswa tunanetra mengenakan headphone berkabel dengan senyum ramah di ruang perpustakaan kampus, siap mengakses materi perkuliahan digital melalui audio dan pembaca layar.",
-    caption: "Aksesibilitas mandiri untuk mahasiswa tunanetra di perguruan tinggi.",
+  heroBraille: {
+    src: "/images/hero_braille_display.jpg",
+    alt: "Tampilan jarak dekat jari-jemari pengguna tunanetra membaca baris huruf timbul pada perangkat refreshable braille display di depan layar monitor komputer yang menampilkan materi digital.",
+    caption: "Navigasi materi kuliah mandiri dengan refreshable braille display dan screen reader.",
     category: "hero",
   },
-  featureSpeech: {
-    src: "/images/feature_speech.jpg",
-    alt: "Tangan memegang smartphone yang menampilkan antarmuka aplikasi audio pembaca layar SONAR dengan visualisasi gelombang suara yang merepresentasikan sintesis teks ke suara secara real-time.",
-    caption: "Articulating visual information into natural academic speech.",
-    category: "feature",
+  quoteBraille: {
+    src: "/images/quote_braille_hands.jpg",
+    alt: "Jari-jemari seorang pembaca tunanetra menyusuri deretan titik timbul pada halaman buku cetak braille dengan pencahayaan lembut.",
+    caption: "Menjembatani literasi taktil dan materi perkuliahan digital modern.",
+    category: "editorial",
   },
-  featureGlasses: {
-    src: "/images/feature_glasses.jpg",
-    alt: "Tampilan jarak dekat mahasiswa yang mengenakan kacamata berbingkai modern dengan integrasi sensor kamera mikro untuk membantu navigasi ruang dan pembacaan teks visual.",
-    caption: "Dukungan perangkat wearable dan asisten visual cerdas.",
+  featureAudio: {
+    src: "/images/feature_audio.jpg",
+    alt: "Mahasiswi tersenyum hangat sambil mengenakan headphone berkabel untuk mendengarkan narasi audio materi perkuliahan terstruktur.",
+    caption: "Narasi audio natural berbahasa Indonesia dan Inggris per blok bacaan.",
     category: "feature",
   },
   featureScan: {
     src: "/images/feature_scan.jpg",
-    alt: "Buku teks perkuliahan terbuka di atas meja belajar dengan kamera ponsel mengarah ke halaman cetak untuk proses OCR dan restrukturisasi semantik dokumen.",
-    caption: "Pemindaian instan untuk dokumen cetak, modul kuliah, dan handout.",
+    alt: "Buku teks perkuliahan terbuka lebar dengan lembaran halaman berlatar langit biru, menggambarkan konversi dokumen cetak dan PDF menjadi teks digital terbuka.",
+    caption: "Ekstraksi OCR dan restrukturisasi semantik dari PDF hasil scan.",
     category: "feature",
   },
   featureStudy: {
     src: "/images/feature_study.jpg",
-    alt: "Dua mahasiswa universitas duduk berdampingan di meja perpustakaan kampus, saling berdiskusi dan memeriksa hasil verifikasi dokumen perkuliahan.",
-    caption: "Kolaborasi antara mahasiswa dan volunteer reviewer dalam satu mata kuliah.",
+    alt: "Mahasiswa dan volunteer duduk mengelilingi meja belajar kampus, berkolaborasi meninjau dan memverifikasi keakuratan materi perkuliahan bersama.",
+    caption: "Kolaborasi verifikasi antara mahasiswa dan volunteer dalam satu mata kuliah.",
     category: "feature",
   },
   featureBraille: {
     src: "/images/feature_braille.jpg",
-    alt: "Jari-jemari seorang mahasiswa menyentuh titik-titik timbul braille pada buku bertekstur tebal, menggambarkan pentingnya representasi taktil dan format alternatif.",
+    alt: "Tampilan makro deretan titik timbul huruf braille pada kertas krem di bawah cahaya hangat, melambangkan keterbacaan taktil dan dukungan perangkat braille.",
     caption: "Kompatibilitas penuh dengan refreshable braille display dan screen reader.",
     category: "feature",
   },
   testimonialStudent1: {
     src: "/images/testimonial_1.jpg",
-    alt: "Foto potret Maya Lin, mahasiswi Ilmu Komputer tunanetra angkatan 2024, tersenyum percaya diri di koridor fakultas.",
+    alt: "Foto potret Maya Lin, mahasiswi Ilmu Komputer, tersenyum ramah di ruang terbuka kampus.",
     name: "Maya Lin",
     role: "Mahasiswi Ilmu Komputer (Tunanetra Total)",
     university: "Universitas Indonesia",
@@ -54,37 +54,37 @@ export const APP_IMAGES = {
   },
   testimonialStudent2: {
     src: "/images/testimonial_2.jpg",
-    alt: "Foto potret David Pratama, mahasiswa Program Studi Matematika low-vision, mengenakan kacamata dan tersenyum di ruang baca komputasi.",
+    alt: "Foto David Pratama bersama rekan belajar menggunakan laptop di halaman rumput kampus.",
     name: "David Pratama",
     role: "Mahasiswa Matematika (Low Vision)",
     university: "Institut Teknologi Bandung",
     quote:
-      "Fitur high-contrast warm surface dan navigasi heading level di SONAR membuat saya tidak cepat lelah saat membaca jurnal puluhan halaman. Fitur Tanya AI dengan sitasi dokumen sangat membantu pemahaman materi.",
+      "Fitur warm paper canvas, font Atkinson Hyperlegible, dan navigasi heading di SONAR membuat saya tidak cepat lelah saat membaca jurnal puluhan halaman. Tanya AI dengan sitasi dokumen sangat membantu persiapan ujian.",
     rating: 5,
   },
   testimonialVolunteer: {
     src: "/images/testimonial_3.jpg",
-    alt: "Foto potret Sarah Jenkins, S.Kom., asisten pengajar pascasarjana dan volunteer reviewer dokumen aksesibilitas, berpose profesional.",
+    alt: "Foto potret Sarah Jenkins, S.Kom., asisten pengajar dan volunteer reviewer di depan papan tulis kelas.",
     name: "Sarah Jenkins, S.Kom.",
-    role: "Senior Teaching Assistant & Volunteer Reviewer",
+    role: "Asisten Pengajar & Volunteer Reviewer",
     university: "Universitas Gadjah Mada",
     quote:
-      "Sebagai volunteer, review workbench SONAR memudahkan saya memeriksa LaTeX formula dan deskripsi diagram secara side-by-side. Sekali materi saya setujui, seluruh mahasiswa sekelas langsung dapat menggunakannya kembali.",
+      "Review workbench SONAR memudahkan saya memeriksa LaTeX formula dan deskripsi diagram secara terstruktur. Sekali materi saya setujui, seluruh mahasiswa sekelas langsung bisa menggunakannya kembali.",
     rating: 5,
   },
   courseCS: {
     src: "/images/course_cs.jpg",
-    alt: "Visualisasi struktur pohon graf dan potongan kode algoritma pemrograman dengan latar belakang kontras tinggi yang ramah pembaca layar.",
+    alt: "Layar laptop menampilkan potongan kode pemrograman terstruktur di atas meja kerja dengan pencahayaan kontras yang jelas.",
     caption: "CS 201 — Struktur Data dan Algoritma",
   },
   courseMath: {
     src: "/images/course_math.jpg",
-    alt: "Papan tulis akademis yang memuat formula kalkulus integral lipat, gradien vektor, dan pembuktian matriks aljabar terstruktur rapi.",
+    alt: "Ilustrasi papan tulis akademis berisi grafik vektor ruang, koordinat kartesius, dan persamaan matematika kalkulus multivariabel.",
     caption: "MATH 105 — Kalkulus Multivariabel & Aljabar Linier",
   },
   courseStat: {
     src: "/images/course_stat.jpg",
-    alt: "Diagram kurva distribusi probabilitas normal standar dan tabel ringkasan inferensi statistik dengan anotasi data yang jelas.",
+    alt: "Layar tablet menampilkan grafik garis tren dan diagram lingkaran distribusi data statistik dengan label angka yang terukur.",
     caption: "STAT 210 — Teori Probabilitas & Inferensi Statistik",
   },
 } as const;

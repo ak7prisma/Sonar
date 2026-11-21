@@ -121,7 +121,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             className="flex items-center justify-between p-3 h-auto bg-card hover:bg-muted/80 border-border text-left"
           >
             <div className="flex items-center gap-2.5">
-              <div className="size-8 rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 flex items-center justify-center font-bold text-xs">
+              <div className="size-8 rounded-lg bg-brand-mint text-brand-ink flex items-center justify-center font-bold text-xs">
                 AF
               </div>
               <div>
@@ -139,7 +139,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             className="flex items-center justify-between p-3 h-auto bg-card hover:bg-muted/80 border-border text-left"
           >
             <div className="flex items-center gap-2.5">
-              <div className="size-8 rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center font-bold text-xs">
+              <div className="size-8 rounded-lg bg-tint-peach text-brand-ink flex items-center justify-center font-bold text-xs">
                 DS
               </div>
               <div>
@@ -157,7 +157,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             className="flex items-center justify-between p-3 h-auto bg-card hover:bg-muted/80 border-border text-left"
           >
             <div className="flex items-center gap-2.5">
-              <div className="size-8 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center font-bold text-xs">
+              <div className="size-8 rounded-lg bg-tint-blue text-brand-ink flex items-center justify-center font-bold text-xs">
                 HG
               </div>
               <div>

@@ -73,7 +73,7 @@ export function ReviewQueueTable({
             <span className="font-heading text-4xl font-extrabold text-foreground tabular-nums">
               4.8
             </span>
-            <div className="flex text-amber-500">
+            <div className="flex text-brand-gold">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="size-4 fill-current" />
               ))}
@@ -93,21 +93,21 @@ export function ReviewQueueTable({
             <div className="flex items-center gap-2">
               <span className="w-12 text-muted-foreground font-semibold">5 Bintang</span>
               <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-teal-600 rounded-full" style={{ width: "82%" }} />
+                <div className="h-full bg-brand-teal rounded-full" style={{ width: "82%" }} />
               </div>
               <span className="text-[11px] font-bold text-foreground tabular-nums">39</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-12 text-muted-foreground font-semibold">4 Bintang</span>
               <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: "14%" }} />
+                <div className="h-full bg-brand-blue rounded-full" style={{ width: "14%" }} />
               </div>
               <span className="text-[11px] font-bold text-foreground tabular-nums">7</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-12 text-muted-foreground font-semibold">3 Bintang</span>
               <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-orange-500 rounded-full" style={{ width: "4%" }} />
+                <div className="h-full bg-brand-peach rounded-full" style={{ width: "4%" }} />
               </div>
               <span className="text-[11px] font-bold text-foreground tabular-nums">2</span>
             </div>
@@ -217,7 +217,7 @@ export function ReviewQueueTable({
                   </div>
 
                   <div className="flex items-center gap-3 font-ui">
-                    <div className="flex text-amber-500">
+                    <div className="flex text-brand-gold">
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} className="size-3.5 fill-current" />
                       ))}
@@ -227,8 +227,8 @@ export function ReviewQueueTable({
                         isApproved
                           ? "bg-success/15 text-success"
                           : isChanges
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          : "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
+                          ? "bg-tint-gold text-brand-ink"
+                          : "bg-tint-blue text-brand-ink"
                       }`}
                     >
                       {isApproved

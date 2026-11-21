@@ -20,7 +20,7 @@ async function AdminBody() {
     <div className="mx-auto max-w-7xl space-y-8 font-sans">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-border pb-6">
         <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 font-ui">
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-blue-strong dark:text-brand-blue font-ui">
             Tata Kelola &bull; Platform Governance
           </span>
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
@@ -52,7 +52,7 @@ async function AdminBody() {
 
         <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Volunteer Reviewer</p>
-          <p className="mt-2 font-heading text-3xl font-extrabold text-purple-700 dark:text-purple-400 tabular-nums">
+          <p className="mt-2 font-heading text-3xl font-extrabold text-brand-blue-strong dark:text-brand-blue tabular-nums">
             18
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">Aktif meninjau dokumen</p>
@@ -60,7 +60,7 @@ async function AdminBody() {
 
         <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Laporan Isu Masuk</p>
-          <p className="mt-2 font-heading text-3xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
+          <p className="mt-2 font-heading text-3xl font-extrabold text-warning tabular-nums">
             2
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">1 ditangani &bull; 1 dalam proses</p>
@@ -122,12 +122,12 @@ async function AdminBody() {
             </div>
 
             <div className="space-y-3 text-xs font-ui">
-              <div className="rounded-xl border border-amber-300/80 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30 space-y-1">
-                <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-amber-100">
-                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="rounded-xl border border-brand-gold bg-tint-gold p-4 text-brand-ink space-y-1">
+                <div className="flex items-center gap-2 font-bold text-brand-ink">
+                  <AlertTriangle className="size-4 text-brand-ink shrink-0" />
                   <span>MATH105_Formula_UTS_v1.0.pdf (Versi Sumber Baru Diunggah Dosen)</span>
                 </div>
-                <p className="text-muted-foreground leading-relaxed font-sans">
+                <p className="text-brand-ink/85 leading-relaxed font-sans">
                   Versi baru <code>v1.1</code> diunggah pada 20 Nov 2026. Mahasiswa yang mengakses materi ini saat ini melihat banner peringatan versi lama.
                 </p>
               </div>
@@ -159,7 +159,7 @@ async function AdminBody() {
               <div className="rounded-xl border border-border p-3.5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground">MATH 105: Deskripsi Gambar 5.3</span>
-                  <span className="rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 font-bold text-[10px]">
+                  <span className="rounded bg-tint-gold text-brand-ink px-2 py-0.5 font-bold text-[10px]">
                     Dalam Penanganan
                   </span>
                 </div>

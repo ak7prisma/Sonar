@@ -123,7 +123,7 @@ async function DashboardBody() {
 
         <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Menunggu Review</p>
-          <p className="mt-2 font-heading text-3xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400">
+          <p className="mt-2 font-heading text-3xl font-extrabold tabular-nums text-warning">
             {inReviewCount} <span className="text-xs font-normal text-muted-foreground">Dokumen</span>
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">Dalam antrean verifikasi</p>

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, FileUp, Cpu, Users, BookOpen, Share2 } from "lucide-react";
+import { FileUp, Cpu, Users, BookOpen, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SonarLogo } from "@/components/shared/SonarLogo";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 const STEPS = [
   {
@@ -43,22 +44,10 @@ const STEPS = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <header className="border-b border-border bg-background/95 px-4 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/" aria-label="Kembali ke beranda">
-            <SonarLogo size="sm" />
-          </Link>
-          <Button variant="ghost" size="sm" asChild className="font-ui">
-            <Link href="/">
-              <ArrowLeft className="mr-2 size-4" />
-              Kembali ke Beranda
-            </Link>
-          </Button>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-background font-sans">
+      <SiteHeader />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-12 sm:px-8 outline-none space-y-12">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-12 px-4 py-12 outline-none sm:px-8">
         <div className="space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">Alur Kerja Sistem</span>
           <h1 className="font-heading text-4xl font-extrabold text-foreground sm:text-5xl">
@@ -110,6 +99,7 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

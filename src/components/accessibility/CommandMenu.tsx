@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import {
   BookOpen,
   CheckSquare,
+  CircleHelp,
   FileUp,
   Home,
+  Info,
   LayoutDashboard,
   Search,
   Settings,
   Shield,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,17 +26,20 @@ import {
 } from "@/components/ui/command";
 
 const COMMAND_ROUTES = [
-  { label: "Home & Live Accessibility Sandbox", href: "/", icon: Home },
-  { label: "Student Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Courses", href: "/courses", icon: BookOpen },
-  { label: "Upload Course PDF", href: "/upload", icon: FileUp },
-  { label: "Document Reader", href: "/reader", icon: BookOpen },
-  { label: "Volunteer Review Queue", href: "/review", icon: CheckSquare },
-  { label: "Accessibility & Account Settings", href: "/settings", icon: Settings },
-  { label: "Administration Console", href: "/admin", icon: Shield },
+  { label: "Beranda", href: "/", icon: Home },
+  { label: "Dashboard Mahasiswa", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Mata Kuliah & Materi Reusable", href: "/courses", icon: BookOpen },
+  { label: "Unggah Dokumen PDF", href: "/upload", icon: FileUp },
+  { label: "Accessible Reader", href: "/reader", icon: BookOpen },
+  { label: "Antrean Review Volunteer", href: "/review", icon: CheckSquare },
+  { label: "Pengaturan Membaca & Akun", href: "/settings", icon: Settings },
+  { label: "Konsol Administrasi", href: "/admin", icon: Shield },
+  { label: "Cara Kerja SONAR", href: "/how-it-works", icon: Info },
+  { label: "Pernyataan Aksesibilitas", href: "/accessibility", icon: ShieldCheck },
+  { label: "Pusat Bantuan", href: "/help", icon: CircleHelp },
 ];
 
-export function CommandMenu() {
+export function CommandMenu({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -50,30 +56,43 @@ export function CommandMenu() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="gap-2 text-muted-foreground"
-      >
-        <Search className="size-4" aria-hidden="true" />
-        <span className="hidden md:inline">Quick jump</span>
-        <span className="sr-only md:hidden">Quick jump navigation menu</span>
-        <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground lg:inline">
-          Ctrl+K
-        </kbd>
-      </Button>
+      {compact ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpen(true)}
+          aria-label="Cari halaman (Ctrl+K)"
+          aria-haspopup="dialog"
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <Search className="size-4" aria-hidden="true" />
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="gap-2 text-muted-foreground"
+        >
+          <Search className="size-4" aria-hidden="true" />
+          <span className="hidden md:inline">Lompat cepat</span>
+          <span className="sr-only md:hidden">Menu navigasi lompat cepat</span>
+          <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground lg:inline">
+            Ctrl+K
+          </kbd>
+        </Button>
+      )}
 
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="SONAR Navigation Menu"
-        description="Search and jump directly to any SONAR workspace page."
+        title="Menu Navigasi SONAR"
+        description="Cari dan lompat langsung ke halaman SONAR mana pun."
       >
-        <CommandInput placeholder="Jump to page or workspace..." />
+        <CommandInput placeholder="Cari halaman..." />
         <CommandList>
-          <CommandEmpty>No matching destination found.</CommandEmpty>
-          <CommandGroup heading="Workspaces">
+          <CommandEmpty>Tidak ada halaman yang cocok.</CommandEmpty>
+          <CommandGroup heading="Halaman">
             {COMMAND_ROUTES.map((item) => {
               const Icon = item.icon;
               return (

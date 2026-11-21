@@ -162,7 +162,7 @@ export function UploadForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6 font-sans" noValidate>
       {/* Top Notice Banner — (Inspired by Image 3 ZeroEssay banner) */}
-      <div className="rounded-xl border border-teal-200/80 bg-teal-50/80 dark:border-teal-900/60 dark:bg-teal-950/30 p-4 text-xs text-foreground/90 space-y-1">
+      <div className="rounded-xl border border-primary/25 bg-brand-mint/70 dark:bg-secondary/60 p-4 text-xs text-foreground/90 space-y-1">
         <div className="flex items-center gap-2 font-bold font-ui text-primary">
           <Info className="size-4 shrink-0" aria-hidden="true" />
           <span>Konfigurasi Ekstraksi Teks, Tabel, dan MathML</span>
@@ -309,8 +309,8 @@ export function UploadForm({
           {...getRootProps()}
           className={`rounded-2xl border-2 border-dashed p-8 transition-colors text-center ${
             isDragActive
-              ? "border-primary bg-secondary/50"
-              : "border-teal-500/40 bg-teal-50/20 dark:bg-teal-950/10"
+              ? "border-primary bg-secondary/60"
+              : "border-primary/40 bg-brand-mint/35 dark:bg-secondary/20"
           }`}
         >
           <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />

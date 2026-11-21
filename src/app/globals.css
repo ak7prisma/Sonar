@@ -58,79 +58,135 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
+  /* Fixed brand palette — identical in light and dark. Always pair fills with
+     brand-ink text (or white on brand-teal / brand-blue-strong). */
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-aqua: var(--brand-aqua);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-strong: var(--brand-blue-strong);
+  --color-brand-peach: var(--brand-peach);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-mint: var(--brand-mint);
+  --color-brand-paper: var(--brand-paper);
+  --color-brand-ink: var(--brand-ink);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-peach: var(--tint-peach);
+  --color-tint-gold: var(--tint-gold);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.35);
   --radius-2xl: calc(var(--radius) * 1.75);
+  --radius-3xl: calc(var(--radius) * 2.4);
+
+  --shadow-float: 0 18px 48px -16px rgb(41 59 57 / 0.28), 0 2px 6px -2px rgb(41 59 57 / 0.08);
+  --shadow-nav: 0 10px 32px -12px rgb(41 59 57 / 0.22), 0 0 0 1px rgb(41 59 57 / 0.07);
+
+  --animate-float: sonar-float 6s ease-in-out infinite;
+  --animate-float-slow: sonar-float 8s ease-in-out infinite;
+
+  @keyframes sonar-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
 }
 
 /* ==========================================================================
-   SONAR Brand Palette & WCAG 2.2 AA Design Tokens
-   Source of truth: public/brand/sonar-logo-master.png
-   - Deep Teal Symbol:  #025952 (8.22:1 on #FEFEFE)
-   - Bright Aqua Wave:  #19B1A4 (7.15:1 on #091214; paired with #0B7A71 5.12:1 on #FEFEFE)
-   - Near-Black Ink:    #0E191C (17.68:1 on #FEFEFE)
-   - Pure Light Canvas: #FEFEFE
+   SONAR Design Tokens — Brand Palette (WCAG 2.2 AA verified pairs)
+   #087E78 teal   · #39B9A7 aqua  · #668FE8 periwinkle · #F1A27E peach
+   #F2D477 gold   · #E5F2EC mint  · #FAF8F2 paper      · #293B39 ink
+
+   Contrast (text pairs actually used):
+   - ink  #293B39 on paper #FAF8F2 ........ 11.1:1
+   - ink  #293B39 on mint  #E5F2EC ........ 9.9:1
+   - white on teal #087E78 ................ 4.9:1
+   - teal #087E78 on paper #FAF8F2 ........ 4.6:1
+   - ink  on aqua #39B9A7 ................. 4.9:1
+   - ink  on peach #F1A27E ................ 5.7:1
+   - ink  on gold #F2D477 ................. 8.1:1
+   - white on blue-strong #3D5FBF ......... 5.9:1  (periwinkle #668FE8 is
+     decorative only; never used for small text)
    ========================================================================== */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  --background: #fefefe;
-  --surface-subtle: #f4f8f8;
-  --foreground: #0e191c;
+  --brand-teal: #087e78;
+  --brand-aqua: #39b9a7;
+  --brand-blue: #668fe8;
+  --brand-blue-strong: #3d5fbf;
+  --brand-peach: #f1a27e;
+  --brand-gold: #f2d477;
+  --brand-mint: #e5f2ec;
+  --brand-paper: #faf8f2;
+  --brand-ink: #293b39;
+
+  /* Solid tints of the palette (same in light & dark) for chips and panels
+     that always carry brand-ink text. */
+  --tint-blue: #dce6fb;
+  --tint-peach: #fad9c9;
+  --tint-gold: #f8ebb9;
+
+  --background: #faf8f2;
+  --surface-subtle: #f1f3ea;
+  --foreground: #293b39;
 
   --card: #ffffff;
-  --card-foreground: #0e191c;
+  --card-foreground: #293b39;
 
   --popover: #ffffff;
-  --popover-foreground: #0e191c;
+  --popover-foreground: #293b39;
 
-  --primary: #025952;
+  --primary: #087e78;
   --primary-foreground: #ffffff;
 
-  --secondary: #e8f3f2;
-  --secondary-foreground: #0b3c38;
+  --secondary: #e5f2ec;
+  --secondary-foreground: #0a4a46;
 
-  --muted: #eef4f4;
-  --muted-foreground: #41555a;
+  --muted: #eef2e9;
+  --muted-foreground: #4f6360;
 
-  --accent: #e1f4f2;
-  --accent-foreground: #024943;
+  --accent: #e5f2ec;
+  --accent-foreground: #0a4a46;
 
-  --accent-teal: #19b1a4;
-  --accent-teal-text: #0b7a71;
+  --accent-teal: #39b9a7;
+  --accent-teal-text: #087e78;
 
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
 
-  --success: #0d6b4a;
+  --success: #0b6b46;
   --success-foreground: #ffffff;
 
   --warning: #8a5300;
   --warning-foreground: #ffffff;
 
-  --info: #0e627c;
+  --info: #3d5fbf;
   --info-foreground: #ffffff;
 
-  --border: #d0dfde;
-  --input: #b8cdcb;
-  --ring: #025952;
+  --border: #dbe3da;
+  --input: #758f87;
+  --ring: #087e78;
 
-  --chart-1: #025952;
-  --chart-2: #0b7a71;
-  --chart-3: #19b1a4;
-  --chart-4: #24484d;
-  --chart-5: #5b787d;
+  --chart-1: #087e78;
+  --chart-2: #39b9a7;
+  --chart-3: #668fe8;
+  --chart-4: #f1a27e;
+  --chart-5: #f2d477;
 
-  --sidebar: #f6fafa;
-  --sidebar-foreground: #0e191c;
-  --sidebar-primary: #025952;
+  --sidebar: #f2f6ef;
+  --sidebar-foreground: #293b39;
+  --sidebar-primary: #087e78;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e1f4f2;
-  --sidebar-accent-foreground: #024943;
-  --sidebar-border: #d7e4e3;
-  --sidebar-ring: #025952;
+  --sidebar-accent: #e5f2ec;
+  --sidebar-accent-foreground: #0a4a46;
+  --sidebar-border: #dbe3da;
+  --sidebar-ring: #087e78;
 
   /* Dynamic Document Reader Tokens (updated by AccessibilityProvider) */
   --reader-font-size: 1.0625rem;
@@ -141,104 +197,104 @@
 }
 
 .dark {
-  --background: #091214;
-  --surface-subtle: #0e1a1e;
-  --foreground: #f0f7f7;
+  --background: #0e1918;
+  --surface-subtle: #132221;
+  --foreground: #eaf3ef;
 
-  --card: #101f24;
-  --card-foreground: #f0f7f7;
+  --card: #172928;
+  --card-foreground: #eaf3ef;
 
-  --popover: #112228;
-  --popover-foreground: #f0f7f7;
+  --popover: #1b2f2d;
+  --popover-foreground: #eaf3ef;
 
-  --primary: #19b1a4;
-  --primary-foreground: #061312;
+  --primary: #39b9a7;
+  --primary-foreground: #08201d;
 
-  --secondary: #162c32;
-  --secondary-foreground: #dff4f2;
+  --secondary: #1f3633;
+  --secondary-foreground: #e5f2ec;
 
-  --muted: #14252a;
-  --muted-foreground: #9fb7bc;
+  --muted: #1b2f2d;
+  --muted-foreground: #a5bdb6;
 
-  --accent: #163338;
-  --accent-foreground: #7eece2;
+  --accent: #1f3a37;
+  --accent-foreground: #a6e8dc;
 
-  --accent-teal: #27cabd;
-  --accent-teal-text: #4be0d3;
+  --accent-teal: #39b9a7;
+  --accent-teal-text: #6ad3c3;
 
   --destructive: #f97066;
   --destructive-foreground: #190605;
 
-  --success: #32d583;
-  --success-foreground: #041d11;
+  --success: #4ade9a;
+  --success-foreground: #04200f;
 
-  --warning: #fdb022;
-  --warning-foreground: #1c1000;
+  --warning: #f2d477;
+  --warning-foreground: #2a2000;
 
-  --info: #38bdf8;
-  --info-foreground: #061822;
+  --info: #8eaef2;
+  --info-foreground: #0b1630;
 
-  --border: #20373d;
-  --input: #2b474f;
-  --ring: #2fd6c7;
+  --border: #2a403d;
+  --input: #4f7069;
+  --ring: #6ad3c3;
 
-  --chart-1: #27cabd;
-  --chart-2: #5eead4;
-  --chart-3: #0b7a71;
-  --chart-4: #9fb7bc;
-  --chart-5: #38bdf8;
+  --chart-1: #39b9a7;
+  --chart-2: #8eaef2;
+  --chart-3: #f1a27e;
+  --chart-4: #f2d477;
+  --chart-5: #e5f2ec;
 
-  --sidebar: #0c171a;
-  --sidebar-foreground: #f0f7f7;
-  --sidebar-primary: #19b1a4;
-  --sidebar-primary-foreground: #061312;
-  --sidebar-accent: #163338;
-  --sidebar-accent-foreground: #7eece2;
-  --sidebar-border: #1b3136;
-  --sidebar-ring: #2fd6c7;
+  --sidebar: #0b1615;
+  --sidebar-foreground: #eaf3ef;
+  --sidebar-primary: #39b9a7;
+  --sidebar-primary-foreground: #08201d;
+  --sidebar-accent: #1f3a37;
+  --sidebar-accent-foreground: #a6e8dc;
+  --sidebar-border: #223633;
+  --sidebar-ring: #6ad3c3;
 }
 
 /* Warm Dyslexia-Friendly Reading Canvas */
 html[data-surface="warm"]:not(.dark) {
-  --background: #faf6ee;
-  --surface-subtle: #f3ede0;
-  --card: #fcf9f2;
-  --popover: #fcf9f2;
-  --muted: #ece5d6;
+  --background: #f6efdf;
+  --surface-subtle: #efe7d3;
+  --card: #fbf6ea;
+  --popover: #fbf6ea;
+  --muted: #ebe2cc;
   --border: #d5ccb9;
-  --sidebar: #f4efe3;
+  --sidebar: #f1e9d6;
 }
 
 /* High Contrast Mode (Light) */
 html[data-contrast="high"]:not(.dark) {
   --background: #ffffff;
-  --surface-subtle: #f2f5f5;
+  --surface-subtle: #f2f5f4;
   --foreground: #000000;
   --card: #ffffff;
   --card-foreground: #000000;
-  --muted-foreground: #1a282b;
-  --primary: #004741;
+  --muted-foreground: #1c2b29;
+  --primary: #05524e;
   --primary-foreground: #ffffff;
-  --accent-teal-text: #004741;
+  --accent-teal-text: #05524e;
   --border: #4a6361;
   --input: #1e3130;
-  --ring: #004741;
+  --ring: #05524e;
 }
 
 /* High Contrast Mode (Dark) */
 html.dark[data-contrast="high"] {
   --background: #000000;
-  --surface-subtle: #081012;
+  --surface-subtle: #081110;
   --foreground: #ffffff;
-  --card: #081214;
+  --card: #0a1514;
   --card-foreground: #ffffff;
-  --muted-foreground: #d8e6e8;
-  --primary: #4be8da;
+  --muted-foreground: #d8e6e3;
+  --primary: #6ad3c3;
   --primary-foreground: #000000;
-  --accent-teal-text: #6bf3e7;
-  --border: #7ea3a6;
-  --input: #95b8bb;
-  --ring: #6bf3e7;
+  --accent-teal-text: #8ae6d8;
+  --border: #7ea3a0;
+  --input: #95b8b4;
+  --ring: #8ae6d8;
 }
 
 @layer base {
@@ -273,7 +329,7 @@ html.dark[data-contrast="high"] {
   padding: 0.75rem 1.25rem;
   font-weight: 600;
   font-size: 0.9375rem;
-  box-shadow: 0 8px 24px rgba(2, 89, 82, 0.25);
+  box-shadow: 0 8px 24px rgba(8, 126, 120, 0.3);
   transition: top 0.15s ease;
 }
 
@@ -282,6 +338,16 @@ html.dark[data-contrast="high"] {
   top: 1rem;
   outline: 3px solid var(--ring);
   outline-offset: 3px;
+}
+
+/* Decorative hero grid (non-interactive, purely visual) */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--brand-ink) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--brand-ink) 7%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 35% 40%, #000 25%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 35% 40%, #000 25%, transparent 80%);
 }
 
 /* Accessible Document Reader Surface Typography */

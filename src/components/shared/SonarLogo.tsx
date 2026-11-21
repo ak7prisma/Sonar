@@ -8,6 +8,8 @@ interface SonarLogoProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   decorative?: boolean;
+  /** "light" pins the light-surface artwork (for use on a light chip regardless of theme). */
+  tone?: "auto" | "light";
 }
 
 const FULL_DIMENSIONS = {
@@ -31,6 +33,7 @@ export function SonarLogo({
   size = "md",
   className,
   decorative = false,
+  tone = "auto",
 }: SonarLogoProps) {
   const altText = decorative ? "" : "SONAR";
 
@@ -59,20 +62,25 @@ export function SonarLogo({
         width={width}
         height={height}
         priority
-        className="block h-auto w-auto object-contain dark:hidden"
+        className={cn(
+          "block h-auto w-auto object-contain",
+          tone === "auto" && "dark:hidden"
+        )}
         style={{ height: `${height}px`, width: "auto" }}
         aria-hidden={decorative || undefined}
       />
-      <Image
-        src="/brand/sonar-logo-dark.png"
-        alt={altText}
-        width={width}
-        height={height}
-        priority
-        className="hidden h-auto w-auto object-contain dark:block"
-        style={{ height: `${height}px`, width: "auto" }}
-        aria-hidden={decorative || undefined}
-      />
+      {tone === "auto" ? (
+        <Image
+          src="/brand/sonar-logo-dark.png"
+          alt={altText}
+          width={width}
+          height={height}
+          priority
+          className="hidden h-auto w-auto object-contain dark:block"
+          style={{ height: `${height}px`, width: "auto" }}
+          aria-hidden={decorative || undefined}
+        />
+      ) : null}
     </span>
   );
 }

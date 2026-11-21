@@ -16,7 +16,7 @@ async function ReviewQueueBody() {
     <div className="mx-auto max-w-7xl space-y-8 font-sans">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-border pb-6">
         <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 font-ui">
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-blue-strong dark:text-brand-blue font-ui">
             Volunteer Quality Assurance &amp; Verification
           </span>
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">

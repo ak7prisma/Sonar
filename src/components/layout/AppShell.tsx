@@ -169,12 +169,12 @@ export function AppShell({
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium font-ui",
+                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold font-ui",
                     isVolunteer
-                      ? "bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300"
+                      ? "bg-tint-peach text-brand-ink"
                       : isAdmin
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
-                      : "bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300"
+                      ? "bg-tint-blue text-brand-ink"
+                      : "bg-brand-mint text-brand-ink"
                   )}
                 >
                   <UserCheck className="size-3" aria-hidden="true" />
@@ -268,13 +268,13 @@ export function AppShell({
                   <Menu className="size-5" aria-hidden="true" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0">
+              <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0">
                 <SheetHeader className="border-b px-5 py-4 text-left">
                   <SheetTitle>
                     <SonarLogo size="sm" />
                   </SheetTitle>
                 </SheetHeader>
-                <nav aria-label="Navigasi Mobile" className="p-4">
+                <nav aria-label="Navigasi Mobile" className="flex-1 overflow-y-auto p-4">
                   <Suspense fallback={null}>
                     <WorkspaceNavList
                       visibleItems={visibleItems}
@@ -282,6 +282,54 @@ export function AppShell({
                     />
                   </Suspense>
                 </nav>
+                <div className="space-y-3 border-t border-sidebar-border bg-surface-subtle/40 p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground font-ui">
+                    Ganti Peran Demo
+                  </p>
+                  <div className="grid grid-cols-3 gap-1">
+                    <form action={() => loginAsDemoRole("student")}>
+                      <Button
+                        type="submit"
+                        variant={!isVolunteer && !isAdmin ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 w-full px-1 text-xs font-ui"
+                      >
+                        Student
+                      </Button>
+                    </form>
+                    <form action={() => loginAsDemoRole("volunteer")}>
+                      <Button
+                        type="submit"
+                        variant={isVolunteer ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 w-full px-1 text-xs font-ui"
+                      >
+                        Volunteer
+                      </Button>
+                    </form>
+                    <form action={() => loginAsDemoRole("admin")}>
+                      <Button
+                        type="submit"
+                        variant={isAdmin ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 w-full px-1 text-xs font-ui"
+                      >
+                        Admin
+                      </Button>
+                    </form>
+                  </div>
+                  <form action={signOutAction}>
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-xs text-muted-foreground hover:text-destructive font-ui"
+                    >
+                      <LogOut className="mr-2 size-3.5" aria-hidden="true" />
+                      <span>Keluar dari Akun</span>
+                    </Button>
+                  </form>
+                </div>
               </SheetContent>
             </Sheet>
 

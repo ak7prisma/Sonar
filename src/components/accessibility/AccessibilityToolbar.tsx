@@ -17,7 +17,7 @@ import {
 } from "@/stores/accessibility-store";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 
-export function AccessibilityToolbar() {
+export function AccessibilityToolbar({ compact = false }: { compact?: boolean }) {
   const store = useAccessibilityStore();
   const { announce } = useLiveAnnouncer();
 
@@ -25,12 +25,13 @@ export function AccessibilityToolbar() {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
+          variant={compact ? "ghost" : "outline"}
+          size={compact ? "icon" : "sm"}
           aria-label="Reading display and accessibility preferences"
+          className={compact ? "text-muted-foreground hover:text-foreground" : undefined}
         >
           <Type className="size-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Reading display</span>
+          {compact ? null : <span className="hidden sm:inline">Reading display</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent

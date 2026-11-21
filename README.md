@@ -83,12 +83,14 @@ Mahasiswa tunanetra dan *low vision* di perguruan tinggi sering mengalami hambat
 | **Accessibility Reading** | `Atkinson Hyperlegible` | Mode membaca, canvas materi kuliah, pratinjau teks, dan konten pembelajaran beresolusi tinggi. |
 
 ### Palet Warna Resmi (Lolos WCAG 2.2 AA)
-* **Deep Teal (`#025952`):** Warna identitas utama brand SONAR.
-* **Electric Aqua (`#00A896` / `#19B1A4`):** Aksen dinamis dan indikator fokus interaktif.
-* **Warm Paper Canvas (`#FAF9F5`):** Latar permukaan membaca lembut yang meminimalkan kelelahan mata.
-* **Peach Callout (`#FFEDD5` / `#EA580C`):** Blok kutipan testimonial dan evaluasi.
-* **Campus Amber Gold (`#F59E0B` / `#D97706`):** Aksen kemitraan institusi pendidikan tinggi.
-* **Near-Black Ink (`#0E191C`) & Dark Mode Surface (`#081415`):** Kontras tinggi berstandar internasional.
+* **Deep Teal (`#087E78`):** Warna primer identitas brand SONAR untuk tombol utama, tautan aktif, dan aksen fokus.
+* **Fresh Aqua (`#39B9A7`):** Aksen sekunder dinamis dan tombol primer pada dark mode.
+* **Periwinkle Blue (`#668FE8` / `#3D5FBF`):** Aksen highlight MathML, indikator sistem, dan peran administrator.
+* **Warm Peach (`#F1A27E`):** Sorotan kutipan editorial, status volunteer reviewer, dan kartu metrik.
+* **Warm Gold (`#F2D477`):** Banner kemitraan kampus, rating bintang, dan peringatan pembaruan versi sumber.
+* **Soft Mint (`#E5F2EC`):** Permukaan sekunder, badge mahasiswa, dan latar bagian interaktif.
+* **Warm Paper (`#FAF8F2`):** Latar belakang utama bebas silau yang nyaman untuk keterbacaan jangka panjang.
+* **Deep Charcoal Ink (`#293B39`):** Teks utama berkontras tinggi (11.1:1 di atas Warm Paper) serta warna dasar footer.
 
 ---
 
