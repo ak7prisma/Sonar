@@ -121,45 +121,40 @@ export function ReviewQueueTable({
           <button
             type="button"
             onClick={() => setFilterTab("all")}
-            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-              filterTab === "all" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${filterTab === "all" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Semua Dokumen ({documents.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterTab("unreviewed")}
-            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-              filterTab === "unreviewed" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${filterTab === "unreviewed" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Menunggu Review
           </button>
           <button
             type="button"
             onClick={() => setFilterTab("in_review")}
-            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-              filterTab === "in_review" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${filterTab === "in_review" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Sedang Ditinjau
           </button>
           <button
             type="button"
             onClick={() => setFilterTab("needs_revision")}
-            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-              filterTab === "needs_revision" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${filterTab === "needs_revision" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Perlu Perbaikan
           </button>
           <button
             type="button"
             onClick={() => setFilterTab("verified")}
-            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${
-              filterTab === "verified" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`rounded-lg px-3 py-1.5 font-semibold transition-colors ${filterTab === "verified" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Disetujui &bull; Reusable
           </button>
@@ -223,21 +218,20 @@ export function ReviewQueueTable({
                       ))}
                     </div>
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                        isApproved
-                          ? "bg-success/15 text-success"
-                          : isChanges
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${isApproved
+                        ? "bg-success/15 text-success"
+                        : isChanges
                           ? "bg-tint-gold text-brand-ink"
                           : "bg-tint-blue text-brand-ink"
-                      }`}
+                        }`}
                     >
                       {isApproved
                         ? "Disetujui & Reusable"
                         : isChanges
-                        ? "Perlu Perbaikan"
-                        : isInReview
-                        ? "Sedang Ditinjau"
-                        : "Menunggu Review"}
+                          ? "Perlu Perbaikan"
+                          : isInReview
+                            ? "Sedang Ditinjau"
+                            : "Menunggu Review"}
                     </span>
                   </div>
                 </div>
@@ -268,8 +262,8 @@ export function ReviewQueueTable({
                     {isApproved
                       ? "Seluruh 14 pohon biner, rumus keseimbangan, dan tabel rotasi telah diverifikasi MathML dan deskripsi taktilnya. Layak untuk digunakan seluruh mahasiswa se-kelas."
                       : isChanges
-                      ? "Perlu penyesuaian: Deskripsi visual arah rotasi kurva di Gambar 5.3 belum mencantumkan orientasi putaran jarum jam. Harap perbaiki alt text sebelum disetujui."
-                      : "Menunggu pemeriksaan volunteer: Mohon verifikasi rumus integral lipat pada halaman 3 dan tabel perbandingan di halaman 4."}
+                        ? "Perlu penyesuaian: Deskripsi visual arah rotasi kurva di Gambar 5.3 belum mencantumkan orientasi putaran jarum jam. Harap perbaiki alt text sebelum disetujui."
+                        : "Menunggu pemeriksaan volunteer: Mohon verifikasi rumus integral lipat pada halaman 3 dan tabel perbandingan di halaman 4."}
                   </p>
                 </div>
 

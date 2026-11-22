@@ -242,11 +242,10 @@ export function UploadForm({
             </Label>
             <div className="grid gap-3 sm:grid-cols-2">
               <div
-                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
-                  sharingOption === "shared"
-                    ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
-                    : "border-border bg-card hover:bg-muted/40"
-                }`}
+                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${sharingOption === "shared"
+                  ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
+                  : "border-border bg-card hover:bg-muted/40"
+                  }`}
               >
                 <input
                   id="sharing-shared"
@@ -269,11 +268,10 @@ export function UploadForm({
               </div>
 
               <div
-                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
-                  sharingOption === "personal"
-                    ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
-                    : "border-border bg-card hover:bg-muted/40"
-                }`}
+                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${sharingOption === "personal"
+                  ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
+                  : "border-border bg-card hover:bg-muted/40"
+                  }`}
               >
                 <input
                   id="sharing-personal"
@@ -307,11 +305,10 @@ export function UploadForm({
 
         <div
           {...getRootProps()}
-          className={`rounded-2xl border-2 border-dashed p-8 transition-colors text-center ${
-            isDragActive
-              ? "border-primary bg-secondary/60"
-              : "border-primary/40 bg-brand-mint/35 dark:bg-secondary/20"
-          }`}
+          className={`rounded-2xl border-2 border-dashed p-8 transition-colors text-center ${isDragActive
+            ? "border-primary bg-secondary/60"
+            : "border-primary/40 bg-brand-mint/35 dark:bg-secondary/20"
+            }`}
         >
           <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />
           <input

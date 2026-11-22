@@ -421,27 +421,24 @@ export function AccessibleReaderStudio({
               <button
                 type="button"
                 onClick={() => setActiveSidebarTab("outline")}
-                className={`rounded py-1 font-semibold transition-colors ${
-                  activeSidebarTab === "outline" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                }`}
+                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "outline" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
+                  }`}
               >
                 Bab &amp; Hlm
               </button>
               <button
                 type="button"
                 onClick={() => setActiveSidebarTab("bookmarks")}
-                className={`rounded py-1 font-semibold transition-colors ${
-                  activeSidebarTab === "bookmarks" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                }`}
+                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "bookmarks" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
+                  }`}
               >
                 Penanda ({bookmarks.length})
               </button>
               <button
                 type="button"
                 onClick={() => setActiveSidebarTab("search")}
-                className={`rounded py-1 font-semibold transition-colors ${
-                  activeSidebarTab === "search" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                }`}
+                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "search" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
+                  }`}
               >
                 Cari
               </button>
@@ -471,17 +468,15 @@ export function AccessibleReaderStudio({
                       <button
                         type="button"
                         onClick={() => jumpToBlock(item.id)}
-                        className={`w-full text-left rounded-lg px-2.5 py-1.5 transition-colors flex items-center justify-between ${
-                          isActive
-                            ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                            : "text-foreground/80 hover:bg-muted hover:text-foreground"
-                        } ${isH2 ? "pl-5 text-[11px]" : isH1 ? "font-bold text-xs" : "text-[11px]"}`}
+                        className={`w-full text-left rounded-lg px-2.5 py-1.5 transition-colors flex items-center justify-between ${isActive
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                          } ${isH2 ? "pl-5 text-[11px]" : isH1 ? "font-bold text-xs" : "text-[11px]"}`}
                       >
                         <span className="truncate">{item.content_text}</span>
                         <span
-                          className={`text-[10px] ml-1 shrink-0 ${
-                            isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                          }`}
+                          className={`text-[10px] ml-1 shrink-0 ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"
+                            }`}
                         >
                           Hlm {item.page_number}
                         </span>
@@ -497,13 +492,12 @@ export function AccessibleReaderStudio({
         {/* CENTER READING CANVAS (Atkinson Hyperlegible, Paper Reading Mode) */}
         <article
           aria-label="Isi Materi Perkuliahan Terstruktur"
-          className={`rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-xs transition-colors ${
-            showOutline && showAssistant
-              ? "lg:col-span-5"
-              : showOutline || showAssistant
+          className={`rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-xs transition-colors ${showOutline && showAssistant
+            ? "lg:col-span-5"
+            : showOutline || showAssistant
               ? "lg:col-span-8"
               : "lg:col-span-12"
-          }`}
+            }`}
         >
           <div className="sonar-reader-prose max-w-none space-y-6">
             {filteredBlocks.map((block, index) => {
@@ -518,9 +512,8 @@ export function AccessibleReaderStudio({
                   id={`block-${block.id}`}
                   tabIndex={-1}
                   aria-label={`Halaman ${block.page_number}, ${block.block_type}`}
-                  className={`group relative scroll-mt-36 rounded-xl p-3 transition-colors ${
-                    isCurrent ? "ring-2 ring-primary/50 bg-secondary/30" : "hover:bg-surface-subtle/50"
-                  }`}
+                  className={`group relative scroll-mt-36 rounded-xl p-3 transition-colors ${isCurrent ? "ring-2 ring-primary/50 bg-secondary/30" : "hover:bg-surface-subtle/50"
+                    }`}
                 >
                   {/* Quick Action Overlay (Bookmark & Report Issue) */}
                   <div className="absolute right-2 top-2 hidden group-hover:flex items-center gap-1 bg-background/90 rounded-md p-1 shadow-xs border border-border">
@@ -722,11 +715,10 @@ export function AccessibleReaderStudio({
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`rounded-xl p-3.5 space-y-1.5 ${
-                    m.role === "user"
-                      ? "ml-4 bg-primary text-primary-foreground font-medium"
-                      : "mr-2 border border-border bg-surface-subtle text-foreground"
-                  }`}
+                  className={`rounded-xl p-3.5 space-y-1.5 ${m.role === "user"
+                    ? "ml-4 bg-primary text-primary-foreground font-medium"
+                    : "mr-2 border border-border bg-surface-subtle text-foreground"
+                    }`}
                 >
                   <p className="font-bold font-ui text-[11px] opacity-85">
                     {m.role === "user" ? "Anda" : "Asisten Dokumen SONAR"}

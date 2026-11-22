@@ -173,8 +173,8 @@ export function AppShell({
                     isVolunteer
                       ? "bg-tint-peach text-brand-ink"
                       : isAdmin
-                      ? "bg-tint-blue text-brand-ink"
-                      : "bg-brand-mint text-brand-ink"
+                        ? "bg-tint-blue text-brand-ink"
+                        : "bg-brand-mint text-brand-ink"
                   )}
                 >
                   <UserCheck className="size-3" aria-hidden="true" />
