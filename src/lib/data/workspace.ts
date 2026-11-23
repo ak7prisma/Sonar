@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentAppUser } from "@/lib/auth/session";
 import type { AppRole, Database } from "@/types/database";
@@ -228,73 +229,151 @@ export const FALLBACK_JOBS: ProcessingJobRow[] = [
 export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
   const demoUser = await getCurrentAppUser();
 
-  if (!isSupabaseConfigured()) {
-    return {
-      configured: true,
-      missingServices: [],
-      user: demoUser
-        ? {
-            id: demoUser.id,
-            email: demoUser.email,
-            fullName: demoUser.name,
-            roles: [demoUser.role],
-          }
-        : null,
-      courses: FALLBACK_COURSES,
-      documents: FALLBACK_DOCUMENTS,
-      jobs: FALLBACK_JOBS,
-    };
-  }
+  let courses: CourseRow[] = [];
+  let documents: DocumentRow[] = [];
+  let jobs: ProcessingJobRow[] = [];
 
-  const { supabase, auth } = await getAuthenticatedContext();
-  if (!supabase || !auth) {
-    return {
-      configured: true,
-      missingServices: [],
-      user: demoUser
-        ? {
-            id: demoUser.id,
-            email: demoUser.email,
-            fullName: demoUser.name,
-            roles: [demoUser.role],
-          }
-        : null,
-      courses: FALLBACK_COURSES,
-      documents: FALLBACK_DOCUMENTS,
-      jobs: FALLBACK_JOBS,
-    };
-  }
+  let authUser: {
+    id: string;
+    email: string;
+    fullName: string | null;
+    roles: AppRole[];
+  } | null = demoUser
+    ? {
+        id: demoUser.id,
+        email: demoUser.email,
+        fullName: demoUser.name,
+        roles: [demoUser.role],
+      }
+    : null;
 
-  const [{ data: courses }, { data: documents }, { data: jobs }] =
-    await Promise.all([
-      supabase
-        .from("courses")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("documents")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30),
-      supabase
-        .from("processing_jobs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+  if (isSupabaseConfigured()) {
+    const { supabase, auth } = await getAuthenticatedContext();
+    const client = supabase ?? (await createServerSupabaseClient());
+
+    if (auth) {
+      authUser = {
+        id: auth.userId,
+        email: auth.email,
+        fullName: auth.fullName,
+        roles: auth.roles,
+      };
+    }
+
+    if (client) {
+      const [{ data: dbCourses }, { data: dbDocs }, { data: dbJobs }] =
+        await Promise.all([
+          client.from("courses").select("*").order("code", { ascending: true }),
+          client.from("documents").select("*").order("created_at", { ascending: false }).limit(30),
+          client.from("processing_jobs").select("*").order("created_at", { ascending: false }).limit(20),
+        ]);
+
+      if (dbCourses && dbCourses.length > 0) {
+        courses = dbCourses;
+      }
+      if (dbDocs && dbDocs.length > 0) {
+        documents = dbDocs;
+      }
+      if (dbJobs && dbJobs.length > 0) {
+        jobs = dbJobs;
+      }
+    }
+  }
 
   return {
-    configured: true,
+    configured: isSupabaseConfigured(),
     missingServices: [],
-    user: {
-      id: auth.userId,
-      email: auth.email,
-      fullName: auth.fullName,
-      roles: auth.roles,
-    },
-    courses: courses && courses.length > 0 ? courses : FALLBACK_COURSES,
-    documents: documents && documents.length > 0 ? documents : FALLBACK_DOCUMENTS,
-    jobs: jobs && jobs.length > 0 ? jobs : FALLBACK_JOBS,
+    user: authUser,
+    courses: courses.length > 0 ? courses : FALLBACK_COURSES,
+    documents: documents.length > 0 ? documents : FALLBACK_DOCUMENTS,
+    jobs: jobs.length > 0 ? jobs : FALLBACK_JOBS,
+  };
+}
+
+export async function loadCourseDetailWithMaterials(courseId: string) {
+  const snapshot = await loadWorkspaceSnapshot();
+  const lowerId = courseId.toLowerCase().trim();
+
+  // Find course matching UUID, code, or slug (e.g. "cs-201" matching "CS 201")
+  const course =
+    snapshot.courses.find(
+      (c) =>
+        c.id.toLowerCase() === lowerId ||
+        c.code.toLowerCase() === lowerId ||
+        c.code.toLowerCase().replace(/\s+/g, "-") === lowerId
+    ) ??
+    FALLBACK_COURSES.find(
+      (c) =>
+        c.id.toLowerCase() === lowerId ||
+        c.code.toLowerCase() === lowerId ||
+        c.code.toLowerCase().replace(/\s+/g, "-") === lowerId
+    ) ??
+    snapshot.courses[0] ??
+    FALLBACK_COURSES[0];
+
+  let courseDocuments: DocumentRow[] = [];
+  let isEnrolled = false;
+  let memberCount = 0;
+  let userRoleInCourse: string | null = null;
+
+  if (isSupabaseConfigured()) {
+    const { supabase, auth } = await getAuthenticatedContext();
+    const client = supabase ?? (await createServerSupabaseClient());
+
+    if (client) {
+      const [
+        { data: dbDocs },
+        { count: totalMembers },
+        userMembershipRes,
+      ] = await Promise.all([
+        client
+          .from("documents")
+          .select("*")
+          .eq("course_id", course.id)
+          .order("created_at", { ascending: false }),
+        client
+          .from("course_members")
+          .select("id", { count: "exact", head: true })
+          .eq("course_id", course.id),
+        auth
+          ? client
+              .from("course_members")
+              .select("member_role")
+              .eq("course_id", course.id)
+              .eq("user_id", auth.userId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      if (dbDocs && dbDocs.length > 0) {
+        courseDocuments = dbDocs;
+      }
+      memberCount = totalMembers ?? 0;
+      if (userMembershipRes.data) {
+        isEnrolled = true;
+        userRoleInCourse = userMembershipRes.data.member_role;
+      }
+    }
+  }
+
+  // Fallback to static documents if no documents in database yet for this course
+  if (courseDocuments.length === 0) {
+    courseDocuments = FALLBACK_DOCUMENTS.filter(
+      (d) =>
+        d.course_id === course.id ||
+        (course.code === "CS 201" && d.course_id === "cs-201") ||
+        (course.code === "MATH 105" && d.course_id === "math-105") ||
+        (course.code === "STAT 210" && d.course_id === "stat-210")
+    );
+  }
+
+  return {
+    course,
+    documents: courseDocuments,
+    isEnrolled,
+    memberCount: Math.max(memberCount, 1),
+    userRoleInCourse,
+    currentUser: snapshot.user,
   };
 }
 
