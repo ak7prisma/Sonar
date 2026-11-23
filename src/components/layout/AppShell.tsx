@@ -139,8 +139,8 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      {/* Desktop Sidebar */}
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      {/* Desktop Sidebar (Sticky on viewport) */}
+      <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
         <div className="flex h-16 items-center border-b border-sidebar-border px-5">
           <Link
             href="/dashboard"
