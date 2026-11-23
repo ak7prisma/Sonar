@@ -1,25 +1,45 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().trim().email("Enter a valid university or personal email address."),
+  email: z.string().trim().email("Masukkan alamat email yang valid."),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(128, "Password cannot exceed 128 characters."),
+    .min(8, "Kata sandi minimal 8 karakter.")
+    .max(128, "Kata sandi maksimal 128 karakter."),
 });
 
 export const registerSchema = loginSchema.extend({
   fullName: z
     .string()
     .trim()
-    .min(2, "Full name must be at least 2 characters.")
-    .max(100, "Full name must be under 100 characters."),
+    .min(2, "Nama lengkap minimal 2 karakter.")
+    .max(100, "Nama lengkap maksimal 100 karakter."),
   studyProgram: z
     .string()
     .trim()
-    .max(120, "Study program must be under 120 characters.")
+    .max(120, "Program studi maksimal 120 karakter.")
     .optional(),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Masukkan alamat email yang valid."),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Kata sandi minimal 8 karakter.")
+      .max(128, "Kata sandi maksimal 128 karakter."),
+    confirmPassword: z
+      .string()
+      .min(8, "Konfirmasi kata sandi minimal 8 karakter.")
+      .max(128, "Konfirmasi kata sandi maksimal 128 karakter."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Konfirmasi kata sandi tidak cocok dengan kata sandi baru.",
+    path: ["confirmPassword"],
+  });
 
 export const courseCreateSchema = z.object({
   code: z
