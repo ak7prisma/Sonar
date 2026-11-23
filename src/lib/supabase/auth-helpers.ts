@@ -54,7 +54,11 @@ export async function getAuthenticatedContext(): Promise<{
     auth: {
       userId: user.id,
       email: profile?.email ?? user.email ?? "",
-      fullName: profile?.full_name ?? null,
+      fullName:
+        profile?.full_name ??
+        (user.user_metadata?.full_name as string) ??
+        (user.user_metadata?.name as string) ??
+        null,
       roles,
     },
   };

@@ -7,12 +7,9 @@ import {
   BookOpen,
   CheckSquare,
   FileUp,
-  HelpCircle,
-  Info,
+  Headphones,
   LayoutDashboard,
   LogOut,
-  Menu,
-  Settings,
   Shield,
   UserCheck,
 } from "lucide-react";
@@ -29,6 +26,7 @@ import { SonarLogo } from "@/components/shared/SonarLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { AccessibilityToolbar } from "@/components/accessibility/AccessibilityToolbar";
 import { CommandMenu } from "@/components/accessibility/CommandMenu";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { loginAsDemoRole, signOutAction } from "@/features/authentication/actions";
 import type { AppRole } from "@/types/database";
 
@@ -42,9 +40,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Mata Kuliah & Materi Reusable", href: "/courses", icon: BookOpen, badge: "3 Kuliah" },
+  { label: "Mata Kuliah & Materi", href: "/courses", icon: BookOpen, badge: "3 Kuliah" },
   { label: "Unggah Dokumen PDF", href: "/upload", icon: FileUp },
-  { label: "Accessible Reader", href: "/reader", icon: BookOpen },
+  { label: "Accessible Reader", href: "/reader", icon: Headphones },
   {
     label: "Review Queue Volunteer",
     href: "/review",
@@ -57,9 +55,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: Shield,
     roles: ["admin"],
   },
-  { label: "Pengaturan Membaca", href: "/settings", icon: Settings },
-  { label: "Panduan & Help Center", href: "/help", icon: HelpCircle },
-  { label: "Tentang SONAR", href: "/about", icon: Info },
 ];
 
 function WorkspaceNavList({
@@ -131,7 +126,7 @@ export function AppShell({
   userRoles?: AppRole[];
   pageSectionLabel?: string;
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
 
   const isVolunteer = userRoles.includes("reviewer") || userRoles.includes("volunteer");
   const isAdmin = userRoles.includes("admin");
@@ -148,7 +143,7 @@ export function AppShell({
       <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <div className="flex h-16 items-center border-b border-sidebar-border px-5">
           <Link
-            href="/"
+            href="/dashboard"
             aria-label="SONAR beranda"
             className="inline-flex items-center rounded-md py-1"
           >
@@ -255,90 +250,15 @@ export function AppShell({
 
       {/* Main Column */}
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile & Desktop Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
           <div className="flex items-center gap-3">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="lg:hidden"
-                  aria-label="Buka menu navigasi"
-                >
-                  <Menu className="size-5" aria-hidden="true" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0">
-                <SheetHeader className="border-b px-5 py-4 text-left">
-                  <SheetTitle>
-                    <SonarLogo size="sm" />
-                  </SheetTitle>
-                </SheetHeader>
-                <nav aria-label="Navigasi Mobile" className="flex-1 overflow-y-auto p-4">
-                  <Suspense fallback={null}>
-                    <WorkspaceNavList
-                      visibleItems={visibleItems}
-                      onNavigate={() => setMobileOpen(false)}
-                    />
-                  </Suspense>
-                </nav>
-                <div className="space-y-3 border-t border-sidebar-border bg-surface-subtle/40 p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground font-ui">
-                    Ganti Peran Demo
-                  </p>
-                  <div className="grid grid-cols-3 gap-1">
-                    <form action={() => loginAsDemoRole("student")}>
-                      <Button
-                        type="submit"
-                        variant={!isVolunteer && !isAdmin ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 w-full px-1 text-xs font-ui"
-                      >
-                        Student
-                      </Button>
-                    </form>
-                    <form action={() => loginAsDemoRole("volunteer")}>
-                      <Button
-                        type="submit"
-                        variant={isVolunteer ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 w-full px-1 text-xs font-ui"
-                      >
-                        Volunteer
-                      </Button>
-                    </form>
-                    <form action={() => loginAsDemoRole("admin")}>
-                      <Button
-                        type="submit"
-                        variant={isAdmin ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 w-full px-1 text-xs font-ui"
-                      >
-                        Admin
-                      </Button>
-                    </form>
-                  </div>
-                  <form action={signOutAction}>
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start text-xs text-muted-foreground hover:text-destructive font-ui"
-                    >
-                      <LogOut className="mr-2 size-3.5" aria-hidden="true" />
-                      <span>Keluar dari Akun</span>
-                    </Button>
-                  </form>
-                </div>
-              </SheetContent>
-            </Sheet>
-
             <Link
-              href="/"
+              href="/dashboard"
               aria-label="SONAR beranda"
               className="inline-flex items-center lg:hidden"
             >
-              <SonarLogo variant="mark" size="sm" />
+              <SonarLogo size="sm" />
             </Link>
 
             {pageSectionLabel ? (
@@ -352,23 +272,125 @@ export function AppShell({
             <CommandMenu />
             <AccessibilityToolbar />
             <ThemeToggle />
+
+            {/* Mobile Profile & Logout Trigger */}
+            <div className="lg:hidden">
+              <Sheet open={mobileProfileOpen} onOpenChange={setMobileProfileOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="relative size-8 rounded-full border border-primary/20 bg-primary/10 font-bold text-xs text-primary font-heading"
+                    aria-label="Buka profil dan pengaturan akun"
+                  >
+                    {isVolunteer ? "DS" : isAdmin ? "HG" : "AF"}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="flex w-72 flex-col gap-0 p-0">
+                  <SheetHeader className="border-b px-5 py-4 text-left">
+                    <SheetTitle>
+                      <SonarLogo size="sm" />
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="p-4 border-b border-border space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center font-bold text-primary font-heading">
+                        {isVolunteer ? "DS" : isAdmin ? "HG" : "AF"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground font-ui">
+                          {isVolunteer ? "Dewi Sartika, S.Kom." : isAdmin ? "Dr. Hendra Gunawan" : "Ahmad Fauzi"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {isVolunteer ? "Volunteer Reviewer" : isAdmin ? "Administrator" : "Mahasiswa Tunanetra"}
+                        </p>
+                      </div>
+                    </div>
+                    {userEmail && (
+                      <p className="text-[11px] text-muted-foreground font-mono pt-1">
+                        {userEmail}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex-1 p-4 space-y-4">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground font-ui">
+                        Ganti Peran Demo
+                      </p>
+                      <div className="grid grid-cols-3 gap-1">
+                        <form action={() => { loginAsDemoRole("student"); setMobileProfileOpen(false); }}>
+                          <Button
+                            type="submit"
+                            variant={!isVolunteer && !isAdmin ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 w-full px-1 text-xs font-ui"
+                          >
+                            Student
+                          </Button>
+                        </form>
+                        <form action={() => { loginAsDemoRole("volunteer"); setMobileProfileOpen(false); }}>
+                          <Button
+                            type="submit"
+                            variant={isVolunteer ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 w-full px-1 text-xs font-ui"
+                          >
+                            Volunteer
+                          </Button>
+                        </form>
+                        <form action={() => { loginAsDemoRole("admin"); setMobileProfileOpen(false); }}>
+                          <Button
+                            type="submit"
+                            variant={isAdmin ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 w-full px-1 text-xs font-ui"
+                          >
+                            Admin
+                          </Button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border-t border-border">
+                    <form action={signOutAction}>
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-xs text-muted-foreground hover:text-destructive font-ui"
+                      >
+                        <LogOut className="mr-2 size-3.5" aria-hidden="true" />
+                        <span>Keluar dari Akun</span>
+                      </Button>
+                    </form>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </header>
 
+        {/* Main Content Area (pb-24 on mobile so bottom nav does not block content) */}
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8"
+          className="flex-1 px-4 py-6 outline-none pb-28 lg:pb-8 sm:px-6 lg:px-8"
         >
           {children}
         </main>
 
-        <footer className="border-t bg-surface-subtle px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8 font-ui">
+        {/* Footer (mb-16 on mobile so not covered by bottom nav) */}
+        <footer className="border-t bg-surface-subtle px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8 font-ui mb-16 lg:mb-0">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <p>SONAR — Platform Materi Perkuliahan Aksesibel untuk Mahasiswa Tunanetra</p>
             <p>Standar WCAG 2.2 Level AA · Terverifikasi Screen Reader & Audio Bilingual</p>
           </div>
         </footer>
+
+        {/* Mobile Bottom Navigation (Mirip DANA) */}
+        <Suspense fallback={null}>
+          <MobileBottomNav userRoles={userRoles} />
+        </Suspense>
       </div>
     </div>
   );

@@ -3,14 +3,23 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/env";
-import { loginSchema, registerSchema } from "@/lib/validation/schemas";
+import { getAppUrl, isSupabaseConfigured } from "@/lib/env";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "@/lib/validation/schemas";
+import { mapAuthErrorMessage } from "@/features/authentication/utils";
 
 export interface AuthActionResult {
   error?: string;
   fieldErrors?: Record<string, string[]>;
   message?: string;
+  success?: boolean;
 }
+
+export { mapAuthErrorMessage };
 
 export async function loginAction(input: {
   email: string;
@@ -34,7 +43,7 @@ export async function loginAction(input: {
       });
 
       if (error) {
-        return { error: error.message };
+        return { error: mapAuthErrorMessage(error.message) };
       }
 
       const safeRedirect =
@@ -100,7 +109,7 @@ export async function registerAction(input: {
       });
 
       if (error) {
-        return { error: error.message };
+        return { error: mapAuthErrorMessage(error.message) };
       }
 
       if (data.session) {
@@ -109,7 +118,7 @@ export async function registerAction(input: {
 
       return {
         message:
-          "Pendaftaran berhasil dikirim. Silakan periksa inbox email Anda untuk verifikasi.",
+          "Pendaftaran berhasil! Silakan periksa inbox email Anda untuk memverifikasi akun sebelum masuk.",
       };
     }
   }
@@ -117,6 +126,123 @@ export async function registerAction(input: {
   const cookieStore = await cookies();
   cookieStore.set("sonar_role", "student", { path: "/", httpOnly: true, sameSite: "lax" });
   redirect("/dashboard");
+}
+
+export async function forgotPasswordAction(input: {
+  email: string;
+}): Promise<AuthActionResult> {
+  const parsed = forgotPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: "Periksa kembali data yang dimasukkan.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createServerSupabaseClient();
+    if (supabase) {
+      const appUrl = getAppUrl();
+      const callbackUrl = `${appUrl}/auth/callback?next=/reset-password`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+        redirectTo: callbackUrl,
+      });
+
+      if (error) {
+        return { error: mapAuthErrorMessage(error.message) };
+      }
+
+      return {
+        success: true,
+        message:
+          "Tautan pemulihan kata sandi telah dikirim ke email Anda. Silakan periksa kotak masuk atau spam.",
+      };
+    }
+  }
+
+  return {
+    success: true,
+    message:
+      "Tautan pemulihan kata sandi telah dikirim ke email Anda. (Mode Demo Lokal)",
+  };
+}
+
+export async function resetPasswordAction(input: {
+  password: string;
+  confirmPassword: string;
+}): Promise<AuthActionResult> {
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: "Periksa kembali kata sandi yang dimasukkan.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createServerSupabaseClient();
+    if (supabase) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return {
+          error:
+            "Sesi pemulihan kata sandi tidak ditemukan atau telah kedaluwarsa. Silakan ajukan permohonan tautan baru.",
+        };
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: parsed.data.password,
+      });
+
+      if (error) {
+        return { error: mapAuthErrorMessage(error.message) };
+      }
+
+      redirect("/dashboard");
+    }
+  }
+
+  redirect("/dashboard");
+}
+
+export async function signInWithGoogleAction(redirectTo?: string) {
+  if (isSupabaseConfigured()) {
+    const supabase = await createServerSupabaseClient();
+    if (supabase) {
+      const appUrl = getAppUrl();
+      const safeRedirect =
+        redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+      const callbackUrl = `${appUrl}/auth/callback?next=${encodeURIComponent(safeRedirect)}`;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error) {
+        return { error: mapAuthErrorMessage(error.message) };
+      }
+
+      if (data?.url) {
+        redirect(data.url);
+      }
+    }
+  }
+
+  return {
+    error:
+      "Supabase belum dikonfigurasi dengan URL dan Publishable Key yang valid.",
+  };
 }
 
 export async function signOutAction() {
