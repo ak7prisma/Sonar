@@ -19,6 +19,15 @@ const COURSE_IMAGES: Record<string, { src: string; alt: string; caption?: string
   "stat-210": APP_IMAGES.courseStat,
 };
 
+function getCourseImage(course: { id: string; code: string; discipline: string }) {
+  if (COURSE_IMAGES[course.id]) return COURSE_IMAGES[course.id];
+  const code = course.code.toLowerCase();
+  const disc = course.discipline.toLowerCase();
+  if (code.includes("math") || disc.includes("matematika")) return APP_IMAGES.courseMath;
+  if (code.includes("stat") || disc.includes("statistika")) return APP_IMAGES.courseStat;
+  return APP_IMAGES.courseCS;
+}
+
 async function CoursesBody() {
   const snapshot = await loadWorkspaceSnapshot();
   const courses = snapshot.courses.length > 0 ? snapshot.courses : FALLBACK_COURSES;
@@ -28,13 +37,13 @@ async function CoursesBody() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-border pb-6">
         <div className="space-y-1">
           <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">
-            Katalog Mata Kuliah &bull; 3 Kelas Didukung
+            Katalog Mata Kuliah &bull; {courses.length} Kelas Tersedia (Supabase)
           </span>
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Mata Kuliah &amp; Shared Reviewed Materials
           </h1>
           <p className="text-sm text-muted-foreground font-sans">
-            Akses materi perkuliahan yang telah diverifikasi volunteer dan dapat digunakan bersama oleh mahasiswa tunanetra yang terdaftar.
+            Akses materi perkuliahan terhubung ke Supabase yang telah diverifikasi volunteer dan dapat digunakan bersama oleh mahasiswa tunanetra yang terdaftar.
           </p>
         </div>
 
@@ -48,8 +57,18 @@ async function CoursesBody() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => {
-          const courseImage = COURSE_IMAGES[course.id] ?? APP_IMAGES.courseCS;
-          const sharedDocs = SHARED_REVIEWED_MATERIALS.filter((m) => m.courseId === course.id);
+          const courseImage = getCourseImage(course);
+          const docsCount =
+            snapshot.documents.filter(
+              (d) =>
+                d.course_id === course.id ||
+                d.course_id === course.code.toLowerCase().replace(/\s+/g, "-")
+            ).length ||
+            SHARED_REVIEWED_MATERIALS.filter(
+              (m) =>
+                m.courseId === course.id ||
+                m.courseId === course.code.toLowerCase().replace(/\s+/g, "-")
+            ).length;
 
           return (
             <article
@@ -91,14 +110,14 @@ async function CoursesBody() {
                         <CheckCircle2 className="size-3.5 text-success" />
                         <span>Materi Terverifikasi (Reusable)</span>
                       </span>
-                      <strong className="text-foreground">{sharedDocs.length} Modul</strong>
+                      <strong className="text-foreground">{docsCount} Dokumen</strong>
                     </div>
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span className="flex items-center gap-1.5">
                         <GraduationCap className="size-3.5 text-primary" />
-                        <span>Status Akses Anda</span>
+                        <span>Koleksi Terbuka</span>
                       </span>
-                      <span className="text-success font-semibold">Terdaftar (Penuh)</span>
+                      <span className="text-primary font-semibold">Terkoneksi Supabase</span>
                     </div>
                   </div>
                 </div>
@@ -107,7 +126,7 @@ async function CoursesBody() {
               <div className="border-t border-border/60 p-5 pt-3 bg-surface-subtle/40 font-ui">
                 <Button asChild size="sm" className="w-full justify-between font-semibold">
                   <Link href={`/courses/${course.id}`}>
-                    <span>Buka Shared Materials</span>
+                    <span>Buka Materi Kuliah</span>
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
