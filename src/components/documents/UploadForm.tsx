@@ -45,26 +45,71 @@ export function UploadForm({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSelectedFile = (file: File | undefined) => {
+  const handleSelectedFile = async (file: File | undefined) => {
     if (!file) return;
     setErrorMessage(null);
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      const msg = "Silakan pilih file berekstensi .pdf yang valid.";
+
+    // 1. Validasi ekstensi nama berkas (.pdf)
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith(".pdf")) {
+      const msg = `Format file "${file.name}" tidak didukung. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`;
       setErrorMessage(msg);
       announce(msg, "assertive");
+      setSelectedFile(null);
+      if (nativeFileRef.current) nativeFileRef.current.value = "";
       return;
     }
+
+    // 2. Validasi MIME type browser
+    const allowedMimes = ["application/pdf", "application/x-pdf", ""];
+    if (file.type && !allowedMimes.includes(file.type.toLowerCase())) {
+      const msg = `Tipe berkas (${file.type}) tidak valid. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`;
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedFile(null);
+      if (nativeFileRef.current) nativeFileRef.current.value = "";
+      return;
+    }
+
+    // 3. Validasi ukuran berkas (tidak boleh kosong 0 byte)
+    if (file.size === 0) {
+      const msg = "File yang dipilih kosong (0 byte). Harap pilih file PDF perkuliahan yang valid.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedFile(null);
+      if (nativeFileRef.current) nativeFileRef.current.value = "";
+      return;
+    }
+
     if (file.size > 25 * 1024 * 1024) {
       const msg = "Ukuran file melebihi batas maksimal 25 MB.";
       setErrorMessage(msg);
       announce(msg, "assertive");
       return;
     }
+
+    // 4. Validasi Magic Header Signature (%PDF-)
+    try {
+      const headerSlice = file.slice(0, 5);
+      const buffer = await headerSlice.arrayBuffer();
+      const header = new TextDecoder("ascii").decode(buffer);
+      if (!header.startsWith("%PDF-")) {
+        const msg = `Berkas "${file.name}" bukan dokumen PDF asli yang valid (signature %PDF- tidak ditemukan). Hanya dokumen PDF asli yang diperbolehkan masuk.`;
+        setErrorMessage(msg);
+        announce(msg, "assertive");
+        setSelectedFile(null);
+        if (nativeFileRef.current) nativeFileRef.current.value = "";
+        return;
+      }
+    } catch {
+      // Abaikan jika lingkungan runtime tidak mengizinkan pembacaan slice
+    }
+
     setSelectedFile(file);
     if (!title.trim()) {
       setTitle(file.name.replace(/\.pdf$/i, ""));
     }
-    announce(`File PDF terpilih: ${file.name}.`);
+    announce(`File PDF terpilih: ${file.name}. Validasi PDF berhasil.`);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -72,7 +117,20 @@ export function UploadForm({
     accept: { "application/pdf": [".pdf"] },
     noClick: true,
     noKeyboard: true,
-    onDrop: (accepted) => handleSelectedFile(accepted[0]),
+    onDrop: (accepted) => {
+      if (accepted && accepted[0]) {
+        void handleSelectedFile(accepted[0]);
+      }
+    },
+    onDropRejected: (fileRejections) => {
+      const rejectedFile = fileRejections[0]?.file;
+      const msg = rejectedFile
+        ? `Format berkas "${rejectedFile.name}" ditolak. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`
+        : "Format berkas tidak didukung. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedFile(null);
+    },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,7 +146,14 @@ export function UploadForm({
     }
 
     if (!selectedFile) {
-      const msg = "Pilih atau seret file PDF sebelum mengunggah.";
+      const msg = "Pilih atau seret file PDF sebelum mengunggah. Hanya file PDF yang diperbolehkan masuk.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      return;
+    }
+
+    if (!selectedFile.name.toLowerCase().endsWith(".pdf")) {
+      const msg = "Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.";
       setErrorMessage(msg);
       announce(msg, "assertive");
       return;
@@ -332,7 +397,7 @@ export function UploadForm({
                 Klik untuk memilih file atau seret file PDF ke sini
               </p>
               <p className="text-xs text-muted-foreground font-sans">
-                Maksimal ukuran file: 25MB &bull; Mendukung PDF digital maupun hasil scan kamera dosen
+                Maksimal ukuran file: 25MB &bull; Khusus berkas format dokumen PDF (.pdf)
               </p>
             </div>
 
