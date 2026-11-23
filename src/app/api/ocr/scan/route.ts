@@ -38,9 +38,16 @@ export async function POST(req: Request) {
       documentTitle = String(formData.get("title") ?? "Hasil Pindai Dokumen OCR");
 
       if (file instanceof File) {
+        const lowerName = file.name.toLowerCase();
+        if (!lowerName.endsWith(".pdf") && file.type !== "application/pdf" && file.type !== "application/x-pdf") {
+          return NextResponse.json(
+            { error: "Hanya berkas dokumen berformat PDF (.pdf) yang diperbolehkan untuk pemindaian OCR." },
+            { status: 400 }
+          );
+        }
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        imageBase64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+        imageBase64 = `data:application/pdf;base64,${buffer.toString("base64")}`;
       } else {
         const rawBase64 = formData.get("imageBase64");
         if (typeof rawBase64 === "string") {
@@ -57,7 +64,20 @@ export async function POST(req: Request) {
 
     if (!imageBase64) {
       return NextResponse.json(
-        { error: "Gambar atau foto dokumen diperlukan untuk menjalankan pemindaian OCR." },
+        { error: "Berkas dokumen PDF diperlukan untuk menjalankan pemindaian OCR." },
+        { status: 400 }
+      );
+    }
+
+    // Pastikan berkas adalah PDF atau sampel demonstrasi
+    const isPdfPayload =
+      imageBase64.startsWith("data:application/pdf") ||
+      imageBase64.startsWith("data:application/x-pdf") ||
+      imageBase64.startsWith("data:image/svg+xml");
+
+    if (!isPdfPayload) {
+      return NextResponse.json(
+        { error: "Format tidak didukung. Fitur OCR hanya menerima berkas dokumen berformat PDF (.pdf)." },
         { status: 400 }
       );
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, FileUp, Sparkles, FileText } from "lucide-react";
+import { FileUp, Sparkles, FileText } from "lucide-react";
 import type { CourseRow } from "@/lib/data/workspace";
 import { OcrDocumentScanner } from "@/components/scanner/OcrDocumentScanner";
 import { UploadForm } from "@/components/documents/UploadForm";
@@ -42,18 +42,18 @@ export function UploadHub({
           }`}
         >
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary">
-            <Camera className="w-4 h-4" aria-hidden="true" />
+            <FileText className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="text-left">
             <div className="flex items-center gap-1.5">
               <span>AI OCR Scanner</span>
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
                 <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
-                Live
+                Khusus PDF
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground font-normal">
-              Foto/Kamera &amp; rumus MathML langsung
+              Berkas PDF scan &amp; rumus MathML langsung
             </p>
           </div>
         </button>

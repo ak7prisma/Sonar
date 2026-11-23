@@ -5,10 +5,9 @@ import Link from "next/link";
 import {
   AlertCircle,
   BookOpen,
-  Camera,
   CheckCircle2,
+  FileText,
   Headphones,
-  Image as ImageIcon,
   RotateCcw,
   Sparkles,
   Square,
@@ -49,13 +48,13 @@ export function OcrDocumentScanner({
 }: OcrDocumentScannerProps) {
   const { announce } = useLiveAnnouncer();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [courseId, setCourseId] = useState(
     defaultCourseId || courses[0]?.id || "cs-201"
   );
   const [language, setLanguage] = useState<"id" | "en">("id");
   const [documentTitle, setDocumentTitle] = useState("Catatan Kuliah OCR");
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -72,27 +71,82 @@ export function OcrDocumentScanner({
     };
   }, []);
 
-  const handleFileSelect = (file: File | undefined) => {
+  const handleFileSelect = async (file: File | undefined) => {
     if (!file) return;
     setErrorMessage(null);
     setScanResult(null);
 
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
+    const lowerName = file.name.toLowerCase();
 
-    if (!isImage && !isPdf) {
-      setErrorMessage("Silakan pilih file gambar (JPG, PNG, WEBP) atau PDF dokumen scan.");
+    // Validasi ketat: HANYA BERKAS PDF
+    if (!lowerName.endsWith(".pdf")) {
+      const msg = `Format berkas "${file.name}" tidak diizinkan. Pemindaian OCR wajib menggunakan berkas dokumen PDF (.pdf). Format foto/gambar biasa (JPG/PNG) atau format lainnya tidak didukung.`;
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedPdfFile(null);
+      setPreviewImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
+
+    // Validasi MIME type
+    const allowedMimes = ["application/pdf", "application/x-pdf", ""];
+    if (file.type && !allowedMimes.includes(file.type.toLowerCase())) {
+      const msg = `Tipe berkas (${file.type}) tidak valid. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`;
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedPdfFile(null);
+      setPreviewImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // Validasi ukuran
+    if (file.size === 0) {
+      const msg = "Berkas PDF yang dipilih kosong (0 byte). Harap pilih berkas PDF materi yang valid.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setSelectedPdfFile(null);
+      setPreviewImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      const msg = "Ukuran berkas PDF melebihi batas maksimal 25 MB.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      return;
+    }
+
+    // Validasi Magic Header Signature (%PDF-)
+    try {
+      const headerSlice = file.slice(0, 5);
+      const buffer = await headerSlice.arrayBuffer();
+      const header = new TextDecoder("ascii").decode(buffer);
+      if (!header.startsWith("%PDF-")) {
+        const msg = `Berkas "${file.name}" bukan dokumen PDF asli yang valid (signature %PDF- tidak ditemukan). Hanya berkas dokumen PDF asli yang diperbolehkan.`;
+        setErrorMessage(msg);
+        announce(msg, "assertive");
+        setSelectedPdfFile(null);
+        setPreviewImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    } catch {
+      // Abaikan jika lingkungan runtime tidak mengizinkan pembacaan slice
+    }
+
+    setSelectedPdfFile(file);
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setPreviewImage(dataUrl);
       if (!documentTitle || documentTitle === "Catatan Kuliah OCR") {
-        setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
+        setDocumentTitle(file.name.replace(/\.pdf$/i, ""));
       }
-      announce(`Gambar dokumen ${file.name} berhasil dimuat. Siap dipindai.`, "polite");
+      announce(`Berkas PDF ${file.name} berhasil dimuat. Siap dipindai.`, "polite");
     };
     reader.readAsDataURL(file);
   };
@@ -100,6 +154,7 @@ export function OcrDocumentScanner({
   const handleLoadSample = (sampleType: "math" | "cs") => {
     setErrorMessage(null);
     setScanResult(null);
+    setSelectedPdfFile(null);
 
     if (sampleType === "math") {
       setCourseId(courses.find((c) => c.id === "math-105")?.id || courses[0]?.id || "math-105");
@@ -116,8 +171,8 @@ export function OcrDocumentScanner({
 
   const executeOcrScan = async () => {
     if (!previewImage) {
-      setErrorMessage("Harap ambil foto atau pilih gambar dokumen terlebih dahulu.");
-      announce("Harap ambil foto dokumen terlebih dahulu.", "assertive");
+      setErrorMessage("Harap pilih berkas dokumen PDF terlebih dahulu.");
+      announce("Harap pilih berkas PDF terlebih dahulu.", "assertive");
       return;
     }
 
@@ -280,18 +335,40 @@ export function OcrDocumentScanner({
       <div className="rounded-2xl border-2 border-dashed border-border bg-card p-6 text-center space-y-4">
         {previewImage ? (
           <div className="space-y-4">
-            <div className="relative mx-auto max-w-md overflow-hidden rounded-xl border border-border shadow-sm max-h-72 flex items-center justify-center bg-black/5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewImage}
-                alt="Pratinjau dokumen yang akan dipindai"
-                className="w-full object-contain max-h-72"
-              />
-              {/* Scanning Laser Animation */}
-              {scanning && (
-                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(20,184,166,0.8)] animate-pulse" />
-              )}
-            </div>
+            {selectedPdfFile ? (
+              <div className="relative mx-auto max-w-md overflow-hidden rounded-xl border-2 border-primary/30 bg-primary/5 p-6 flex flex-col items-center justify-center text-center space-y-3 min-h-48 shadow-sm">
+                <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                  <FileText className="size-8" aria-hidden="true" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-heading font-bold text-foreground text-sm truncate max-w-xs">{selectedPdfFile.name}</p>
+                  <p className="text-xs text-muted-foreground font-ui">
+                    {(selectedPdfFile.size / (1024 * 1024)).toFixed(2)} MB &bull; Dokumen PDF Terverifikasi
+                  </p>
+                  <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/15 text-primary">
+                    <CheckCircle2 className="size-3" aria-hidden="true" />
+                    Format PDF Valid &bull; Siap Dipindai OCR
+                  </span>
+                </div>
+                {/* Scanning Laser Animation */}
+                {scanning && (
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_14px_rgba(20,184,166,0.9)] animate-pulse top-1/2 -translate-y-1/2" />
+                )}
+              </div>
+            ) : (
+              <div className="relative mx-auto max-w-md overflow-hidden rounded-xl border border-border shadow-sm max-h-72 flex items-center justify-center bg-black/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewImage}
+                  alt="Pratinjau lembar materi perkuliahan"
+                  className="w-full object-contain max-h-72"
+                />
+                {/* Scanning Laser Animation */}
+                {scanning && (
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(20,184,166,0.8)] animate-pulse" />
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button
@@ -317,58 +394,48 @@ export function OcrDocumentScanner({
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  setSelectedPdfFile(null);
                   setPreviewImage(null);
                   setScanResult(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 disabled={scanning}
                 className="h-11 font-ui"
               >
                 <RotateCcw className="size-4 mr-2" aria-hidden="true" />
-                Ganti Foto / Gambar
+                Ganti Berkas PDF
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-4 py-4">
             <div className="mx-auto size-16 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-              <Camera className="size-8" aria-hidden="true" />
+              <FileText className="size-8" aria-hidden="true" />
             </div>
 
             <div className="space-y-1">
               <h3 className="font-heading text-lg font-bold text-foreground">
-                Ambil Foto atau Unggah Dokumen
+                Unggah Berkas PDF Materi Kuliah
               </h3>
               <p className="text-xs text-muted-foreground font-ui max-w-md mx-auto">
-                Gunakan kamera ponsel untuk memotret materi fisik, atau pilih berkas gambar / PDF dari perangkat Anda.
+                Khusus dokumen berformat PDF (.pdf). SONAR menganalisis halaman PDF via AI Vision untuk mengekstrak rumus MathML &amp; tabel semantik.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              {/* Camera Trigger */}
               <Button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="h-11 font-semibold flex items-center gap-2"
-              >
-                <Camera className="size-4" aria-hidden="true" />
-                <span>Pindai dari Kamera</span>
-              </Button>
-
-              {/* Gallery/File Trigger */}
-              <Button
-                type="button"
-                variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-11 font-semibold flex items-center gap-2"
+                className="h-11 font-semibold flex items-center gap-2 px-6"
               >
-                <ImageIcon className="size-4" aria-hidden="true" />
-                <span>Pilih Berkas Gambar</span>
+                <FileText className="size-4" aria-hidden="true" />
+                <span>Pilih Berkas Dokumen PDF</span>
               </Button>
             </div>
 
             {/* Quick Sample Demonstrators */}
             <div className="pt-4 border-t border-border flex items-center justify-center gap-2 text-xs text-muted-foreground font-ui">
-              <span>Coba sampel instan:</span>
+              <span>Coba sampel PDF instan:</span>
               <button
                 type="button"
                 onClick={() => handleLoadSample("math")}
@@ -386,23 +453,14 @@ export function OcrDocumentScanner({
               </button>
             </div>
 
-            {/* Hidden Native File Inputs */}
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              aria-label="Ambil foto dari kamera"
-              className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0])}
-            />
+            {/* Hidden Native File Input (STRICT PDF ONLY) */}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
-              aria-label="Pilih file dokumen atau gambar"
+              accept=".pdf,application/pdf"
+              aria-label="Pilih berkas dokumen PDF untuk dipindai OCR"
               className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0])}
+              onChange={(e) => void handleFileSelect(e.target.files?.[0])}
             />
           </div>
         )}

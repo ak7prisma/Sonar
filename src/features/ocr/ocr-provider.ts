@@ -172,6 +172,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       const userParts: Array<
         | { type: "text"; text: string }
         | { type: "image"; image: string; mediaType: string }
+        | { type: "file"; data: string; mediaType: string }
       > = [
         {
           type: "text",
@@ -180,7 +181,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
             input.courseContext ? `Course Context: ${input.courseContext}` : "",
             input.rawTextLayer
               ? `Extracted PDF Text Layer:\n${input.rawTextLayer}`
-              : "Scanned academic page or captured photograph. Extract full semantic layout, clean text, tables, and mathematical formulas in standard LaTeX.",
+              : "Scanned academic PDF document page. Extract full semantic layout, clean text, tables, and mathematical formulas in standard LaTeX.",
           ]
             .filter(Boolean)
             .join("\n\n"),
@@ -188,16 +189,22 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       ];
 
       if (input.pageImageBase64) {
-        // Strip data:image/...;base64, prefix if present
-        const cleanBase64 = input.pageImageBase64.replace(
-          /^data:image\/[a-zA-Z+]+;base64,/,
-          ""
-        );
-        userParts.push({
-          type: "image",
-          image: cleanBase64,
-          mediaType: "image/png",
-        });
+        if (input.pageImageBase64.startsWith("data:application/pdf")) {
+          const cleanBase64 = input.pageImageBase64.replace(/^data:application\/pdf;base64,/, "");
+          userParts.push({
+            type: "file",
+            data: cleanBase64,
+            mediaType: "application/pdf",
+          });
+        } else {
+          // Fallback for sample SVG or raster image
+          const cleanBase64 = input.pageImageBase64.replace(/^data:[^;]+;base64,/, "");
+          userParts.push({
+            type: "image",
+            image: cleanBase64,
+            mediaType: "image/png",
+          });
+        }
       }
 
       const result = await generateText({
