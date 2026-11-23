@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import type { CourseRow } from "@/lib/data/workspace";
@@ -57,6 +58,8 @@ export function OcrDocumentScanner({
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStageMessage, setScanStageMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResultData | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -75,6 +78,8 @@ export function OcrDocumentScanner({
     if (!file) return;
     setErrorMessage(null);
     setScanResult(null);
+    setScanProgress(0);
+    setScanStageMessage("");
 
     const lowerName = file.name.toLowerCase();
 
@@ -155,6 +160,8 @@ export function OcrDocumentScanner({
     setErrorMessage(null);
     setScanResult(null);
     setSelectedPdfFile(null);
+    setScanProgress(0);
+    setScanStageMessage("");
 
     if (sampleType === "math") {
       setCourseId(courses.find((c) => c.id === "math-105")?.id || courses[0]?.id || "math-105");
@@ -176,10 +183,36 @@ export function OcrDocumentScanner({
       return;
     }
 
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+
     try {
       setScanning(true);
+      setScanProgress(12);
+      setScanStageMessage("Membaca halaman PDF & mengonfigurasi model AI Vision...");
       setErrorMessage(null);
       announce("Memulai analisis OCR multimodal dan ekstraksi MathML...", "polite");
+
+      progressTimer = setInterval(() => {
+        setScanProgress((prev) => {
+          if (prev < 35) {
+            setScanStageMessage("Menganalisis hierarki heading, paragraf, dan tata letak halaman...");
+            return prev + 6;
+          }
+          if (prev < 65) {
+            setScanStageMessage("Mendeteksi formula matematika & mengonversi ke MathML standar...");
+            return prev + 5;
+          }
+          if (prev < 85) {
+            setScanStageMessage("Menyusun tabel matriks semantik & deskripsi visual...");
+            return prev + 3;
+          }
+          if (prev < 96) {
+            setScanStageMessage("Menghasilkan audio narasi lisan dan mengindeks dokumen...");
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 400);
 
       const response = await fetch("/api/ocr/scan", {
         method: "POST",
@@ -194,21 +227,33 @@ export function OcrDocumentScanner({
 
       const data = await response.json();
 
+      if (progressTimer) clearInterval(progressTimer);
+
       if (!response.ok || data.error) {
         throw new Error(data.error ?? "Gagal menjalankan OCR pada dokumen.");
       }
 
-      setScanResult(data);
-      announce(
-        `Pemindaian OCR selesai dengan tingkat keyakinan ${data.confidence}%. Terdeteksi ${data.stats.totalBlocks} blok struktur semantik.`,
-        "polite"
-      );
+      setScanProgress(100);
+      setScanStageMessage("Konversi OCR selesai! Menyajikan struktur dokumen aksesibel...");
+
+      setTimeout(() => {
+        setScanResult(data);
+        announce(
+          `Pemindaian OCR selesai dengan tingkat keyakinan ${data.confidence}%. Terdeteksi ${data.stats.totalBlocks} blok struktur semantik.`,
+          "polite"
+        );
+      }, 350);
     } catch (err) {
+      if (progressTimer) clearInterval(progressTimer);
+      setScanProgress(0);
+      setScanStageMessage("");
       const msg = err instanceof Error ? err.message : "Gagal memproses pemindaian OCR.";
       setErrorMessage(msg);
       announce(msg, "assertive");
     } finally {
-      setScanning(false);
+      setTimeout(() => {
+        setScanning(false);
+      }, 400);
     }
   };
 
@@ -370,6 +415,62 @@ export function OcrDocumentScanner({
               </div>
             )}
 
+            {/* Live Loading Progress Bar during OCR Conversion */}
+            {scanning && (
+              <div
+                role="status"
+                aria-live="polite"
+                aria-label="Status konversi dokumen OCR"
+                className="mx-auto max-w-md rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left shadow-xs transition-all"
+              >
+                <div className="flex items-center justify-between text-xs font-ui">
+                  <div className="flex items-center gap-2 text-primary font-bold min-w-0">
+                    <Sparkles className="size-4 animate-spin text-primary shrink-0" aria-hidden="true" />
+                    <span className="truncate">{scanStageMessage}</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground bg-primary/15 px-2 py-0.5 rounded-full text-[11px] shrink-0">
+                    {scanProgress}%
+                  </span>
+                </div>
+
+                <Progress
+                  value={scanProgress}
+                  aria-label={`Progres konversi OCR: ${scanProgress}%`}
+                  className="h-2.5 rounded-full bg-muted/80"
+                />
+
+                <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-ui text-center">
+                  <span
+                    className={`py-1 px-1 rounded transition-colors ${
+                      scanProgress >= 25
+                        ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                        : "bg-muted/70 text-muted-foreground border border-transparent"
+                    }`}
+                  >
+                    1. Analisis Visual
+                  </span>
+                  <span
+                    className={`py-1 px-1 rounded transition-colors ${
+                      scanProgress >= 60
+                        ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                        : "bg-muted/70 text-muted-foreground border border-transparent"
+                    }`}
+                  >
+                    2. Rumus MathML
+                  </span>
+                  <span
+                    className={`py-1 px-1 rounded transition-colors ${
+                      scanProgress >= 85
+                        ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                        : "bg-muted/70 text-muted-foreground border border-transparent"
+                    }`}
+                  >
+                    3. Narasi Suara
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button
                 type="button"
@@ -380,7 +481,7 @@ export function OcrDocumentScanner({
                 {scanning ? (
                   <>
                     <Sparkles className="size-4 animate-spin" aria-hidden="true" />
-                    <span>Menganalisis Dokumen via AI...</span>
+                    <span>Menganalisis Dokumen ({scanProgress}%)...</span>
                   </>
                 ) : (
                   <>
