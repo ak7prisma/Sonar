@@ -520,11 +520,7 @@ export function OcrDocumentScanner({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tint-blue text-brand-blue-strong">
-                    {scanning ? (
-                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <FileText className="size-5" aria-hidden="true" />
-                    )}
+                    <FileText className="size-5" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground font-ui">
@@ -535,7 +531,7 @@ export function OcrDocumentScanner({
                         PDF
                       </span>
                       <span>
-                        {scanning ? "Memindai…" : formatFileSize(selectedPdfFile.size)}
+                        {scanning ? `Memproses OCR (${scanProgress}%)…` : formatFileSize(selectedPdfFile.size)}
                       </span>
                     </div>
                   </div>
@@ -640,6 +636,13 @@ export function OcrDocumentScanner({
                       <span>3. Narasi Suara</span>
                     </div>
                   </div>
+                    >
+                      {scanProgress >= 100 ? (
+                        <CheckCircle2 className="size-3 text-primary shrink-0" aria-hidden="true" />
+                      ) : null}
+                      <span>3. Narasi Suara</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -654,12 +657,8 @@ export function OcrDocumentScanner({
             onClick={executeOcrScan}
             className="min-h-11 rounded-full px-6 text-sm font-semibold shadow-xs"
           >
-            {scanning ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <ScanText className="size-4" aria-hidden="true" />
-            )}
-            <span>{scanning ? "Memindai…" : "Mulai Pindai OCR"}</span>
+            {!scanning && <ScanText className="size-4 mr-2" aria-hidden="true" />}
+            <span>{scanning ? `Memindai (${scanProgress}%)…` : "Mulai Pindai OCR"}</span>
           </Button>
         </div>
       </div>
@@ -973,7 +972,6 @@ export function OcrDocumentScanner({
           blocks={scanResult.blocks}
           language={language}
         />
-        <div className="h-16" aria-hidden="true" />
       </>
     ) : null}
     </div>

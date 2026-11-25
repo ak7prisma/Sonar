@@ -26,11 +26,17 @@ describe("AI Fallback System", () => {
 
       const err3 = new Error("The model is overloaded. Please try again later.");
       expect(isRateLimitOrQuotaError(err3)).toBe(true);
+
+      const err4 = new Error("This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.");
+      expect(isRateLimitOrQuotaError(err4)).toBe(true);
     });
 
     it("detects deprecated or not-found preview models", () => {
       const err = new Error("models/gemini-3-flash-preview is not found");
       expect(isRateLimitOrQuotaError(err)).toBe(true);
+
+      const errNoLonger = new Error("This model models/gemini-2.5-flash is no longer available to new users.");
+      expect(isRateLimitOrQuotaError(errNoLonger)).toBe(true);
     });
 
     it("returns false for non-quota errors (e.g. invalid syntax, auth error)", () => {
@@ -47,10 +53,10 @@ describe("AI Fallback System", () => {
 
   describe("resolveFallbackChain", () => {
     it("puts primary model first and deduplicates default fallbacks", () => {
-      const chain = resolveFallbackChain("gemini-3-flash-preview");
-      expect(chain[0]).toBe("gemini-3-flash-preview");
-      expect(chain).toContain("gemini-2.5-flash");
-      expect(chain).toContain("gemini-2.0-flash");
+      const chain = resolveFallbackChain("gemini-3.8-flash");
+      expect(chain[0]).toBe("gemini-3.8-flash");
+      expect(chain).toContain("gemini-3.6-flash");
+      expect(chain).toContain("gemini-3.1-flash-lite");
       expect(new Set(chain).size).toBe(chain.length);
     });
 

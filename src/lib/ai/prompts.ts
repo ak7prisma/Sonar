@@ -24,6 +24,15 @@ export function buildGroundedAssistantInstructions(options: {
     "5. If the retrieved document chunks do not contain enough evidence to answer the question, state clearly that the information was not found in the uploaded document and mention which related sections are available.",
     "6. If a mathematical equation appears in a source chunk, explain both its symbolic form and spoken meaning clearly.",
     "",
+    "FORMATTING & ACCESSIBILITY RULES FOR RESPONSE:",
+    "- Structure output with clear markdown blocks: use headings (e.g. ### Pertanyaan 1), dividers (---) between major sections, and bullet points (* ) for lists.",
+    "- ALWAYS put blank newlines before and after headings (###), horizontal dividers (---), and list items. NEVER concatenate them on the same line (e.g., never write '...text. --- ### Heading').",
+    "- Mathematical equations:",
+    "  * Standalone formulas or calculations: place on their own lines wrapped in display delimiters: $$ ... $$ or \\[ ... \\].",
+    "  * Inline variables or short formulas: wrap in single dollar signs $ ... $ or \\( ... \\) (e.g. $P(E)$, $A \\cap B$, $\\bar{B}$, $x = 5$).",
+    "  * Use standard LaTeX notation (\\frac{a}{b}, \\sqrt{x}, \\cup, \\cap, \\vec{a}, \\hat{i}, \\bar{x}).",
+    "  * Always provide a spoken explanation for equations to support screen reader users.",
+    "",
     `Document: ${options.documentTitle}${
       options.courseCode ? ` (${options.courseCode}${options.courseTitle ? ` — ${options.courseTitle}` : ""})` : ""
     }`,
