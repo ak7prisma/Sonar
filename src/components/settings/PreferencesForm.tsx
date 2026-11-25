@@ -275,7 +275,7 @@ export function PreferencesForm({
           </div>
 
           <div className="space-y-4 border-t border-border pt-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex max-w-2xl items-center justify-between gap-4">
               <div>
                 <Label htmlFor="settings-high-contrast">Mode kontras tinggi</Label>
                 <p className="font-sans text-xs text-muted-foreground">
@@ -291,7 +291,7 @@ export function PreferencesForm({
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex max-w-2xl items-center justify-between gap-4">
               <div>
                 <Label htmlFor="settings-warm-surface">Latar kertas hangat</Label>
                 <p className="font-sans text-xs text-muted-foreground">
@@ -307,7 +307,7 @@ export function PreferencesForm({
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex max-w-2xl items-center justify-between gap-4">
               <div>
                 <Label htmlFor="settings-reduced-motion">Kurangi animasi</Label>
                 <p className="font-sans text-xs text-muted-foreground">
@@ -326,20 +326,8 @@ export function PreferencesForm({
         </div>
       </Panel>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 font-ui">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            store.resetDefaults();
-            announce("Pengaturan aksesibilitas dikembalikan ke bawaan.", "polite");
-          }}
-          className="min-h-11 rounded-full px-5"
-        >
-          <RotateCcw className="size-4" aria-hidden="true" />
-          <span>Kembalikan Bawaan</span>
-        </Button>
-
+      {/* Action buttons — grouped on the left */}
+      <div className="flex flex-wrap items-center justify-start gap-3 font-ui">
         <Button
           type="submit"
           disabled={saving}
@@ -351,6 +339,19 @@ export function PreferencesForm({
             <Save className="size-4" aria-hidden="true" />
           )}
           <span>{saving ? "Menyimpan…" : "Simpan Pengaturan"}</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            store.resetDefaults();
+            announce("Pengaturan aksesibilitas dikembalikan ke bawaan.", "polite");
+          }}
+          className="min-h-11 rounded-full px-5"
+        >
+          <RotateCcw className="size-4" aria-hidden="true" />
+          <span>Kembalikan Bawaan</span>
         </Button>
       </div>
     </form>

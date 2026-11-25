@@ -79,7 +79,7 @@ export function DashboardSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat ringkasan materi dan kelas dashboard…"
-      className="mx-auto max-w-6xl space-y-8"
+      className="w-full max-w-7xl space-y-8"
     >
       {/* Greeting row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -88,6 +88,37 @@ export function DashboardSkeleton() {
           <Skeleton className="h-4 w-80 max-w-full rounded-md" />
         </div>
         <Skeleton className="hidden h-10 w-36 rounded-full sm:block" />
+      </div>
+
+      {/* Mata Kuliah Utama (Top Left) */}
+      <div className="space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <Skeleton className="h-7 w-48 rounded-lg" />
+            <Skeleton className="h-4 w-64 rounded-md" />
+          </div>
+          <Skeleton className="h-4 w-32 rounded-md" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((card) => (
+            <div
+              key={card}
+              className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-card"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-20 rounded-md bg-brand-mint/70" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                </div>
+                <Skeleton className="h-5 w-4/5 rounded-lg" />
+                <Skeleton className="h-4 w-1/2 rounded-md" />
+              </div>
+              <div className="mt-4 border-t border-border/70 pt-3">
+                <Skeleton className="h-4 w-28 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Continue-reading spotlight banner */}
@@ -140,27 +171,6 @@ export function DashboardSkeleton() {
         </div>
 
         <div className="space-y-8 lg:col-span-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-7 w-28 rounded-lg" />
-              <Skeleton className="h-4 w-20 rounded-md" />
-            </div>
-            <div className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="flex items-center gap-3.5 px-4 py-3.5">
-                  <Skeleton className="h-9 w-1.5 shrink-0 rounded-full" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-3.5 w-16 rounded-md" />
-                      <Skeleton className="h-3.5 w-12 rounded-md" />
-                    </div>
-                    <Skeleton className="h-4 w-4/5 rounded-md" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="space-y-3">
             <Skeleton className="h-6 w-36 rounded-lg" />
             <div className="space-y-2.5 rounded-2xl border border-border bg-card p-4">
@@ -179,7 +189,7 @@ export function CoursesSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat daftar mata kuliah dan materi terverifikasi…"
-      className="mx-auto max-w-7xl space-y-8"
+      className="w-full max-w-7xl space-y-8"
     >
       <PageHeaderSkeleton hasAction />
 
@@ -225,7 +235,7 @@ export function CourseDetailSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat detail dan daftar materi mata kuliah…"
-      className="mx-auto max-w-7xl space-y-6"
+      className="w-full max-w-7xl space-y-6"
     >
       <PageHeaderSkeleton hasBack hasAction />
 
@@ -267,23 +277,23 @@ export function UploadSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat ruang unggah materi perkuliahan…"
-      className="mx-auto w-full max-w-3xl space-y-6 py-2 sm:py-6"
+      className="w-full max-w-5xl space-y-6 py-2 sm:py-4"
     >
-      <div className="flex flex-col items-center space-y-2.5 text-center">
-        <Skeleton className="h-10 w-64 rounded-xl sm:w-80" />
-        <Skeleton className="h-4 w-full max-w-lg rounded-md" />
+      <div className="flex flex-col items-start space-y-2 text-left">
+        <Skeleton className="h-8 w-64 rounded-xl sm:h-9 sm:w-80" />
+        <Skeleton className="h-4 w-full max-w-md rounded-md" />
       </div>
 
       <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-        <div className="flex justify-center">
-          <Skeleton className="h-11 w-72 rounded-full" />
+        <div className="flex justify-start">
+          <Skeleton className="h-11 w-72 rounded-2xl" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Skeleton className="h-12 w-full rounded-xl" />
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>
         <Skeleton className="h-44 w-full rounded-2xl" />
-        <Skeleton className="h-11 w-full rounded-full" />
+        <Skeleton className="h-11 w-44 rounded-full" />
       </div>
     </SkeletonStatus>
   );
@@ -293,10 +303,10 @@ export function ReaderSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat pembaca dokumen terstruktur…"
-      className="mx-auto w-full max-w-6xl space-y-6"
+      className="w-full max-w-7xl space-y-6"
     >
-      {/* Reader control strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
+      {/* Reader control strip - Left aligned */}
+      <div className="flex flex-wrap items-center justify-start gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
         <div className="flex items-center gap-2">
           <Skeleton className="h-9 w-28 rounded-full" />
           <Skeleton className="h-9 w-20 rounded-full" />
@@ -308,8 +318,8 @@ export function ReaderSkeleton() {
         </div>
       </div>
 
-      {/* Centered editorial paper reading canvas */}
-      <div className="mx-auto w-full max-w-3xl space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card sm:p-10">
+      {/* Left-aligned reading canvas */}
+      <div className="w-full max-w-4xl space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card sm:p-10">
         <div className="space-y-3 border-b border-border/70 pb-6">
           <div className="flex gap-2">
             <Skeleton className="h-5 w-24 rounded-full bg-brand-mint/70" />
@@ -337,7 +347,7 @@ export function ReviewQueueSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat antrean review volunteer…"
-      className="mx-auto max-w-7xl space-y-6"
+      className="w-full max-w-7xl space-y-6"
     >
       <PageHeaderSkeleton />
 
@@ -376,7 +386,7 @@ export function ReviewDetailSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat editor review dokumen…"
-      className="mx-auto max-w-7xl space-y-6"
+      className="w-full max-w-7xl space-y-6"
     >
       <PageHeaderSkeleton hasBack />
 
@@ -409,7 +419,7 @@ export function SettingsSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat pengaturan membaca dan aksesibilitas…"
-      className="mx-auto max-w-4xl space-y-6"
+      className="w-full max-w-5xl space-y-6"
     >
       <PageHeaderSkeleton />
 
@@ -434,7 +444,7 @@ export function AdminSkeleton() {
   return (
     <SkeletonStatus
       label="Memuat konsol administrasi mata kuliah dan dokumen…"
-      className="mx-auto max-w-7xl space-y-6"
+      className="w-full max-w-7xl space-y-6"
     >
       <PageHeaderSkeleton />
 

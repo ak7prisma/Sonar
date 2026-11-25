@@ -877,12 +877,12 @@ export function AccessibleReaderStudio({
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="space-y-4">
           <h1 className="min-w-0 font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {document.title}
           </h1>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2 font-ui">
+          <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
             <div
               role="group"
               aria-label="Ukuran huruf bacaan"
@@ -1062,7 +1062,7 @@ export function AccessibleReaderStudio({
 
                       {block.block_type === "equation" && (
                         <div className="space-y-3 rounded-2xl border border-brand-teal/30 bg-brand-mint/35 p-5 dark:bg-secondary/35">
-                          <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+                          <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
                             <span className="rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink">
                               Rumus Matematika
                             </span>
@@ -1123,7 +1123,7 @@ export function AccessibleReaderStudio({
                       {/* Quiet block actions: visible when active, hovered, or keyboard-focused */}
                       <div
                         className={cn(
-                          "mt-2 flex items-center justify-end gap-1 font-ui transition-opacity",
+                          "mt-2 flex items-center justify-start gap-1 font-ui transition-opacity",
                           isCurrent
                             ? "opacity-100"
                             : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
@@ -1179,7 +1179,7 @@ export function AccessibleReaderStudio({
           <div
             role="region"
             aria-label="Pemutar audio pembaca dokumen"
-            className="sticky bottom-20 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 font-ui shadow-nav backdrop-blur-md lg:bottom-4"
+            className="sticky bottom-20 z-20 flex flex-wrap items-center justify-start gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 font-ui shadow-nav backdrop-blur-md lg:bottom-4"
           >
             <div className="flex flex-wrap items-center gap-2">
               <Button
