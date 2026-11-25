@@ -7,7 +7,7 @@ import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getDefaultOcrProvider, type ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 import { extractPdfTextPages } from "@/features/pdf-processing/text-extractor";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
-import { narrateLatexEquation } from "@/features/math-ocr/math-narration";
+import { narrateLatexEquation, narrateMixedText } from "@/features/math-ocr/math-narration";
 import {
   FALLBACK_COURSES,
   registerScannedDocument,
@@ -122,6 +122,7 @@ export async function POST(req: Request) {
       pageImageBase64: imageBase64,
       rawTextLayer,
       courseContext: `Course: ${courseId}, Document: ${documentTitle}`,
+      language,
     });
 
     // Enrich blocks with MathML and Speech Narration
@@ -136,7 +137,10 @@ export async function POST(req: Request) {
           spokenText: spoken,
         };
       }
-      return block;
+      return {
+        ...block,
+        spokenText: narrateMixedText(block.contentText, language),
+      };
     });
 
     // Calculate confidence and stats

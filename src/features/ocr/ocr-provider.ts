@@ -32,6 +32,7 @@ export interface OcrPageInput {
   rawTextLayer?: string;
   pageImageBase64?: string;
   courseContext?: string;
+  language?: "id" | "en";
 }
 
 export interface OcrProvider {
@@ -277,6 +278,11 @@ export class GeminiVisionOcrProvider implements OcrProvider {
     try {
       const model = getVisionModel();
 
+      const langDirective =
+        input.language === "en"
+          ? "CRITICAL TARGET LANGUAGE: English. All extracted headings, paragraphs, figure summaries, and table cells must be presented in clear academic English. Mathematical formulas inside LaTeX must remain valid LaTeX notation."
+          : "CRITICAL TARGET LANGUAGE: Bahasa Indonesia (Indonesian). Terjemahkan seluruh judul (headings), teks paragraf, deskripsi gambar, dan tabel ke dalam Bahasa Indonesia yang akademis, jelas, dan alami. JANGAN ubah atau terjemahkan kode rumus matematika LaTeX (tetap gunakan notasi LaTeX standar, seperti \\vec{a}, \\frac{a}{b}, \\cap, \\cup, dll).";
+
       const userParts: Array<
         | { type: "text"; text: string }
         | { type: "image"; image: string; mediaType: string }
@@ -286,6 +292,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
           type: "text",
           text: [
             `Page Number: ${input.pageNumber}`,
+            input.language ? `Target Language: ${input.language === "id" ? "Bahasa Indonesia" : "English"}` : "",
             input.courseContext ? `Course Context: ${input.courseContext}` : "",
             input.rawTextLayer
               ? `Extracted PDF Text Layer:\n${input.rawTextLayer}`
@@ -330,7 +337,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
 
       const result = await generateText({
         model,
-        instructions: STRUCTURED_PAGE_EXTRACTION_PROMPT,
+        instructions: `${STRUCTURED_PAGE_EXTRACTION_PROMPT}\n\n${langDirective}`,
         messages: [
           {
             role: "user",
