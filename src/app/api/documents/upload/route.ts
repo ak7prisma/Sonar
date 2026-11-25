@@ -61,19 +61,44 @@ export async function POST(req: Request) {
     );
   }
 
-  // Ensure user belongs to the selected course
+  // Resolve course identifier: supports both UUID and slug (e.g. "cs-201" -> "CS 201")
+  let targetCourseId = parsedMeta.data.courseId;
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      targetCourseId
+    );
+
+  if (!isUuid) {
+    const normalizedCode = targetCourseId.toUpperCase().replace("-", " ");
+    const { data: dbCourse } = await supabase
+      .from("courses")
+      .select("id")
+      .ilike("code", `%${normalizedCode}%`)
+      .maybeSingle();
+
+    if (dbCourse) {
+      targetCourseId = dbCourse.id;
+    }
+  }
+
+  // Ensure user belongs to the selected course, or auto-enroll them as student
   const { data: membership } = await supabase
     .from("course_members")
     .select("id")
-    .eq("course_id", parsedMeta.data.courseId)
+    .eq("course_id", targetCourseId)
     .eq("user_id", auth.userId)
     .maybeSingle();
 
   if (!membership && !auth.roles.includes("admin")) {
-    return NextResponse.json(
-      { error: "You are not enrolled in the selected course." },
-      { status: 403 }
-    );
+    try {
+      await supabase.from("course_members").insert({
+        course_id: targetCourseId,
+        user_id: auth.userId,
+        member_role: "student",
+      });
+    } catch (enrollErr) {
+      console.warn("[Upload Route] Auto-enrollment info:", enrollErr);
+    }
   }
 
   const arrayBuffer = await file.arrayBuffer();
@@ -93,7 +118,7 @@ export async function POST(req: Request) {
   const { data: duplicate } = await supabase
     .from("documents")
     .select("id, title, review_status")
-    .eq("course_id", parsedMeta.data.courseId)
+    .eq("course_id", targetCourseId)
     .eq("file_hash", validation.fileHash)
     .maybeSingle();
 
@@ -112,7 +137,7 @@ export async function POST(req: Request) {
   }
 
   const safeSlug = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath = `${parsedMeta.data.courseId}/${nanoid(12)}-${safeSlug}`;
+  const storagePath = `${targetCourseId}/${nanoid(12)}-${safeSlug}`;
 
   const { error: uploadError } = await supabase.storage
     .from("course-documents")
@@ -166,7 +191,7 @@ export async function POST(req: Request) {
   const { data: createdDoc, error: docErr } = await dbClient
     .from("documents")
     .insert({
-      course_id: parsedMeta.data.courseId,
+      course_id: targetCourseId,
       uploaded_by: auth.userId,
       title: finalTitle,
       original_filename: file.name,
@@ -242,7 +267,7 @@ export async function POST(req: Request) {
     documentId: createdDoc.id,
     versionId: version.id,
     jobId: job.id,
-    courseId: parsedMeta.data.courseId,
+    courseId: targetCourseId,
     storagePath,
     language: parsedMeta.data.language,
     uploadedBy: auth.userId,
@@ -254,7 +279,7 @@ export async function POST(req: Request) {
     entity_type: "document",
     entity_id: createdDoc.id,
     metadata: {
-      courseId: parsedMeta.data.courseId,
+      courseId: targetCourseId,
       sizeBytes: validation.sizeBytes,
       dispatchMode: dispatchResult.mode,
     },

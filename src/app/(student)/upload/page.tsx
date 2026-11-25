@@ -35,6 +35,7 @@ async function UploadBody({
       <UploadHub
         courses={courses}
         defaultCourseId={params.courseId}
+        initialMode={params.mode === "pdf" ? "pdf" : "ocr"}
       />
     </div>
   );
