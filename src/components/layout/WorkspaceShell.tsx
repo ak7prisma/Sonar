@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { AppShell } from "@/components/layout/AppShell";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
 import { getCurrentAppUser } from "@/lib/auth/session";
 
 async function AuthenticatedAppShell({ children }: { children: React.ReactNode }) {
+  await connection();
   const [{ auth }, demoUser] = await Promise.all([
     getAuthenticatedContext(),
     getCurrentAppUser(),

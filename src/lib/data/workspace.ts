@@ -1,5 +1,6 @@
 import "server-only";
 
+import { connection } from "next/server";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -37,8 +38,8 @@ export const FALLBACK_COURSES: CourseRow[] = [
     discipline: "Ilmu Komputer",
     description: "Analisis kompleksitas algoritma, linked list, tree, binary search tree, graph traversal, dan hashing dengan struktur dokumen ramah teknologi asistif.",
     created_by: "usr-admin-001",
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: "2026-10-20T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
   },
   {
     id: "math-105",
@@ -47,8 +48,8 @@ export const FALLBACK_COURSES: CourseRow[] = [
     discipline: "Matematika Terapan",
     description: "Fungsi multivariabel, turunan parsial, integral lipat, ruang vektor, nilai eigen, dan representasi formula MathML terbaca pembaca layar.",
     created_by: "usr-admin-001",
-    created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: "2026-10-25T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
   },
   {
     id: "stat-210",
@@ -57,8 +58,8 @@ export const FALLBACK_COURSES: CourseRow[] = [
     discipline: "Statistika & Sains Data",
     description: "Distribusi probabilitas diskrit dan kontinu, teorema limit pusat, estimasi parameter, uji hipotesis, dan tabel statistik terstruktur.",
     created_by: "usr-admin-001",
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: "2026-10-30T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
   },
 ];
 
@@ -78,8 +79,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "verified",
     overall_confidence: 0.98,
     language: "id",
-    created_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    created_at: "2026-11-14T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
   },
   {
     id: "doc-cs-02",
@@ -96,8 +97,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "verified",
     overall_confidence: 0.96,
     language: "id",
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    created_at: "2026-11-15T08:00:00.000Z",
+    updated_at: "2026-11-16T08:00:00.000Z",
   },
   {
     id: "doc-math-01",
@@ -114,8 +115,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "verified",
     overall_confidence: 0.97,
     language: "id",
-    created_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    created_at: "2026-11-11T08:00:00.000Z",
+    updated_at: "2026-11-15T08:00:00.000Z",
   },
   {
     id: "doc-math-02",
@@ -132,8 +133,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "verified",
     overall_confidence: 0.94,
     language: "id",
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    created_at: "2026-11-08T08:00:00.000Z",
+    updated_at: "2026-11-10T08:00:00.000Z",
   },
   {
     id: "doc-stat-01",
@@ -150,8 +151,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "verified",
     overall_confidence: 0.99,
     language: "id",
-    created_at: new Date(Date.now() - 12 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    created_at: "2026-11-06T08:00:00.000Z",
+    updated_at: "2026-11-12T08:00:00.000Z",
   },
   {
     id: "doc-cs-03",
@@ -168,8 +169,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "in_review",
     overall_confidence: 0.92,
     language: "id",
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
+    created_at: "2026-11-19T08:00:00.000Z",
+    updated_at: "2026-11-20T04:00:00.000Z",
   },
   {
     id: "doc-math-03",
@@ -186,8 +187,8 @@ export const FALLBACK_DOCUMENTS: DocumentRow[] = [
     review_status: "needs_revision",
     overall_confidence: 0.89,
     language: "id",
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 12 * 3600000).toISOString(),
+    created_at: "2026-11-18T08:00:00.000Z",
+    updated_at: "2026-11-19T12:00:00.000Z",
   },
 ];
 
@@ -203,10 +204,10 @@ export const FALLBACK_JOBS: ProcessingJobRow[] = [
     attempts: 1,
     error_message: null,
     logs: [],
-    started_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-    completed_at: new Date(Date.now() - 6 * 86400000 + 120000).toISOString(),
-    created_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 6 * 86400000 + 120000).toISOString(),
+    started_at: "2026-11-14T08:00:00.000Z",
+    completed_at: "2026-11-14T08:02:00.000Z",
+    created_at: "2026-11-14T08:00:00.000Z",
+    updated_at: "2026-11-14T08:02:00.000Z",
   },
   {
     id: "job-02",
@@ -219,14 +220,15 @@ export const FALLBACK_JOBS: ProcessingJobRow[] = [
     attempts: 1,
     error_message: null,
     logs: [],
-    started_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    completed_at: new Date(Date.now() - 1 * 86400000 + 95000).toISOString(),
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 1 * 86400000 + 95000).toISOString(),
+    started_at: "2026-11-19T08:00:00.000Z",
+    completed_at: "2026-11-19T08:01:35.000Z",
+    created_at: "2026-11-19T08:00:00.000Z",
+    updated_at: "2026-11-19T08:01:35.000Z",
   },
 ];
 
 export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
+  await connection();
   const demoUser = await getCurrentAppUser();
 
   let courses: CourseRow[] = [];
@@ -291,6 +293,7 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
 }
 
 export async function loadCourseDetailWithMaterials(courseId: string) {
+  await connection();
   const snapshot = await loadWorkspaceSnapshot();
   const lowerId = courseId.toLowerCase().trim();
 
@@ -378,6 +381,7 @@ export async function loadCourseDetailWithMaterials(courseId: string) {
 }
 
 export async function loadDocumentDetail(documentId: string) {
+  await connection();
   const demoUser = await getCurrentAppUser();
   const fallbackDoc = FALLBACK_DOCUMENTS.find((d) => d.id === documentId) ?? FALLBACK_DOCUMENTS[0];
   const fallbackCourse = FALLBACK_COURSES.find((c) => c.id === fallbackDoc.course_id) ?? FALLBACK_COURSES[0];
@@ -443,8 +447,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-02",
@@ -465,8 +469,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-03",
@@ -485,8 +489,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-04",
@@ -505,8 +509,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-05",
@@ -527,8 +531,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-06",
@@ -547,8 +551,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
     {
       id: "blk-07",
@@ -567,8 +571,8 @@ export async function loadDocumentDetail(documentId: string) {
       needs_review: false,
       is_verified: true,
       metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
+      updated_at: "2026-11-14T08:00:00.000Z",
     },
   ];
 
@@ -586,7 +590,7 @@ export async function loadDocumentDetail(documentId: string) {
       ],
       row_count: 3,
       column_count: 3,
-      created_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
     },
   ];
 
@@ -601,7 +605,7 @@ export async function loadDocumentDetail(documentId: string) {
       narration_id: "B F dari v sama dengan ketinggian anak kiri v dikurangi ketinggian anak kanan v, bernilai antara minus satu, nol, atau satu.",
       is_supported: true,
       unsupported_reason: null,
-      created_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
     },
   ];
 
@@ -617,7 +621,7 @@ export async function loadDocumentDetail(documentId: string) {
       trends: null,
       key_points: ["Akar lama 30", "Akar baru 20", "Subpohon seimbang"],
       uncertainty_notes: null,
-      created_at: new Date().toISOString(),
+      created_at: "2026-11-14T08:00:00.000Z",
     },
   ];
 
@@ -629,8 +633,8 @@ export async function loadDocumentDetail(documentId: string) {
       reviewer_id: "usr-volunteer-001",
       status: "verified",
       notes: "Seluruh formula LaTeX, rotasi AVL, dan deskripsi taktil pohon biner telah diverifikasi. MathML terbaca lancar di NVDA dan VoiceOver. Disetujui untuk materi kelas bersama.",
-      started_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-      completed_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      started_at: "2026-11-17T08:00:00.000Z",
+      completed_at: "2026-11-18T08:00:00.000Z",
       duration_seconds: 720,
     },
   ];

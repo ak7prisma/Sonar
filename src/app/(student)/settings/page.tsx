@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 async function SettingsBody() {
+  await connection();
   const { auth } = await getAuthenticatedContext();
 
   return (
