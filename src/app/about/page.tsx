@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { HeartHandshake, Shield, Sparkles } from "lucide-react";
+import { HeartHandshake, Layers, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -11,20 +11,21 @@ export default function AboutPage() {
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <SiteHeader />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-12 px-4 py-12 outline-none sm:px-8">
-        <div className="space-y-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">Tentang SONAR</span>
-          <h1 className="font-heading text-4xl font-extrabold text-foreground sm:text-5xl">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 py-12 outline-none sm:px-8"
+      >
+        <header className="space-y-3">
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl">
             Menghapus Hambatan Digital di Ruang Kuliah Perguruan Tinggi
           </h1>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            SONAR lahir dari kenyataan bahwa ribuan mahasiswa tunanetra di Indonesia dan seluruh dunia
-            menghadapi kendala besar saat mengakses materi perkuliahan dalam format PDF hasil scan dosen,
-            slide presentasi, tabel kompleks, dan rumus matematika.
+          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            SONAR membantu mahasiswa tunanetra dan low-vision mengakses materi perkuliahan berbentuk PDF hasil pindai, slide presentasi, tabel kompleks, dan rumus matematika secara mandiri.
           </p>
-        </div>
+        </header>
 
-        <div className="relative aspect-21/9 w-full overflow-hidden rounded-2xl border border-border shadow-md">
+        <div className="relative aspect-21/9 w-full overflow-hidden rounded-3xl border border-border shadow-card">
           <Image
             src={APP_IMAGES.featureStudy.src}
             alt={APP_IMAGES.featureStudy.alt}
@@ -34,46 +35,54 @@ export default function AboutPage() {
           />
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-2">
-            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3">
-              <Shield className="size-5" />
-            </div>
-            <h2 className="font-heading text-xl font-bold text-foreground">Visi Kami</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground font-sans">
-              Mewujudkan kesetaraan penuh bagi mahasiswa tunanetra dan low-vision dalam mengakses
-              ilmu pengetahuan sains, teknologi, teknik, dan matematika (STEM) tanpa diskriminasi format.
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-6 shadow-card">
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-brand-mint text-brand-teal">
+              <Shield className="size-5" aria-hidden="true" />
+            </span>
+            <h2 className="font-heading text-xl font-bold text-foreground">
+              Visi Kesetaraan Akademik
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Mewujudkan akses setara terhadap literatur sains, teknologi, teknik, dan matematika tanpa bergantung pada format PDF visual semata.
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6 space-y-2">
-            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3">
-              <Sparkles className="size-5" />
-            </div>
-            <h2 className="font-heading text-xl font-bold text-foreground">Misi Kami</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground font-sans">
-              Mengintegrasikan kecerdasan buatan multimodal berstandar tinggi dengan kepastian
-              verifikasi manusia melalui volunteer reviewer demi menghasilkan materi belajar yang akurat.
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-6 shadow-card">
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-tint-blue text-brand-blue-strong">
+              <Layers className="size-5" aria-hidden="true" />
+            </span>
+            <h2 className="font-heading text-xl font-bold text-foreground">
+              Terstruktur &amp; Terverifikasi
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Menggabungkan ekstraksi tata letak otomatis dengan peninjauan volunteer terlatih untuk menjaga ketepatan rumus MathML dan deskripsi visual.
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6 space-y-2">
-            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3">
-              <HeartHandshake className="size-5" />
-            </div>
-            <h2 className="font-heading text-xl font-bold text-foreground">Prinsip Inklusif</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground font-sans">
-              Bukan sekadar visual yang bagus, tetapi setiap tombol, heading, rumus, dan tabel
-              harus dapat dioperasikan secara mandiri hanya dengan keyboard dan pembaca layar.
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-6 shadow-card">
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-tint-peach text-brand-ink">
+              <HeartHandshake className="size-5" aria-hidden="true" />
+            </span>
+            <h2 className="font-heading text-xl font-bold text-foreground">
+              Penggunaan Ulang Se-Kelas
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Materi yang telah disetujui volunteer langsung tersedia bagi mahasiswa lain yang terdaftar pada mata kuliah yang sama dengan pelacakan versi sumber.
             </p>
           </div>
         </div>
 
-        <div className="border-t border-border pt-8 flex justify-between items-center">
-          <Button asChild size="lg" className="font-ui font-semibold">
-            <Link href="/how-it-works">Pelajari Alur Konversi</Link>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 font-ui">
+          <Button asChild size="lg" className="min-h-11 rounded-full px-6 font-semibold">
+            <Link href="/how-it-works">Pelajari Cara Kerja SONAR</Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="font-ui font-semibold">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="min-h-11 rounded-full px-6 font-semibold"
+          >
             <Link href="/courses">Lihat Mata Kuliah Tersedia</Link>
           </Button>
         </div>

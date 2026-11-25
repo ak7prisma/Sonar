@@ -1,112 +1,87 @@
 "use client";
 
-import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
-  CheckSquare,
+  ChevronDown,
+  ClipboardCheck,
   FileUp,
   Headphones,
   LayoutDashboard,
   LogOut,
-  Shield,
-  UserCheck,
+  Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SonarLogo } from "@/components/shared/SonarLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { AccessibilityToolbar } from "@/components/accessibility/AccessibilityToolbar";
 import { CommandMenu } from "@/components/accessibility/CommandMenu";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-import { loginAsDemoRole, signOutAction } from "@/features/authentication/actions";
+import { signOutAction } from "@/features/authentication/actions";
+import { initialsOf } from "@/lib/format";
 import type { AppRole } from "@/types/database";
 
 interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  roles?: AppRole[];
-  badge?: string;
+  access?: "reviewer" | "admin";
 }
 
-const NAV_ITEMS: NavItem[] = [
+const MENU_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Mata Kuliah & Materi", href: "/courses", icon: BookOpen, badge: "3 Kuliah" },
-  { label: "Unggah Dokumen PDF", href: "/upload", icon: FileUp },
-  { label: "Accessible Reader", href: "/reader", icon: Headphones },
-  {
-    label: "Review Queue Volunteer",
-    href: "/review",
-    icon: CheckSquare,
-    badge: "Volunteer",
-  },
-  {
-    label: "Admin & Tata Kelola",
-    href: "/admin",
-    icon: Shield,
-    roles: ["admin"],
-  },
+  { label: "Mata Kuliah", href: "/courses", icon: BookOpen },
+  { label: "Unggah Materi", href: "/upload", icon: FileUp },
+  { label: "Pembaca", href: "/reader", icon: Headphones },
+  { label: "Antrean Review", href: "/review", icon: ClipboardCheck, access: "reviewer" },
+  { label: "Administrasi", href: "/admin", icon: ShieldCheck, access: "admin" },
 ];
 
-function WorkspaceNavList({
-  visibleItems,
-  onNavigate,
-}: {
-  visibleItems: NavItem[];
-  onNavigate?: () => void;
-}) {
-  const pathname = usePathname();
+const ACCOUNT_ITEMS: NavItem[] = [
+  { label: "Pengaturan", href: "/settings", icon: Settings },
+];
 
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavList({
+  items,
+  pathname,
+}: {
+  items: NavItem[];
+  pathname: string;
+}) {
   return (
     <ul className="space-y-1 font-ui">
-      {visibleItems.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
-        const active =
-          pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+        const active = isActivePath(pathname, item.href);
         return (
           <li key={item.href}>
             <Link
               href={item.href}
-              onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-10 items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                  : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                  ? "bg-primary font-semibold text-primary-foreground shadow-xs"
+                  : "text-foreground/85 hover:bg-brand-mint hover:text-brand-ink dark:hover:bg-muted dark:hover:text-foreground"
               )}
             >
-              <div className="flex items-center gap-3">
-                <Icon
-                  className={cn(
-                    "size-4 shrink-0",
-                    active ? "text-primary-foreground" : "text-primary"
-                  )}
-                  aria-hidden="true"
-                />
-                <span>{item.label}</span>
-              </div>
-              {item.badge ? (
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                    active
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "bg-secondary text-primary"
-                  )}
-                >
-                  {item.badge}
-                </span>
-              ) : null}
+              <Icon className="size-5 shrink-0" aria-hidden="true" />
+              <span>{item.label}</span>
             </Link>
           </li>
         );
@@ -115,282 +90,188 @@ function WorkspaceNavList({
   );
 }
 
+function Avatar({ name, className }: { name: string; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-tint-blue font-heading font-bold text-brand-ink",
+        className
+      )}
+    >
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+function UserMenu({
+  name,
+  email,
+  roleLabel,
+}: {
+  name: string;
+  email?: string | null;
+  roleLabel: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="h-11 gap-2 rounded-full px-1.5 sm:pr-3"
+        >
+          <Avatar name={name} className="size-8 text-xs" />
+          <span className="sr-only md:hidden">Menu akun {name}</span>
+          <span className="hidden min-w-0 text-left leading-tight md:block">
+            <span className="block max-w-36 truncate text-sm font-semibold text-foreground">
+              {name}
+            </span>
+            <span className="block text-xs font-normal text-muted-foreground">{roleLabel}</span>
+          </span>
+          <ChevronDown className="hidden size-4 text-muted-foreground sm:block" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel className="space-y-0.5 font-normal">
+          <span className="block truncate text-sm font-semibold text-foreground">{name}</span>
+          {email ? (
+            <span className="block truncate text-xs text-muted-foreground">{email}</span>
+          ) : null}
+          <span className="block text-xs text-muted-foreground">{roleLabel}</span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="min-h-10 cursor-pointer">
+            <Settings className="size-4" aria-hidden="true" />
+            <span>Pengaturan membaca</span>
+          </Link>
+        </DropdownMenuItem>
+        <form action={signOutAction}>
+          <DropdownMenuItem asChild>
+            <button type="submit" className="min-h-10 w-full cursor-pointer">
+              <LogOut className="size-4" aria-hidden="true" />
+              <span>Keluar</span>
+            </button>
+          </DropdownMenuItem>
+        </form>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AppShell({
   children,
+  userName,
   userEmail,
   userRoles = ["student"],
-  pageSectionLabel,
 }: {
   children: React.ReactNode;
+  userName?: string | null;
   userEmail?: string | null;
   userRoles?: AppRole[];
-  pageSectionLabel?: string;
 }) {
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
+  const pathname = usePathname();
 
-  const isVolunteer = userRoles.includes("reviewer") || userRoles.includes("volunteer");
   const isAdmin = userRoles.includes("admin");
+  const isReviewer =
+    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
+  const roleLabel = isAdmin ? "Administrator" : isReviewer ? "Volunteer" : "Mahasiswa";
+  const displayName =
+    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
 
-  const visibleItems = NAV_ITEMS.filter((item) => {
-    if (!item.roles) return true;
-    if (isAdmin) return true;
-    return item.roles.some((role) => userRoles.includes(role));
+  const visibleMenu = MENU_ITEMS.filter((item) => {
+    if (item.access === "admin") return isAdmin;
+    if (item.access === "reviewer") return isReviewer;
+    return true;
   });
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+    <div className="min-h-dvh overflow-x-clip bg-background lg:flex">
       {/* Desktop Sidebar (Sticky on viewport) */}
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
-        <div className="flex h-16 items-center border-b border-sidebar-border px-5">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
+        <div className="flex h-16 items-center px-5">
           <Link
             href="/dashboard"
-            aria-label="SONAR beranda"
-            className="inline-flex items-center rounded-md py-1"
+            aria-label="SONAR, ke dashboard"
+            className="inline-flex items-center rounded-md"
           >
-            <SonarLogo size="sm" />
+            <SonarLogo variant="full" size="sm" />
           </Link>
         </div>
 
-        {/* User Role Card */}
-        <div className="border-b border-sidebar-border p-4 bg-surface-subtle/50">
-          <div className="flex items-center gap-3">
-            <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center font-bold text-primary font-heading">
-              {isVolunteer ? "DS" : isAdmin ? "HG" : "AF"}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground font-ui">
-                {isVolunteer ? "Dewi Sartika, S.Kom." : isAdmin ? "Dr. Hendra Gunawan" : "Ahmad Fauzi"}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold font-ui",
-                    isVolunteer
-                      ? "bg-tint-peach text-brand-ink"
-                      : isAdmin
-                        ? "bg-tint-blue text-brand-ink"
-                        : "bg-brand-mint text-brand-ink"
-                  )}
-                >
-                  <UserCheck className="size-3" aria-hidden="true" />
-                  {isVolunteer ? "Volunteer Reviewer" : isAdmin ? "Administrator" : "Mahasiswa Tunanetra"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <nav
-          aria-label="Navigasi Workspace SONAR"
-          className="flex-1 overflow-y-auto px-3 py-4"
+          aria-label="Navigasi utama"
+          className="flex-1 space-y-6 overflow-y-auto px-3 py-4"
         >
-          <Suspense fallback={null}>
-            <WorkspaceNavList visibleItems={visibleItems} />
-          </Suspense>
+          <div className="space-y-2">
+            <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
+              Menu
+            </p>
+            <NavList items={visibleMenu} pathname={pathname} />
+          </div>
+          <div className="space-y-2">
+            <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
+              Akun
+            </p>
+            <NavList items={ACCOUNT_ITEMS} pathname={pathname} />
+          </div>
         </nav>
 
-        {/* Role Switcher & Sign Out */}
-        <div className="border-t border-sidebar-border p-4 space-y-3 bg-surface-subtle/30">
-          {userEmail && (
-            <p className="truncate text-[11px] text-muted-foreground font-mono">
-              {userEmail}
-            </p>
-          )}
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-ui">
-              Ganti Peran Demo
-            </p>
-            <div className="grid grid-cols-3 gap-1">
-              <form action={() => loginAsDemoRole("student")}>
-                <Button
-                  type="submit"
-                  variant={!isVolunteer && !isAdmin ? "default" : "outline"}
-                  size="sm"
-                  className="w-full text-xs h-7 px-1 font-ui"
-                >
-                  Student
-                </Button>
-              </form>
-              <form action={() => loginAsDemoRole("volunteer")}>
-                <Button
-                  type="submit"
-                  variant={isVolunteer ? "default" : "outline"}
-                  size="sm"
-                  className="w-full text-xs h-7 px-1 font-ui"
-                >
-                  Volunteer
-                </Button>
-              </form>
-              <form action={() => loginAsDemoRole("admin")}>
-                <Button
-                  type="submit"
-                  variant={isAdmin ? "default" : "outline"}
-                  size="sm"
-                  className="w-full text-xs h-7 px-1 font-ui"
-                >
-                  Admin
-                </Button>
-              </form>
+        <div className="border-t border-border p-3">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 rounded-xl bg-surface-subtle p-3">
+              <Avatar name={displayName} className="size-10 text-sm" />
+              <div className="min-w-0">
+                <p className="truncate font-ui text-sm font-semibold text-foreground">
+                  {displayName}
+                </p>
+                <p className="text-xs text-muted-foreground">{roleLabel}</p>
+              </div>
             </div>
+            <form action={signOutAction}>
+              <Button
+                type="submit"
+                variant="ghost"
+                className="h-11 w-full justify-start gap-3 rounded-xl px-3 font-ui text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="size-5" aria-hidden="true" />
+                <span>Keluar</span>
+              </Button>
+            </form>
           </div>
-
-          <form action={signOutAction}>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-xs text-muted-foreground hover:text-destructive font-ui"
-            >
-              <LogOut className="size-3.5 mr-2" aria-hidden="true" />
-              <span>Keluar dari Akun</span>
-            </Button>
-          </form>
         </div>
       </aside>
 
-      {/* Main Column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile & Desktop Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              aria-label="SONAR beranda"
-              className="inline-flex items-center lg:hidden"
-            >
-              <SonarLogo size="sm" />
-            </Link>
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur sm:gap-3 sm:px-6">
+          <Link
+            href="/dashboard"
+            aria-label="SONAR, ke dashboard"
+            className="inline-flex shrink-0 items-center rounded-md lg:hidden"
+          >
+            <SonarLogo variant="mark" size="sm" />
+          </Link>
 
-            {pageSectionLabel ? (
-              <span className="hidden text-sm font-semibold text-foreground font-ui sm:inline">
-                {pageSectionLabel}
-              </span>
-            ) : null}
+          <div className="min-w-0 sm:max-w-md sm:flex-1">
+            <CommandMenu bar />
           </div>
 
-          <div className="flex items-center gap-2">
-            <CommandMenu />
-            <AccessibilityToolbar />
+          <div className="ml-auto flex items-center gap-1">
+            <AccessibilityToolbar compact />
             <ThemeToggle />
-
-            {/* Mobile Profile & Logout Trigger */}
-            <div className="lg:hidden">
-              <Sheet open={mobileProfileOpen} onOpenChange={setMobileProfileOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="relative size-8 rounded-full border border-primary/20 bg-primary/10 font-bold text-xs text-primary font-heading"
-                    aria-label="Buka profil dan pengaturan akun"
-                  >
-                    {isVolunteer ? "DS" : isAdmin ? "HG" : "AF"}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="flex w-72 flex-col gap-0 p-0">
-                  <SheetHeader className="border-b px-5 py-4 text-left">
-                    <SheetTitle>
-                      <SonarLogo size="sm" />
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="p-4 border-b border-border space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center font-bold text-primary font-heading">
-                        {isVolunteer ? "DS" : isAdmin ? "HG" : "AF"}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground font-ui">
-                          {isVolunteer ? "Dewi Sartika, S.Kom." : isAdmin ? "Dr. Hendra Gunawan" : "Ahmad Fauzi"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {isVolunteer ? "Volunteer Reviewer" : isAdmin ? "Administrator" : "Mahasiswa Tunanetra"}
-                        </p>
-                      </div>
-                    </div>
-                    {userEmail && (
-                      <p className="text-[11px] text-muted-foreground font-mono pt-1">
-                        {userEmail}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex-1 p-4 space-y-4">
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-semibold text-foreground font-ui">
-                        Ganti Peran Demo
-                      </p>
-                      <div className="grid grid-cols-3 gap-1">
-                        <form action={() => { loginAsDemoRole("student"); setMobileProfileOpen(false); }}>
-                          <Button
-                            type="submit"
-                            variant={!isVolunteer && !isAdmin ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 w-full px-1 text-xs font-ui"
-                          >
-                            Student
-                          </Button>
-                        </form>
-                        <form action={() => { loginAsDemoRole("volunteer"); setMobileProfileOpen(false); }}>
-                          <Button
-                            type="submit"
-                            variant={isVolunteer ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 w-full px-1 text-xs font-ui"
-                          >
-                            Volunteer
-                          </Button>
-                        </form>
-                        <form action={() => { loginAsDemoRole("admin"); setMobileProfileOpen(false); }}>
-                          <Button
-                            type="submit"
-                            variant={isAdmin ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 w-full px-1 text-xs font-ui"
-                          >
-                            Admin
-                          </Button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 border-t border-border">
-                    <form action={signOutAction}>
-                      <Button
-                        type="submit"
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-xs text-muted-foreground hover:text-destructive font-ui"
-                      >
-                        <LogOut className="mr-2 size-3.5" aria-hidden="true" />
-                        <span>Keluar dari Akun</span>
-                      </Button>
-                    </form>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+            <UserMenu name={displayName} email={userEmail} roleLabel={roleLabel} />
           </div>
         </header>
 
-        {/* Main Content Area (pb-24 on mobile so bottom nav does not block content) */}
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 px-4 py-6 outline-none pb-28 lg:pb-8 sm:px-6 lg:px-8"
+          className="flex-1 px-4 py-6 pb-28 outline-none sm:px-6 lg:px-8 lg:pb-10"
         >
           {children}
         </main>
 
-        {/* Footer (mb-16 on mobile so not covered by bottom nav) */}
-        <footer className="border-t bg-surface-subtle px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8 font-ui mb-16 lg:mb-0">
-          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-            <p>SONAR — Platform Materi Perkuliahan Aksesibel untuk Mahasiswa Tunanetra</p>
-            <p>Standar WCAG 2.2 Level AA · Terverifikasi Screen Reader & Audio Bilingual</p>
-          </div>
-        </footer>
-
-        {/* Mobile Bottom Navigation (Mirip DANA) */}
-        <Suspense fallback={null}>
-          <MobileBottomNav userRoles={userRoles} />
-        </Suspense>
+        <MobileBottomNav userRoles={userRoles} />
       </div>
     </div>
   );

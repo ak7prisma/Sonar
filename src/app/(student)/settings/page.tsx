@@ -1,27 +1,23 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { PageHeader } from "@/components/app/PageHeader";
 import { PreferencesForm } from "@/components/settings/PreferencesForm";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
 
 export const metadata: Metadata = {
-  title: "Accessibility & Preferences",
+  title: "Pengaturan Membaca & Aksesibilitas",
 };
 
 async function SettingsBody() {
   const { auth } = await getAuthenticatedContext();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-          Accessibility &amp; Reading Preferences
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Settings apply immediately across the reader and persist locally as
-          well as in your private user profile when signed in.
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6 font-sans">
+      <PageHeader
+        title="Pengaturan Membaca & Aksesibilitas"
+        description="Perubahan berlaku langsung di seluruh halaman pembaca dan tersimpan di peramban maupun profil akun Anda."
+      />
 
       <PreferencesForm isAuthenticated={Boolean(auth)} />
     </div>
@@ -30,8 +26,14 @@ async function SettingsBody() {
 
 export default function SettingsPage() {
   return (
-    <WorkspaceShell pageSectionLabel="Preferences">
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading preferences...</p>}>
+    <WorkspaceShell>
+      <Suspense
+        fallback={
+          <p className="text-sm text-muted-foreground font-ui">
+            Memuat pengaturan aksesibilitas…
+          </p>
+        }
+      >
         <SettingsBody />
       </Suspense>
     </WorkspaceShell>

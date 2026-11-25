@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { FileUp, Cpu, Users, BookOpen, Share2 } from "lucide-react";
+import { BookOpen, Cpu, FileUp, Share2, Users } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -9,36 +10,41 @@ const STEPS = [
     step: "01",
     title: "Unggah Dokumen PDF Kuliah",
     icon: FileUp,
+    tone: "bg-brand-mint text-brand-ink",
     description:
-      "Mahasiswa atau dosen mengunggah materi perkuliahan dalam format PDF (baik PDF digital dengan selectable text maupun dokumen hasil foto/scan).",
+      "Mahasiswa mengunggah materi perkuliahan berformat PDF, baik dokumen teks maupun hasil pemindaian.",
   },
   {
     step: "02",
-    title: "Ekstraksi OCR & Analisis Tata Letak Semantik",
+    title: "Ekstraksi Struktur Semantik",
     icon: Cpu,
+    tone: "bg-tint-blue text-brand-ink",
     description:
-      "SONAR mendeteksi heading (H1, H2, H3), urutan membaca kolom majemuk, struktur tabel matriks, formula matematika LaTeX, dan grafik diagram.",
+      "SONAR menyusun hierarki heading, urutan membaca alami, tabel dengan header baris-kolom, serta formula matematika.",
   },
   {
     step: "03",
-    title: "Konversi MathML & Sintesis Audio Bilingual",
+    title: "MathML & Narasi Suara Bilingual",
     icon: BookOpen,
+    tone: "bg-tint-gold text-brand-ink",
     description:
-      "Rumus matematika diubah menjadi kode MathML standar W3C yang didukung screen reader, serta dinarasikan dalam Bahasa Indonesia dan Inggris.",
+      "Persamaan matematika dirender sebagai MathML yang didukung screen reader dan dilengkapi narasi suara Bahasa Indonesia maupun Inggris.",
   },
   {
     step: "04",
-    title: "Verifikasi Volunteer Reviewer & QA",
+    title: "Verifikasi Volunteer Reviewer",
     icon: Users,
+    tone: "bg-tint-peach text-brand-ink",
     description:
-      "Trained volunteer memeriksa hasil ekstraksi teks, memeriksa formula kompleks, dan memberikan persetujuan (Reviewed / Approved) dengan catatan review.",
+      "Volunteer meninjau ketepatan teks, narasi rumus, dan deskripsi diagram sebelum menyetujui publikasi materi.",
   },
   {
     step: "05",
-    title: "Publikasi ke Course Library & Reusable Sharing",
+    title: "Berbagi & Penggunaan Ulang Se-Kelas",
     icon: Share2,
+    tone: "bg-brand-teal text-white",
     description:
-      "Materi terverifikasi langsung masuk ke perpustakaan bersama mata kuliah tersebut sehingga seluruh mahasiswa se-kelas dapat langsung membaca tanpa perlu konversi ulang.",
+      "Materi terverifikasi tersedia bagi mahasiswa yang terdaftar di mata kuliah yang sama beserta pelacakan versi sumbernya.",
   },
 ];
 
@@ -47,54 +53,70 @@ export default function HowItWorksPage() {
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <SiteHeader />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-12 px-4 py-12 outline-none sm:px-8">
-        <div className="space-y-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">Alur Kerja Sistem</span>
-          <h1 className="font-heading text-4xl font-extrabold text-foreground sm:text-5xl">
-            Dari PDF Sulit Dibaca Menjadi Pengalaman Membaca Audio Semantik
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 py-12 outline-none sm:px-8"
+      >
+        <header className="space-y-3">
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+            Cara Kerja SONAR Mengonversi Materi Kuliah
           </h1>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            Pelajari bagaimana SONAR memadukan kecerdasan buatan OCR, MathML compiler, dan kontrol kualitas
-            volunteer untuk menghasilkan materi kuliah yang 100% ramah teknologi asistif.
+          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Alur terstruktur dari pengunggahan PDF hingga pembacaan mandiri dengan pembaca layar dan berbagi antar mahasiswa dalam satu mata kuliah.
           </p>
-        </div>
+        </header>
 
-        <div className="space-y-6">
+        <ol className="space-y-4">
           {STEPS.map((s) => {
             const Icon = s.icon;
             return (
-              <div
+              <li
                 key={s.step}
-                className="flex flex-col sm:flex-row items-start gap-6 rounded-2xl border border-border bg-card p-6 shadow-xs transition-all hover:border-primary/50"
+                className="flex flex-col items-start gap-5 rounded-2xl border border-border bg-card p-6 shadow-card sm:flex-row sm:items-center"
               >
-                <div className="size-14 shrink-0 rounded-2xl bg-primary text-primary-foreground flex flex-col items-center justify-center font-heading font-extrabold text-lg shadow-sm">
-                  <span>{s.step}</span>
-                </div>
-                <div className="space-y-2">
+                <span
+                  className={cn(
+                    "flex size-13 shrink-0 items-center justify-center rounded-2xl font-heading text-lg font-extrabold",
+                    s.tone
+                  )}
+                >
+                  {s.step}
+                </span>
+                <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <Icon className="size-5 text-primary" aria-hidden="true" />
-                    <h2 className="font-heading text-xl font-bold text-foreground">{s.title}</h2>
+                    <h2 className="font-heading text-xl font-bold text-foreground">
+                      {s.title}
+                    </h2>
                   </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground font-sans">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     {s.description}
                   </p>
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
-        <div className="rounded-2xl border border-border bg-surface-subtle p-8 text-center space-y-4">
-          <h2 className="font-heading text-2xl font-bold text-foreground">Siap Mengakses Materi Perkuliahan?</h2>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            Masuk ke akun Anda dan mulai membaca materi atau unggah modul kuliah Anda sekarang.
+        <div className="space-y-4 rounded-3xl border border-border bg-card p-8 text-center shadow-card">
+          <h2 className="font-heading text-2xl font-bold text-foreground">
+            Siap Mengakses Materi Perkuliahan?
+          </h2>
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+            Masuk ke akun Anda untuk membuka pembaca dokumen terstruktur atau membantu meninjau materi sebagai volunteer.
           </p>
-          <div className="flex justify-center gap-3 pt-2 font-ui">
-            <Button size="lg" asChild className="font-semibold">
-              <Link href="/login">Masuk ke Platform</Link>
+          <div className="flex flex-wrap justify-center gap-3 pt-1 font-ui">
+            <Button size="lg" asChild className="min-h-11 rounded-full px-6 font-semibold">
+              <Link href="/login">Masuk ke SONAR</Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="font-semibold">
-              <Link href="/courses">Lihat Materi Kuliah</Link>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="min-h-11 rounded-full px-6 font-semibold"
+            >
+              <Link href="/courses">Lihat Mata Kuliah</Link>
             </Button>
           </div>
         </div>

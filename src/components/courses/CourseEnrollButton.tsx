@@ -28,8 +28,12 @@ export function CourseEnrollButton({
       const result = await toggleCourseEnrollmentAction(courseId);
       if (result.success && result.enrolled !== undefined) {
         setEnrolled(result.enrolled);
-        setCount((prev) => (result.enrolled ? prev + 1 : Math.max(0, prev - 1)));
-        const msg = result.message ?? "Status keikutsertaan mata kuliah berhasil diperbarui.";
+        setCount((prev) =>
+          result.enrolled ? prev + 1 : Math.max(0, prev - 1)
+        );
+        const msg = result.enrolled
+          ? "Berhasil terdaftar pada mata kuliah ini."
+          : "Keanggotaan pada mata kuliah ini dibatalkan.";
         setFeedback(msg);
         announce(msg, "polite");
       } else if (result.error) {
@@ -40,20 +44,18 @@ export function CourseEnrollButton({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-      <div className="flex items-center gap-2">
-        {enrolled ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success font-ui">
-            <CheckCircle2 className="size-3.5" aria-hidden="true" />
-            <span>Terdaftar ({count} Mahasiswa)</span>
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground font-ui">
-            <UserCheck className="size-3.5" aria-hidden="true" />
-            <span>Belum Terdaftar ({count} Mahasiswa)</span>
-          </span>
-        )}
-      </div>
+    <div className="flex flex-wrap items-center gap-3 font-ui">
+      {enrolled ? (
+        <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-brand-teal/40 bg-brand-mint px-3 py-1 text-xs font-semibold text-brand-ink">
+          <CheckCircle2 className="size-3.5 text-brand-teal" aria-hidden="true" />
+          <span>Terdaftar ({count} anggota)</span>
+        </span>
+      ) : (
+        <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-foreground">
+          <UserCheck className="size-3.5" aria-hidden="true" />
+          <span>Belum terdaftar ({count} anggota)</span>
+        </span>
+      )}
 
       <Button
         type="button"
@@ -61,28 +63,28 @@ export function CourseEnrollButton({
         variant={enrolled ? "outline" : "default"}
         onClick={handleToggle}
         disabled={isPending}
-        className="font-ui text-xs font-semibold h-8"
+        className="min-h-10 rounded-full px-4 text-xs font-semibold"
       >
         {isPending ? (
-          <span>Memperbarui...</span>
+          <span>Memperbarui…</span>
         ) : enrolled ? (
           <>
-            <LogOut className="size-3.5 mr-1.5 text-muted-foreground" aria-hidden="true" />
-            <span>Batalkan Keanggotaan</span>
+            <LogOut className="size-3.5" aria-hidden="true" />
+            <span>Keluar dari Kelas</span>
           </>
         ) : (
           <>
-            <LogIn className="size-3.5 mr-1.5" aria-hidden="true" />
+            <LogIn className="size-3.5" aria-hidden="true" />
             <span>Gabung Mata Kuliah</span>
           </>
         )}
       </Button>
 
-      {feedback && (
-        <span className="text-xs text-muted-foreground font-ui animate-fadeIn" role="status">
+      {feedback ? (
+        <span className="text-xs text-muted-foreground" role="status">
           {feedback}
         </span>
-      )}
+      ) : null}
     </div>
   );
 }
