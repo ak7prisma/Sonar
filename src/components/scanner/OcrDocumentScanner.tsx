@@ -23,6 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { validatePdfFile } from "@/lib/upload/pdf-validation";
 import { formatFileSize } from "@/lib/format";
@@ -144,8 +151,8 @@ export function OcrDocumentScanner({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: { "application/pdf": [".pdf"] },
-    noClick: true,
-    noKeyboard: true,
+    noClick: Boolean(selectedPdfFile),
+    noKeyboard: Boolean(selectedPdfFile),
     onDrop: (accepted) => {
       if (accepted[0]) void handleFileSelect(accepted[0]);
     },
@@ -418,45 +425,53 @@ export function OcrDocumentScanner({
         <div className="grid gap-4 sm:grid-cols-3 font-ui">
           <div className="space-y-1.5">
             <Label htmlFor="ocr-course">Mata kuliah</Label>
-            <select
-              id="ocr-course"
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-            >
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.code} — {course.title}
-                </option>
-              ))}
-            </select>
+            <Select value={courseId} onValueChange={(val) => setCourseId(val)}>
+              <SelectTrigger
+                id="ocr-course"
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+              >
+                <SelectValue placeholder="Pilih mata kuliah" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id} className="rounded-lg text-sm">
+                    {course.code} — {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="ocr-lang">Bahasa narasi</Label>
-            <select
-              id="ocr-lang"
+            <Select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as "id" | "en")}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+              onValueChange={(val) => setLanguage(val as "id" | "en")}
             >
-              <option value="id">Bahasa Indonesia</option>
-              <option value="en">English</option>
-            </select>
+              <SelectTrigger
+                id="ocr-lang"
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+              >
+                <SelectValue placeholder="Pilih bahasa" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                <SelectItem value="id" className="rounded-lg text-sm">
+                  Bahasa Indonesia
+                </SelectItem>
+                <SelectItem value="en" className="rounded-lg text-sm">
+                  English
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ocr-title">
-              Judul bacaan{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                (otomatis dideteksi dari isi PDF)
-              </span>
-            </Label>
+            <Label htmlFor="ocr-title">Judul bacaan</Label>
             <Input
               id="ocr-title"
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
-              placeholder="Otomatis mendeteksi judul di dalam dokumen PDF..."
+              placeholder="Misalnya: Bab 04 — Vektor"
               className="h-10 rounded-xl"
             />
           </div>
@@ -470,7 +485,7 @@ export function OcrDocumentScanner({
               ? "border-primary bg-brand-mint/50"
               : selectedPdfFile
                 ? "border-border bg-surface-subtle/60"
-                : "border-border bg-surface-subtle/40 hover:border-primary/50"
+                : "border-border bg-surface-subtle/40 hover:border-primary/60 hover:bg-surface-subtle/70 cursor-pointer"
           )}
         >
           <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />
@@ -497,14 +512,9 @@ export function OcrDocumentScanner({
                   Ekstraksi teks, rumus MathML, dan tabel langsung untuk dibaca atau didengarkan.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-1 min-h-10 rounded-full border-border bg-card px-5 font-ui text-sm font-semibold hover:bg-brand-mint hover:text-brand-ink"
-              >
+              <span className="mt-1 inline-flex min-h-10 items-center justify-center rounded-full border border-border bg-card px-5 font-ui text-sm font-semibold shadow-xs hover:bg-brand-mint hover:text-brand-ink transition-colors">
                 Pilih Berkas PDF
-              </Button>
+              </span>
             </div>
           ) : (
             <div className="space-y-4">
