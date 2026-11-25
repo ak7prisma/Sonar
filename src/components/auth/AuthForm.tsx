@@ -44,12 +44,15 @@ export function AuthForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<{
     email: string;
     password: string;
     fullName?: string;
     studyProgram?: string;
+    role?: "student" | "volunteer" | "reviewer" | "admin";
   }>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -57,6 +60,7 @@ export function AuthForm({
       password: "",
       fullName: "",
       studyProgram: "",
+      role: "student",
     },
   });
 
@@ -84,6 +88,7 @@ export function AuthForm({
     password: string;
     fullName?: string;
     studyProgram?: string;
+    role?: "student" | "volunteer" | "reviewer" | "admin";
   }) => {
     setServerError(null);
     setSuccessMessage(null);
@@ -100,6 +105,7 @@ export function AuthForm({
             password: values.password,
             fullName: values.fullName ?? "",
             studyProgram: values.studyProgram,
+            role: values.role,
           });
 
     if (res?.error) {
@@ -194,13 +200,25 @@ export function AuthForm({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="field-studyProgram">Program Studi / Peran</Label>
+              <Label htmlFor="field-studyProgram">Program Studi</Label>
               <Input
                 id="field-studyProgram"
                 type="text"
-                placeholder="Contoh: S1 Ilmu Komputer / Volunteer"
+                placeholder="Misalnya: S1 Teknik Informatika, S1 Matematika"
                 {...register("studyProgram")}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="field-role">Peran Akun</Label>
+              <select
+                id="field-role"
+                className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                {...register("role")}
+              >
+                <option value="student">Mahasiswa (Akses Pembaca Asistif & Materi Kuliah)</option>
+                <option value="volunteer">Volunteer / Reviewer (Verifikasi & Transkripsi Dokumen)</option>
+              </select>
             </div>
           </>
         )}

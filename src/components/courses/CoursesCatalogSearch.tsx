@@ -1,0 +1,292 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Search,
+  X,
+  BookOpen,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "cn";
+import { getCourseToneStyles } from "@/lib/course-theme";
+import { APP_IMAGES } from "@/lib/images";
+import type { CourseRow, DocumentRow } from "@/lib/data/workspace";
+
+interface CourseCardData {
+  course: CourseRow;
+  verifiedCount: number;
+  pendingCount: number;
+}
+
+interface CoursesCatalogSearchProps {
+  courses: CourseRow[];
+  documents: DocumentRow[];
+}
+
+function getCourseImage(course: { id: string; code: string; discipline: string }) {
+  if (course.id === "math-105") return APP_IMAGES.courseMath;
+  if (course.id === "stat-210") return APP_IMAGES.courseStat;
+  if (course.id === "cs-201") return APP_IMAGES.courseCS;
+
+  const code = course.code.toLowerCase();
+  const disc = course.discipline.toLowerCase();
+  if (code.includes("math") || disc.includes("matematika")) return APP_IMAGES.courseMath;
+  if (code.includes("stat") || disc.includes("statistika")) return APP_IMAGES.courseStat;
+  return APP_IMAGES.courseCS;
+}
+
+export function CoursesCatalogSearch({
+  courses,
+  documents,
+}: CoursesCatalogSearchProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("all");
+
+  const disciplines = useMemo(() => {
+    const set = new Set<string>();
+    courses.forEach((c) => {
+      if (c.discipline) set.add(c.discipline);
+    });
+    return Array.from(set);
+  }, [courses]);
+
+  const cardsData = useMemo<CourseCardData[]>(() => {
+    return courses.map((course) => {
+      const courseSlug = course.code.toLowerCase().replace(/\s+/g, "-");
+      const docs = documents.filter(
+        (d) => d.course_id === course.id || d.course_id === courseSlug
+      );
+      const verifiedCount = docs.filter(
+        (d) => d.review_status === "verified"
+      ).length;
+      const pendingCount = docs.length - verifiedCount;
+      return { course, verifiedCount, pendingCount };
+    });
+  }, [courses, documents]);
+
+  const filteredCards = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return cardsData.filter(({ course }) => {
+      const matchesSearch =
+        !q ||
+        course.code.toLowerCase().includes(q) ||
+        course.title.toLowerCase().includes(q) ||
+        course.discipline.toLowerCase().includes(q) ||
+        (course.description && course.description.toLowerCase().includes(q));
+
+      const matchesDiscipline =
+        selectedDiscipline === "all" ||
+        course.discipline.toLowerCase() === selectedDiscipline.toLowerCase();
+
+      return matchesSearch && matchesDiscipline;
+    });
+  }, [cardsData, searchQuery, selectedDiscipline]);
+
+  return (
+    <div className="space-y-6">
+      {/* Search Bar & Discipline Filter */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 max-w-md font-ui">
+          <label htmlFor="courses-search-input" className="sr-only">
+            Cari mata kuliah
+          </label>
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
+            <Search className="size-4" aria-hidden="true" />
+          </div>
+          <input
+            id="courses-search-input"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari kode, judul, atau bidang studi kuliah…"
+            className="w-full h-11 rounded-full border border-input bg-card pl-10 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+              aria-label="Bersihkan pencarian"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+
+        {disciplines.length > 1 && (
+          <div
+            role="group"
+            aria-label="Filter berdasarkan bidang studi"
+            className="flex flex-wrap items-center gap-1.5 font-ui"
+          >
+            <button
+              type="button"
+              aria-pressed={selectedDiscipline === "all"}
+              onClick={() => setSelectedDiscipline("all")}
+              className={cn(
+                "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors",
+                selectedDiscipline === "all"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border bg-card text-foreground hover:bg-muted"
+              )}
+            >
+              <span>Semua</span>
+              <span className="tabular-nums opacity-80">{courses.length}</span>
+            </button>
+
+            {disciplines.map((disc) => {
+              const active =
+                selectedDiscipline.toLowerCase() === disc.toLowerCase();
+              const count = courses.filter(
+                (c) => c.discipline.toLowerCase() === disc.toLowerCase()
+              ).length;
+              return (
+                <button
+                  key={disc}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setSelectedDiscipline(disc)}
+                  className={cn(
+                    "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "border border-border bg-card text-foreground hover:bg-muted"
+                  )}
+                >
+                  <span>{disc}</span>
+                  <span className="tabular-nums opacity-80">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Results Grid */}
+      {filteredCards.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredCards.map(({ course, verifiedCount, pendingCount }, idx) => {
+            const courseImage = getCourseImage(course);
+            const tone = getCourseToneStyles(course);
+
+            return (
+              <article
+                key={course.id}
+                className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-colors hover:border-primary/50"
+              >
+                <div>
+                  <div className="relative aspect-16/9 w-full overflow-hidden bg-muted">
+                    <Image
+                      src={courseImage.src}
+                      alt={courseImage.alt}
+                      fill
+                      priority={idx === 0}
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </div>
+
+                  <div className="space-y-3 p-5">
+                    <div className="flex flex-wrap items-center gap-2 font-ui">
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                          tone.surface,
+                          "text-brand-ink"
+                        )}
+                      >
+                        {course.code}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {course.discipline}
+                      </span>
+                    </div>
+
+                    <h2 className="font-heading text-lg font-bold leading-snug text-foreground">
+                      <Link
+                        href={`/courses/${course.id}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {course.title}
+                      </Link>
+                    </h2>
+
+                    <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {course.description}
+                    </p>
+
+                    <div className="space-y-2 border-t border-border/70 pt-3 text-sm font-ui">
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                          <CheckCircle2
+                            className="size-4 text-primary"
+                            aria-hidden="true"
+                          />
+                          <span>Materi terverifikasi</span>
+                        </span>
+                        <span className="font-semibold tabular-nums text-foreground">
+                          {verifiedCount} dokumen
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                          <Clock
+                            className="size-4 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                          <span>Dalam proses review</span>
+                        </span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {pendingCount} dokumen
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/70 bg-surface-subtle/50 p-4 font-ui">
+                  <Button
+                    asChild
+                    className="min-h-10 w-full justify-between rounded-full px-4 font-semibold"
+                  >
+                    <Link href={`/courses/${course.id}`}>
+                      <span>Lihat Materi Kelas</span>
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-card font-ui space-y-3">
+          <BookOpen className="size-8 mx-auto text-muted-foreground/60" aria-hidden="true" />
+          <p className="font-heading text-base font-bold text-foreground">
+            Tidak ada mata kuliah yang cocok dengan &ldquo;{searchQuery}&rdquo;
+          </p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Coba gunakan kata kunci lain, bersihkan filter bidang studi, atau unggah materi baru ke mata kuliah yang Anda butuhkan.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedDiscipline("all");
+            }}
+            className="rounded-full"
+          >
+            Reset Pencarian
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

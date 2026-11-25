@@ -85,6 +85,7 @@ export async function registerAction(input: {
   password: string;
   fullName: string;
   studyProgram?: string;
+  role?: "student" | "volunteer" | "reviewer" | "admin";
 }): Promise<AuthActionResult> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success) {
@@ -93,6 +94,8 @@ export async function registerAction(input: {
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
+
+  const selectedRole = parsed.data.role ?? "student";
 
   if (isSupabaseConfigured()) {
     const supabase = await createServerSupabaseClient();
@@ -104,6 +107,7 @@ export async function registerAction(input: {
           data: {
             full_name: parsed.data.fullName,
             study_program: parsed.data.studyProgram ?? null,
+            role: selectedRole,
           },
         },
       });
@@ -124,7 +128,7 @@ export async function registerAction(input: {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set("sonar_role", "student", { path: "/", httpOnly: true, sameSite: "lax" });
+  cookieStore.set("sonar_role", selectedRole, { path: "/", httpOnly: true, sameSite: "lax" });
   redirect("/dashboard");
 }
 

@@ -40,6 +40,24 @@ describe("Authentication Schemas & Validation", () => {
       studyProgram: "S1 Ilmu Komputer",
     });
     expect(valid.success).toBe(true);
+    if (valid.success) {
+      expect(valid.data.role).toBe("student");
+    }
+  });
+
+  it("validates registration with explicit role and separated study program", () => {
+    const valid = registerSchema.safeParse({
+      email: "volunteer@kampus.ac.id",
+      password: "passwordkuat123",
+      fullName: "Siti Rahma",
+      studyProgram: "S1 Matematika",
+      role: "volunteer",
+    });
+    expect(valid.success).toBe(true);
+    if (valid.success) {
+      expect(valid.data.role).toBe("volunteer");
+      expect(valid.data.studyProgram).toBe("S1 Matematika");
+    }
   });
 
   it("validates forgot password email", () => {
