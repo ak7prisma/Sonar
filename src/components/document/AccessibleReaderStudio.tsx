@@ -854,10 +854,15 @@ export function AccessibleReaderStudio({
   );
 
   return (
-    <div className="w-full max-w-7xl space-y-6 font-sans">
+    <div
+      className={cn(
+        "w-full space-y-6 font-sans",
+        activePanel && isXlDesktop ? "max-w-7xl" : "max-w-5xl"
+      )}
+    >
       {/* Clean Document Header */}
       <header className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+        <div className="flex flex-wrap items-center gap-3 font-ui">
           <Link
             href={`/courses/${document.course_id}`}
             className="inline-flex min-h-9 items-center gap-1.5 rounded-md text-sm font-semibold text-secondary-foreground hover:underline"
@@ -981,7 +986,7 @@ export function AccessibleReaderStudio({
         <div
           className={cn(
             "min-w-0 space-y-6",
-            activePanel && isXlDesktop ? "xl:col-span-8" : "w-full max-w-4xl"
+            activePanel && isXlDesktop ? "xl:col-span-8" : "w-full"
           )}
         >
           {filteredBlocks.length === 0 ? (
@@ -993,9 +998,9 @@ export function AccessibleReaderStudio({
           ) : (
             <article
               aria-label={document.title}
-              className="rounded-3xl border border-border bg-card px-5 py-7 shadow-card sm:px-10 sm:py-10"
+              className="w-full rounded-3xl border border-border bg-card px-5 py-7 shadow-card sm:px-10 sm:py-10"
             >
-              <div className="sonar-reader-prose w-full max-w-[var(--reader-max-width)] space-y-6">
+              <div className="sonar-reader-prose w-full space-y-6">
                 {filteredBlocks.map((block, index) => {
                   const isCurrent = activeBlockId === block.id;
                   const isBookmarked = bookmarks.includes(block.id);
