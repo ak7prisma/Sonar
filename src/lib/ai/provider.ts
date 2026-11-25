@@ -3,7 +3,13 @@ import "server-only";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { EmbeddingModel, LanguageModel } from "ai";
 import { getServerEnv, isAiConfigured } from "@/lib/env";
+import {
+  DEFAULT_FALLBACK_MODELS,
+  isRateLimitOrQuotaError,
+  resolveFallbackChain,
+} from "./fallback-resolver";
 
+export { DEFAULT_FALLBACK_MODELS, isRateLimitOrQuotaError, resolveFallbackChain };
 export type AiModelCapability = "chat" | "vision" | "embedding";
 
 function createGoogleProvider() {
@@ -18,16 +24,86 @@ function createGoogleProvider() {
   });
 }
 
-export function getChatModel(): LanguageModel {
+export function getChatFallbackChain(): string[] {
   const env = getServerEnv();
+  return resolveFallbackChain(env.AI_CHAT_MODEL, env.AI_FALLBACK_CHAT_MODELS);
+}
+
+export function getVisionFallbackChain(): string[] {
+  const env = getServerEnv();
+  return resolveFallbackChain(env.AI_VISION_MODEL, env.AI_FALLBACK_VISION_MODELS);
+}
+
+export function createFallbackLanguageModel(
+  modelNames: string[],
+  googleProvider: ReturnType<typeof createGoogleProvider>
+): LanguageModel {
+  const models = modelNames.map((name) => googleProvider(name));
+  const primary = models[0];
+
+  return new Proxy(primary, {
+    get(target, prop, receiver) {
+      if (prop === "doGenerate") {
+        return async (options: unknown) => {
+          let lastError: unknown;
+          for (let i = 0; i < models.length; i++) {
+            const current = models[i] as unknown as { doGenerate: (opts: unknown) => Promise<unknown> };
+            const name = modelNames[i];
+            try {
+              return await current.doGenerate(options);
+            } catch (err) {
+              lastError = err;
+              if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
+                console.warn(
+                  `[AI Model Fallback] Model "${name}" failed with rate limit / quota exhaustion (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
+                );
+                continue;
+              }
+              throw err;
+            }
+          }
+          throw lastError;
+        };
+      }
+
+      if (prop === "doStream") {
+        return async (options: unknown) => {
+          let lastError: unknown;
+          for (let i = 0; i < models.length; i++) {
+            const current = models[i] as unknown as { doStream: (opts: unknown) => Promise<unknown> };
+            const name = modelNames[i];
+            try {
+              return await current.doStream(options);
+            } catch (err) {
+              lastError = err;
+              if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
+                console.warn(
+                  `[AI Model Fallback] Model "${name}" failed with rate limit / quota exhaustion (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
+                );
+                continue;
+              }
+              throw err;
+            }
+          }
+          throw lastError;
+        };
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+}
+
+export function getChatModel(): LanguageModel {
   const google = createGoogleProvider();
-  return google(env.AI_CHAT_MODEL);
+  const chain = getChatFallbackChain();
+  return createFallbackLanguageModel(chain, google);
 }
 
 export function getVisionModel(): LanguageModel {
-  const env = getServerEnv();
   const google = createGoogleProvider();
-  return google(env.AI_VISION_MODEL);
+  const chain = getVisionFallbackChain();
+  return createFallbackLanguageModel(chain, google);
 }
 
 export function getEmbeddingModel(): EmbeddingModel {
@@ -42,7 +118,9 @@ export function getAiStatus() {
     configured: isAiConfigured(),
     provider: env.AI_PROVIDER,
     chatModel: env.AI_CHAT_MODEL,
+    chatFallbacks: getChatFallbackChain(),
     visionModel: env.AI_VISION_MODEL,
+    visionFallbacks: getVisionFallbackChain(),
     embeddingModel: env.AI_EMBEDDING_MODEL,
   };
 }

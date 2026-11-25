@@ -2,7 +2,7 @@ import "server-only";
 
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { getVisionModel } from "@/lib/ai/provider";
+import { getVisionModel, getVisionFallbackChain } from "@/lib/ai/provider";
 import { STRUCTURED_PAGE_EXTRACTION_PROMPT } from "@/lib/ai/prompts";
 import { isAiConfigured } from "@/lib/env";
 
@@ -293,6 +293,10 @@ export class GeminiVisionOcrProvider implements OcrProvider {
 
     try {
       const model = getVisionModel();
+      const chain = getVisionFallbackChain();
+      console.info(
+        `[GeminiVisionOcrProvider] Extracting page ${input.pageNumber} with fallback chain: ${chain.join(" -> ")}`
+      );
 
       const langDirective =
         input.language === "en"
