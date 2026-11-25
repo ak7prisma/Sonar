@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export function AuthForm({
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<{
     email: string;
@@ -71,6 +71,8 @@ export function AuthForm({
       role: "student",
     },
   });
+
+  const selectedRole = useWatch({ control, name: "role" }) || "student";
 
   const errorEntries = Object.entries(errors).filter(
     ([, val]) => val && typeof val.message === "string"
@@ -220,7 +222,7 @@ export function AuthForm({
             <div className="space-y-1.5 font-ui">
               <Label htmlFor="field-role">Peran Akun</Label>
               <Select
-                value={watch("role") || "student"}
+                value={selectedRole}
                 onValueChange={(val) =>
                   setValue(
                     "role",

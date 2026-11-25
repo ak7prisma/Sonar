@@ -108,7 +108,7 @@ describe("AI Fallback System", () => {
             return async (options: unknown) => {
               for (let i = 0; i < models.length; i++) {
                 try {
-                  return await models[i].doGenerate(options);
+                  return await (models[i] as unknown as MockModel).doGenerate(options);
                 } catch (err) {
                   if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
                     continue;
@@ -122,7 +122,7 @@ describe("AI Fallback System", () => {
         },
       });
 
-      const res = await (proxyModel as MockModel).doGenerate({});
+      const res = await (proxyModel as unknown as MockModel).doGenerate({});
 
       expect(primaryMock.doGenerate).toHaveBeenCalledTimes(1);
       expect(fallbackMock.doGenerate).toHaveBeenCalledTimes(1);
