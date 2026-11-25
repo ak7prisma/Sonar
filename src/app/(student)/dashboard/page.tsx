@@ -1,445 +1,356 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import {
-  ArrowRight,
-  BookOpen,
   ChevronRight,
   ClipboardCheck,
   FileUp,
   Headphones,
-  SlidersHorizontal,
 } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
-import { Panel } from "@/components/app/Panel";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
-import { StudyActivityPanel } from "@/components/dashboard/StudyActivityPanel";
-import { loadWorkspaceSnapshot } from "@/lib/data/workspace";
-import { getCourseToneStyles } from "@/lib/course-theme";
 import {
-  formatDate,
-  formatPageCount,
-  formatVersion,
-  initialsOf,
-} from "@/lib/format";
+  DashboardReadyList,
+  type ReadyCourseFilter,
+  type ReadyMaterialItem,
+} from "@/components/dashboard/DashboardReadyList";
+import { Button } from "@/components/ui/button";
+import { loadWorkspaceSnapshot, type CourseRow } from "@/lib/data/workspace";
+import { getCourseToneStyles } from "@/lib/course-theme";
+import { formatPageCount, splitDocumentTitle } from "@/lib/format";
+import { APP_IMAGES } from "@/lib/images";
 import { cn } from "cn";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
+function normalizeCourseSlug(value: string) {
+  return value.toLowerCase().trim().replace(/\s+/g, "-");
+}
+
+function getCourseArtwork(course: CourseRow | undefined) {
+  if (!course) return APP_IMAGES.featureAudio;
+  const code = course.code.toLowerCase();
+  const disc = course.discipline.toLowerCase();
+  if (course.id === "math-105" || code.includes("math") || disc.includes("matematika")) {
+    return APP_IMAGES.courseMath;
+  }
+  if (course.id === "stat-210" || code.includes("stat") || disc.includes("statistika")) {
+    return APP_IMAGES.courseStat;
+  }
+  return APP_IMAGES.courseCS;
+}
+
 async function DashboardBody() {
   const snapshot = await loadWorkspaceSnapshot();
 
-  const totalDocs = snapshot.documents.length;
-  const verifiedDocs = snapshot.documents.filter(
-    (d) => d.review_status === "verified"
-  );
-  const verifiedCount = verifiedDocs.length;
-  const inReviewCount = totalDocs - verifiedCount;
-  const verifiedPct =
-    totalDocs > 0 ? Math.round((verifiedCount / totalDocs) * 100) : 0;
+  // Map courses by both database UUID and normalized code slug (e.g. "cs-201")
+  // so document relations stay consistent across seeded DB and fallback records.
+  const courseLookup = new Map<string, CourseRow>();
+  for (const course of snapshot.courses) {
+    courseLookup.set(course.id.toLowerCase(), course);
+    courseLookup.set(normalizeCourseSlug(course.code), course);
+  }
 
-  const coursesById = new Map(snapshot.courses.map((c) => [c.id, c]));
+  const resolveCourse = (courseId: string) =>
+    courseLookup.get(courseId.toLowerCase()) ??
+    courseLookup.get(normalizeCourseSlug(courseId));
+
+  const verifiedDocs = snapshot.documents.filter(
+    (doc) => doc.review_status === "verified"
+  );
+  const pendingDocs = snapshot.documents.filter(
+    (doc) => doc.review_status !== "verified"
+  );
+
   const resumeDoc = verifiedDocs[0] ?? snapshot.documents[0] ?? null;
-  const resumeCourse = resumeDoc
-    ? coursesById.get(resumeDoc.course_id)
-    : undefined;
+  const resumeCourse = resumeDoc ? resolveCourse(resumeDoc.course_id) : undefined;
+  const resumeParsed = resumeDoc
+    ? splitDocumentTitle(resumeDoc.title)
+    : { prefix: null, title: "" };
+  const spotlightImage = getCourseArtwork(resumeCourse);
 
   const displayName =
     snapshot.user?.fullName?.trim() ||
     snapshot.user?.email?.split("@")[0] ||
     "Pengguna SONAR";
   const greetingName = displayName.split(",")[0].trim() || displayName;
+
   const userRoles = snapshot.user?.roles ?? ["student"];
   const canReview =
     userRoles.includes("admin") ||
     userRoles.includes("reviewer") ||
     userRoles.includes("volunteer");
 
-  const chartData = snapshot.courses.slice(0, 3).map((course) => {
-    const docs = snapshot.documents.filter((d) => d.course_id === course.id);
+  const readyItems: ReadyMaterialItem[] = verifiedDocs.map((doc) => {
+    const course = resolveCourse(doc.course_id);
+    const courseKey = course ? course.id : normalizeCourseSlug(doc.course_id);
+    const courseCode = course?.code ?? doc.course_id.toUpperCase();
+    const tone = getCourseToneStyles(course ?? { code: courseCode });
+    const parsed = splitDocumentTitle(doc.title);
+
     return {
-      label: course.code,
-      documents: docs.length,
-      verifiedBlocks: docs.filter((d) => d.review_status === "verified").length,
+      id: doc.id,
+      title: parsed.title,
+      prefix: parsed.prefix,
+      courseKey,
+      courseCode,
+      courseSurface: tone.surface,
+      pageLabel: formatPageCount(doc.page_count),
+      isSpotlight: resumeDoc?.id === doc.id,
     };
   });
 
-  const ringRadius = 44;
-  const ringCircumference = 2 * Math.PI * ringRadius;
-  const ringOffset = ringCircumference * (1 - verifiedPct / 100);
+  const filterMap = new Map<string, ReadyCourseFilter>();
+  for (const item of readyItems) {
+    const existing = filterMap.get(item.courseKey);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      filterMap.set(item.courseKey, {
+        key: item.courseKey,
+        code: item.courseCode,
+        count: 1,
+      });
+    }
+  }
+  const readyCourseFilters = Array.from(filterMap.values());
 
   return (
-    <div className="mx-auto max-w-7xl font-sans">
-      <div className="grid items-start gap-6 lg:grid-cols-12">
-        {/* LEFT PRIMARY COLUMN (8 cols) */}
-        <div className="min-w-0 space-y-6 lg:col-span-8">
-          {/* HERO CONTINUE-READING BANNER */}
-          <section
-            aria-label="Lanjutkan belajar"
-            className="relative overflow-hidden rounded-3xl bg-brand-teal p-6 text-white shadow-card sm:p-8"
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-brand-aqua/25"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -bottom-10 right-16 size-32 rounded-full bg-brand-gold/20"
-            />
+    <div className="mx-auto max-w-6xl space-y-8 font-sans">
+      {/* GREETING HEADER — open on warm paper canvas, zero box clutter */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+            Halo, {greetingName}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+            {verifiedDocs.length > 0
+              ? `${verifiedDocs.length} materi perkuliahan sudah terverifikasi dan siap Anda pelajari.`
+              : "Pilih mata kuliah atau unggah dokumen PDF untuk mulai belajar."}
+          </p>
+        </div>
 
-            <div className="relative z-10 max-w-2xl space-y-4">
-              <h1 className="font-heading text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                {resumeDoc
-                  ? `Lanjutkan Belajar, ${greetingName}`
-                  : `Selamat Datang, ${greetingName}`}
-              </h1>
-              <p className="text-sm leading-relaxed text-white sm:text-base">
-                {resumeDoc
-                  ? `${resumeCourse?.code ?? resumeDoc.course_id.toUpperCase()} — ${resumeDoc.title} (${formatPageCount(resumeDoc.page_count)}, versi ${formatVersion(resumeDoc.current_version_id)}).`
-                  : "Unggah materi PDF perkuliahan atau buka perpustakaan kelas yang sudah diverifikasi volunteer."}
-              </p>
+        <Button
+          asChild
+          variant="outline"
+          className="hidden min-h-10 w-fit rounded-full border-border bg-card px-4 font-ui text-sm font-semibold text-foreground shadow-2xs hover:bg-brand-mint hover:text-brand-ink dark:hover:bg-muted dark:hover:text-foreground sm:inline-flex"
+        >
+          <Link href="/upload">
+            <FileUp className="size-4 text-primary" aria-hidden="true" />
+            <span>Unggah Materi</span>
+          </Link>
+        </Button>
+      </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-1 font-ui">
-                {resumeDoc ? (
-                  <Link
-                    href={`/reader/${resumeDoc.id}`}
-                    className="inline-flex min-h-11 items-center gap-3 rounded-full bg-brand-ink py-1.5 pr-2 pl-5 text-sm font-semibold text-white transition-colors hover:bg-brand-ink/90"
-                  >
-                    <span>Lanjutkan Membaca</span>
-                    <span className="flex size-8 items-center justify-center rounded-full bg-white text-brand-ink">
-                      <ChevronRight className="size-4" aria-hidden="true" />
-                    </span>
-                  </Link>
-                ) : null}
+      {/* SINGLE FOCAL POINT — Continue-Reading Editorial Spotlight */}
+      {resumeDoc ? (
+        <section
+          aria-labelledby="spotlight-heading"
+          className="overflow-hidden rounded-3xl bg-brand-teal text-white shadow-card"
+        >
+          <div className="grid items-stretch md:grid-cols-12">
+            <div className="flex flex-col justify-between gap-6 p-6 sm:p-8 md:col-span-7">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2 font-ui text-xs font-semibold">
+                  <span className="inline-flex items-center rounded-full bg-brand-gold px-3 py-1 font-bold text-brand-ink">
+                    {resumeCourse?.code ?? resumeDoc.course_id.toUpperCase()}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-brand-mint px-3 py-1 text-brand-ink">
+                    {resumeDoc.review_status === "verified"
+                      ? "Lanjutkan belajar"
+                      : "Materi terbaru"}
+                  </span>
+                </div>
 
-                <Link
-                  href="/upload"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-mint"
+                <h2
+                  id="spotlight-heading"
+                  className="font-heading text-xl font-extrabold leading-snug tracking-tight text-white sm:text-2xl lg:text-[1.65rem]"
                 >
-                  <FileUp className="size-4" aria-hidden="true" />
-                  <span>Unggah PDF</span>
+                  {resumeParsed.title}
+                </h2>
+
+                <p className="max-w-xl text-sm leading-relaxed text-white sm:text-base">
+                  {resumeParsed.prefix ? `${resumeParsed.prefix}, ` : ""}
+                  {formatPageCount(resumeDoc.page_count)} dengan navigasi per bab, narasi suara, dan rumus MathML.
+                </p>
+              </div>
+
+              <div className="font-ui">
+                <Link
+                  href={`/reader/${resumeDoc.id}`}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-ink shadow-xs transition-colors hover:bg-brand-mint"
+                >
+                  <Headphones className="size-4 text-brand-teal" aria-hidden="true" />
+                  <span>Mulai Membaca</span>
                 </Link>
               </div>
             </div>
-          </section>
 
-          {/* 3 COURSE PROGRESS CARDS (REAL VERIFICATION RATIO) */}
-          <section aria-labelledby="courses-overview-heading" className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="p-3 pt-0 sm:p-4 sm:pt-0 md:col-span-5 md:py-4 md:pr-4 md:pl-0">
+              <div className="relative aspect-16/9 h-full min-h-48 w-full overflow-hidden rounded-2xl bg-brand-ink/25 md:aspect-auto">
+                <Image
+                  src={spotlightImage.src}
+                  alt={spotlightImage.alt}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* TWO-ZONE WORKSPACE: Left = Ready to Read, Right = Classes & Review Pipeline */}
+      <div className="grid items-start gap-8 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8">
+          <DashboardReadyList items={readyItems} courses={readyCourseFilters} />
+        </div>
+
+        <aside
+          aria-label="Daftar kelas dan status peninjauan"
+          className="min-w-0 space-y-8 lg:col-span-4"
+        >
+          {/* COMPACT COURSE LIST */}
+          <section aria-labelledby="my-courses-heading" className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
               <h2
-                id="courses-overview-heading"
-                className="font-heading text-lg font-bold tracking-tight text-foreground"
+                id="my-courses-heading"
+                className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl"
               >
-                Mata Kuliah Aktif
+                Kelas Saya
               </h2>
               <Link
                 href="/courses"
-                className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 font-ui text-sm font-semibold text-secondary-foreground hover:underline"
+                className="inline-flex min-h-9 items-center rounded-md px-2 font-ui text-xs font-semibold text-secondary-foreground hover:underline"
               >
-                <span>Semua kelas</span>
-                <ArrowRight className="size-4" aria-hidden="true" />
+                Semua kelas
               </Link>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {snapshot.courses.slice(0, 3).map((course) => {
-                const courseDocs = snapshot.documents.filter(
-                  (d) => d.course_id === course.id
-                );
-                const courseVerified = courseDocs.filter(
-                  (d) => d.review_status === "verified"
-                ).length;
-                const ratioPct =
-                  courseDocs.length > 0
-                    ? Math.round((courseVerified / courseDocs.length) * 100)
-                    : 0;
-                const tone = getCourseToneStyles(course);
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+              <ul className="divide-y divide-border/70">
+                {snapshot.courses.slice(0, 4).map((course) => {
+                  const courseSlug = normalizeCourseSlug(course.code);
+                  const courseDocs = snapshot.documents.filter(
+                    (doc) =>
+                      doc.course_id === course.id ||
+                      normalizeCourseSlug(doc.course_id) === courseSlug
+                  );
+                  const readyCount = courseDocs.filter(
+                    (doc) => doc.review_status === "verified"
+                  ).length;
+                  const tone = getCourseToneStyles(course);
 
-                return (
-                  <Link
-                    key={course.id}
-                    href={`/courses/${course.id}`}
-                    className="group flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-card transition-colors hover:border-primary/50"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-xl",
-                          tone.surface,
-                          tone.icon
-                        )}
+                  return (
+                    <li key={course.id}>
+                      <Link
+                        href={`/courses/${course.id}`}
+                        className="group flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-surface-subtle/70 sm:px-5"
                       >
-                        <BookOpen className="size-5" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-heading text-sm font-bold text-foreground group-hover:text-primary">
-                          {course.code}
-                        </p>
-                        <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                          {course.title}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5 font-ui">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Terverifikasi</span>
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {courseVerified}/{courseDocs.length}
-                        </span>
-                      </div>
-                      <div
-                        aria-hidden="true"
-                        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
-                      >
-                        <div
-                          className={cn("h-full rounded-full", tone.bar)}
-                          style={{ width: `${ratioPct}%` }}
+                        <span
+                          aria-hidden="true"
+                          className={cn("w-1.5 shrink-0 self-stretch rounded-full", tone.bar)}
                         />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="flex items-center justify-between gap-2 font-ui text-xs">
+                            <span className="font-bold text-muted-foreground">
+                              {course.code}
+                            </span>
+                            <span className="tabular-nums text-muted-foreground">
+                              {readyCount} siap
+                            </span>
+                          </div>
+                          <p className="line-clamp-2 font-heading text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                            {course.title}
+                          </p>
+                        </div>
+                        <ChevronRight
+                          className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                          aria-hidden="true"
+                        />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </section>
 
-          {/* UNIFIED MATERIALS LIST */}
-          <Panel
-            id="dashboard-lessons"
-            title="Materi Kuliah & Status Verifikasi"
-            description="Materi terverifikasi dapat langsung dibaca dengan screen reader dan audio narasi."
-            action={
-              <Link
-                href="/courses"
-                className="inline-flex min-h-9 items-center font-ui text-sm font-semibold text-secondary-foreground hover:underline"
+          {/* IN-REVIEW PIPELINE — separated from main reading list to eliminate noise */}
+          <section aria-labelledby="pending-review-heading" className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                id="pending-review-heading"
+                className="font-heading text-base font-bold tracking-tight text-foreground"
               >
-                Lihat semua
-              </Link>
-            }
-          >
-            {/* Mobile Stacked Cards */}
-            <div className="space-y-3 md:hidden">
-              {snapshot.documents.slice(0, 6).map((doc) => {
-                const course = coursesById.get(doc.course_id);
-                const tone = getCourseToneStyles(course ?? { code: doc.course_id });
+                Dalam Peninjauan
+              </h2>
+              {pendingDocs.length > 0 ? (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-tint-gold px-2 py-0.5 font-ui text-xs font-bold text-brand-ink tabular-nums">
+                  {pendingDocs.length}
+                </span>
+              ) : null}
+            </div>
 
-                return (
-                  <div
-                    key={doc.id}
-                    className="flex flex-col gap-2.5 rounded-xl border border-border bg-surface-subtle/50 p-3.5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2.5 py-0.5 font-ui text-xs font-semibold whitespace-nowrap",
-                          tone.surface,
-                          "text-brand-ink"
-                        )}
-                      >
-                        {course?.code ?? doc.course_id.toUpperCase()}
-                      </span>
-                      <ReviewStatusChip status={doc.review_status} />
-                    </div>
-                    <Link
-                      href={`/reader/${doc.id}`}
-                      className="font-heading text-sm font-bold text-foreground hover:text-primary hover:underline"
-                    >
-                      {doc.title}
-                    </Link>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-ui text-xs text-muted-foreground">
-                        {formatVersion(doc.current_version_id)} ·{" "}
-                        {formatDate(doc.updated_at)}
-                      </span>
+            <div className="rounded-2xl border border-border/90 bg-surface-subtle/55 p-4 dark:bg-card sm:p-5">
+              {pendingDocs.length === 0 ? (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Seluruh materi yang diunggah sudah selesai diverifikasi volunteer.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Materi berikut sedang diperiksa volunteer sebelum masuk daftar baca utama.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {pendingDocs.slice(0, 4).map((doc) => {
+                      const course = resolveCourse(doc.course_id);
+                      const parsed = splitDocumentTitle(doc.title);
+                      const targetHref = canReview
+                        ? `/review/${doc.id}`
+                        : `/reader/${doc.id}`;
+
+                      return (
+                        <li key={doc.id}>
+                          <Link
+                            href={targetHref}
+                            className="group block space-y-1.5 rounded-xl border border-border/80 bg-card p-3.5 transition-colors hover:border-primary/50"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-ui text-xs font-semibold text-muted-foreground">
+                                {course?.code ?? doc.course_id.toUpperCase()}
+                              </span>
+                              <ReviewStatusChip status={doc.review_status} />
+                            </div>
+                            <p className="font-heading text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                              {parsed.title}
+                            </p>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {canReview ? (
+                    <div className="border-t border-border/70 pt-3 font-ui">
                       <Link
-                        href={`/reader/${doc.id}`}
-                        className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-3 font-ui text-xs font-semibold text-foreground transition-colors hover:border-primary/50 hover:bg-brand-mint hover:text-brand-ink"
+                        href="/review"
+                        className="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-secondary-foreground hover:underline"
                       >
-                        <Headphones className="size-3.5" aria-hidden="true" />
-                        <span>Baca</span>
-                        <span className="sr-only"> {doc.title}</span>
+                        <ClipboardCheck className="size-3.5" aria-hidden="true" />
+                        <span>Buka ruang kerja review</span>
                       </Link>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop Semantic Table */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full border-collapse text-left text-sm">
-                <caption className="sr-only">
-                  Daftar materi perkuliahan dan status verifikasinya
-                </caption>
-                <thead>
-                  <tr className="border-b border-border font-ui text-xs font-semibold text-muted-foreground">
-                    <th scope="col" className="py-2.5 pr-4">
-                      Mata Kuliah
-                    </th>
-                    <th scope="col" className="py-2.5 pr-4">
-                      Materi &amp; Versi
-                    </th>
-                    <th scope="col" className="py-2.5 pr-4">
-                      Status
-                    </th>
-                    <th scope="col" className="py-2.5 text-right">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/70">
-                  {snapshot.documents.slice(0, 6).map((doc) => {
-                    const course = coursesById.get(doc.course_id);
-                    const tone = getCourseToneStyles(course ?? { code: doc.course_id });
-
-                    return (
-                      <tr key={doc.id} className="align-middle">
-                        <td className="py-3.5 pr-4">
-                          <span
-                            className={cn(
-                              "inline-flex rounded-full px-2.5 py-0.5 font-ui text-xs font-semibold whitespace-nowrap",
-                              tone.surface,
-                              "text-brand-ink"
-                            )}
-                          >
-                            {course?.code ?? doc.course_id.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-3.5 pr-4">
-                          <Link
-                            href={`/reader/${doc.id}`}
-                            className="block font-heading text-sm font-bold text-foreground hover:text-primary hover:underline"
-                          >
-                            {doc.title}
-                          </Link>
-                          <p className="font-ui text-xs text-muted-foreground">
-                            {formatVersion(doc.current_version_id)} ·{" "}
-                            {formatPageCount(doc.page_count)} ·{" "}
-                            {formatDate(doc.updated_at)}
-                          </p>
-                        </td>
-                        <td className="py-3.5 pr-4">
-                          <ReviewStatusChip status={doc.review_status} />
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <Link
-                            href={`/reader/${doc.id}`}
-                            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 font-ui text-xs font-semibold text-foreground transition-colors hover:border-primary/50 hover:bg-brand-mint hover:text-brand-ink"
-                          >
-                            <Headphones className="size-3.5" aria-hidden="true" />
-                            <span>Baca</span>
-                            <span className="sr-only"> {doc.title}</span>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-        </div>
-
-        {/* RIGHT STATS & QUICK ACTIONS RAIL (4 cols) */}
-        <aside
-          aria-label="Statistik materi dan aksi cepat"
-          className="min-w-0 space-y-6 lg:col-span-4"
-        >
-          <Panel id="dashboard-stats" title="Ringkasan Kesiapan">
-            <div className="space-y-6">
-              <div className="flex flex-col items-center space-y-3 text-center">
-                <div className="relative flex size-26 items-center justify-center">
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 108 108"
-                    className="size-26 -rotate-90"
-                  >
-                    <circle
-                      cx="54"
-                      cy="54"
-                      r={ringRadius}
-                      fill="none"
-                      stroke="var(--muted)"
-                      strokeWidth="7"
-                    />
-                    <circle
-                      cx="54"
-                      cy="54"
-                      r={ringRadius}
-                      fill="none"
-                      stroke="var(--brand-teal)"
-                      strokeWidth="7"
-                      strokeLinecap="round"
-                      strokeDasharray={ringCircumference}
-                      strokeDashoffset={ringOffset}
-                    />
-                  </svg>
-                  <span
-                    aria-hidden="true"
-                    className="absolute flex size-18 items-center justify-center rounded-full bg-tint-blue font-heading text-lg font-extrabold text-brand-ink"
-                  >
-                    {initialsOf(displayName)}
-                  </span>
-                  <span className="absolute -top-0.5 right-0 rounded-full bg-brand-teal px-2 py-0.5 font-ui text-xs font-bold text-white shadow-xs">
-                    {verifiedPct}%
-                  </span>
+                  ) : null}
                 </div>
-
-                <div className="space-y-1">
-                  <p className="font-heading text-base font-bold text-foreground">
-                    {verifiedCount} dari {totalDocs} materi siap dipakai
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {inReviewCount} dokumen menunggu atau sedang ditinjau volunteer.
-                  </p>
-                </div>
-              </div>
-
-              <StudyActivityPanel data={chartData} />
+              )}
             </div>
-          </Panel>
-
-          <Panel id="dashboard-actions" title="Aksi Cepat">
-            <div className="space-y-2.5 font-ui">
-              <Link
-                href="/upload"
-                className="flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-brand-mint px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-mint/80"
-              >
-                <span className="inline-flex items-center gap-2.5">
-                  <FileUp className="size-4 text-brand-teal" aria-hidden="true" />
-                  <span>Unggah Materi PDF Baru</span>
-                </span>
-                <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
-              </Link>
-
-              {canReview ? (
-                <Link
-                  href="/review"
-                  className="flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-tint-peach px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-tint-peach/80"
-                >
-                  <span className="inline-flex items-center gap-2.5">
-                    <ClipboardCheck className="size-4" aria-hidden="true" />
-                    <span>Buka Antrean Review Volunteer</span>
-                  </span>
-                  <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
-                </Link>
-              ) : null}
-
-              <Link
-                href="/settings"
-                className="flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-tint-gold px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-tint-gold/80"
-              >
-                <span className="inline-flex items-center gap-2.5">
-                  <SlidersHorizontal className="size-4" aria-hidden="true" />
-                  <span>Atur Font &amp; Kecepatan Suara</span>
-                </span>
-                <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
-              </Link>
-            </div>
-          </Panel>
+          </section>
         </aside>
       </div>
     </div>

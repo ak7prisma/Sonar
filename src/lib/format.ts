@@ -35,3 +35,22 @@ export function initialsOf(name: string | null | undefined, fallback = "S"): str
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+/**
+ * Separates structured unit prefixes (e.g. "Modul 04 — Judul") from the main
+ * document title so lists read cleanly without em-dash clutter.
+ */
+export function splitDocumentTitle(rawTitle: string): {
+  prefix: string | null;
+  title: string;
+} {
+  const trimmed = rawTitle.trim();
+  const parts = trimmed.split(/\s+[—–]\s+/);
+  if (parts.length >= 2 && parts[0].length <= 28) {
+    return {
+      prefix: parts[0],
+      title: parts.slice(1).join(": "),
+    };
+  }
+  return { prefix: null, title: trimmed };
+}
