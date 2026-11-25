@@ -5,9 +5,15 @@ import { isAiConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getChatModel } from "@/lib/ai/provider";
 import { buildGroundedAssistantInstructions } from "@/lib/ai/prompts";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
-import { retrieveDocumentChunks } from "@/lib/rag/retriever";
+import {
+  rankChunksByQuery,
+  retrieveDocumentChunks,
+  type RetrievedChunk,
+} from "@/lib/rag/retriever";
 import { buildGroundedContext } from "@/lib/rag/context-builder";
+import { buildSemanticChunks, type ChunkableBlock } from "@/lib/rag/chunker";
 import { chatRequestSchema } from "@/lib/validation/schemas";
+import { getScannedDocument } from "@/lib/data/workspace";
 
 export const maxDuration = 45;
 
@@ -27,16 +33,6 @@ function extractLatestUserText(messages: UIMessage[]): string {
 }
 
 export async function POST(req: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json(
-      {
-        error:
-          "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in .env.local.",
-      },
-      { status: 503 }
-    );
-  }
-
   if (!isAiConfigured()) {
     return NextResponse.json(
       {
@@ -47,20 +43,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const { supabase, auth } = await getAuthenticatedContext();
-  if (!supabase || !auth) {
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  }
-
+  // Rate limiting per IP or session
   const rate = checkRateLimit({
-    key: `ai-chat:${auth.userId}`,
-    limit: 30,
+    key: "ai-chat-global",
+    limit: 60,
     windowMs: 60_000,
   });
 
   if (!rate.allowed) {
     return NextResponse.json(
-      { error: "Rate limit exceeded. Please wait before sending another question." },
+      { error: "Rate limit exceeded. Please wait a moment before sending another question." },
       { status: 429 }
     );
   }
@@ -80,52 +72,115 @@ export async function POST(req: Request) {
     );
   }
 
-  const { documentId, language } = parsed.data;
+  const { documentId, documentTitle: passedTitle, language, blocks: passedBlocks } =
+    parsed.data;
   const uiMessages = parsed.data.messages as UIMessage[];
+  const latestQuery = extractLatestUserText(uiMessages);
 
-  // Verify user authorization to read the target document (RLS enforces course/share scope)
-  const { data: doc, error: docError } = await supabase
-    .from("documents")
-    .select("id, title, course_id")
-    .eq("id", documentId)
-    .maybeSingle();
+  let docTitle = passedTitle || "Materi Bacaan";
+  let courseCode: string | undefined = undefined;
+  let courseTitle: string | undefined = undefined;
+  let retrievedChunks: RetrievedChunk[] = [];
 
-  if (docError || !doc) {
-    return NextResponse.json(
-      { error: "Document not found or access denied." },
-      { status: 403 }
-    );
+  // Resolution Strategy 1: Explicit blocks provided directly by the client (scanner or reader)
+  if (passedBlocks && passedBlocks.length > 0) {
+    const chunkable: ChunkableBlock[] = passedBlocks.map((b, idx) => ({
+      id: b.id || `blk-${idx + 1}`,
+      pageNumber: b.pageNumber || 1,
+      readingOrder: b.readingOrder || idx + 1,
+      blockType: (b.blockType as ChunkableBlock["blockType"]) || "paragraph",
+      sectionHeading: b.sectionHeading ?? null,
+      contentText: b.contentText || "",
+      spokenText: b.spokenText ?? null,
+    }));
+
+    const semanticChunks = buildSemanticChunks(chunkable, { maxChars: 1200 });
+    retrievedChunks = rankChunksByQuery(semanticChunks, latestQuery, documentId, 8);
+  } else {
+    // Resolution Strategy 2: In-memory scanned document store (e.g. OCR result in session)
+    const scanned = getScannedDocument(documentId);
+    if (scanned) {
+      docTitle = scanned.document.title;
+      courseCode = scanned.course.code;
+      courseTitle = scanned.course.title;
+
+      const chunkable: ChunkableBlock[] = scanned.blocks.map((b) => ({
+        id: b.id,
+        pageNumber: b.page_number,
+        readingOrder: b.reading_order,
+        blockType: b.block_type,
+        sectionHeading: b.section_id,
+        contentText: b.content_text,
+        spokenText: b.spoken_text,
+      }));
+
+      const semanticChunks = buildSemanticChunks(chunkable, { maxChars: 1200 });
+      retrievedChunks = rankChunksByQuery(semanticChunks, latestQuery, documentId, 8);
+    } else if (isSupabaseConfigured()) {
+      // Resolution Strategy 3: Supabase database chunks & RAG
+      try {
+        const { supabase } = await getAuthenticatedContext();
+        if (supabase) {
+          const { data: doc } = await supabase
+            .from("documents")
+            .select("id, title, course_id")
+            .eq("id", documentId)
+            .maybeSingle();
+
+          if (doc) {
+            docTitle = doc.title;
+            const { data: course } = await supabase
+              .from("courses")
+              .select("code, title")
+              .eq("id", doc.course_id)
+              .maybeSingle();
+
+            if (course) {
+              courseCode = course.code;
+              courseTitle = course.title;
+            }
+
+            retrievedChunks = latestQuery
+              ? await retrieveDocumentChunks({
+                  documentId: doc.id,
+                  query: latestQuery,
+                  matchCount: 8,
+                })
+              : [];
+          }
+        }
+      } catch (err) {
+        console.warn("[AI Chat Route] Supabase chunk retrieval warning:", err);
+      }
+    }
   }
 
-  const { data: course } = await supabase
-    .from("courses")
-    .select("code, title")
-    .eq("id", doc.course_id)
-    .maybeSingle();
-
-  const latestQuery = extractLatestUserText(uiMessages);
-  const retrievedChunks = latestQuery
-    ? await retrieveDocumentChunks({
-        documentId: doc.id,
-        query: latestQuery,
-        matchCount: 6,
-      })
-    : [];
-
   const { contextXml } = buildGroundedContext(retrievedChunks);
-  const instructions = buildGroundedAssistantInstructions({
-    documentTitle: doc.title,
-    courseCode: course?.code,
-    courseTitle: course?.title,
+
+  const baseInstructions = buildGroundedAssistantInstructions({
+    documentTitle: docTitle,
+    courseCode,
+    courseTitle,
     language,
     contextXml,
   });
+
+  const interactiveInstructions = [
+    baseInstructions,
+    "",
+    "ROLE AS AN ACCESSIBLE STUDY COMPANION & DISCUSSION PARTNER:",
+    "- Engage naturally with the student in thoughtful academic discussion about the text.",
+    "- If the student asks for practice questions, quizzes, or step-by-step mathematical derivations, generate them strictly adhering to the definitions and theorems in the text.",
+    "- Render all inline mathematical formulas in LaTeX delimited by \\( ... \\) and standalone display equations with \\[ ... \\].",
+    "- Speak politely and encouragingly in " + (language === "id" ? "Bahasa Indonesia" : "English") + ".",
+    "- Always ground your statements and cite references using the format [Page X · Topic].",
+  ].join("\n");
 
   const modelMessages = await convertToModelMessages(uiMessages);
 
   const result = streamText({
     model: getChatModel(),
-    instructions,
+    instructions: interactiveInstructions,
     messages: modelMessages,
     abortSignal: req.signal,
   });

@@ -20,6 +20,13 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { validatePdfFile } from "@/lib/upload/pdf-validation";
 import { formatFileSize } from "@/lib/format";
@@ -71,9 +78,6 @@ export function UploadForm({
     }
 
     setSelectedFile(file);
-    if (!title.trim()) {
-      setTitle(file.name.replace(/\.pdf$/i, ""));
-    }
     announce(
       `Berkas ${file.name} siap diproses, ukuran ${formatFileSize(file.size)}.`,
       "polite"
@@ -83,8 +87,8 @@ export function UploadForm({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: { "application/pdf": [".pdf"] },
-    noClick: true,
-    noKeyboard: true,
+    noClick: Boolean(selectedFile),
+    noKeyboard: Boolean(selectedFile),
     onDrop: (accepted) => {
       if (accepted[0]) void handleSelectedFile(accepted[0]);
     },
@@ -214,33 +218,44 @@ export function UploadForm({
       <div className="grid gap-4 sm:grid-cols-2 font-ui">
         <div className="space-y-1.5">
           <Label htmlFor="upload-course">Mata kuliah</Label>
-          <select
-            id="upload-course"
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-          >
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.title}
-              </option>
-            ))}
-          </select>
+          <Select value={courseId} onValueChange={(val) => setCourseId(val)}>
+            <SelectTrigger
+              id="upload-course"
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+            >
+              <SelectValue placeholder="Pilih mata kuliah" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+              {courses.map((c) => (
+                <SelectItem key={c.id} value={c.id} className="rounded-lg text-sm">
+                  {c.code} — {c.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="upload-language">Bahasa narasi suara</Label>
-          <select
-            id="upload-language"
+          <Select
             value={language}
-            onChange={(e) =>
-              setLanguage(e.target.value === "en" ? "en" : "id")
-            }
-            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+            onValueChange={(val) => setLanguage(val as "id" | "en")}
           >
-            <option value="id">Bahasa Indonesia</option>
-            <option value="en">English</option>
-          </select>
+            <SelectTrigger
+              id="upload-language"
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+            >
+              <SelectValue placeholder="Pilih bahasa" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+              <SelectItem value="id" className="rounded-lg text-sm">
+                Bahasa Indonesia
+              </SelectItem>
+              <SelectItem value="en" className="rounded-lg text-sm">
+                English
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -253,7 +268,7 @@ export function UploadForm({
             ? "border-primary bg-brand-mint/50"
             : selectedFile
               ? "border-border bg-surface-subtle/60"
-              : "border-border bg-surface-subtle/40 hover:border-primary/50"
+              : "border-border bg-surface-subtle/40 hover:border-primary/60 hover:bg-surface-subtle/70 cursor-pointer"
         )}
       >
         <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />
@@ -280,14 +295,9 @@ export function UploadForm({
                 Hanya berkas format PDF (.pdf), maksimal 25 MB.
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => nativeFileRef.current?.click()}
-              className="mt-1 min-h-10 rounded-full border-border bg-card px-5 font-ui text-sm font-semibold hover:bg-brand-mint hover:text-brand-ink"
-            >
+            <span className="mt-1 inline-flex min-h-10 items-center justify-center rounded-full border border-border bg-card px-5 font-ui text-sm font-semibold shadow-xs hover:bg-brand-mint hover:text-brand-ink transition-colors">
               Pilih Berkas PDF
-            </Button>
+            </span>
           </div>
         ) : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -347,12 +357,17 @@ export function UploadForm({
       {/* Document Title & Sharing Toggle */}
       <div className="space-y-4 border-t border-border pt-5 font-ui">
         <div className="space-y-1.5">
-          <Label htmlFor="upload-title">Judul modul atau materi</Label>
+          <Label htmlFor="upload-title">
+            Judul modul atau materi{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              (otomatis dideteksi dari isi PDF jika dikosongkan)
+            </span>
+          </Label>
           <Input
             id="upload-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Misalnya: Modul 04 — Binary Search Trees"
+            placeholder="Otomatis mendeteksi judul di dalam isi dokumen PDF..."
             className="h-10 rounded-xl"
           />
         </div>

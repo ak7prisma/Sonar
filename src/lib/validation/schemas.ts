@@ -107,7 +107,21 @@ export const accessibilityPreferencesSchema = z.object({
 });
 
 export const chatRequestSchema = z.object({
-  documentId: z.string().uuid("A valid documentId is required for grounded Q&A."),
-  language: z.enum(["en", "id"]).default("en"),
-  messages: z.array(z.unknown()).min(1, "At least one message is required.").max(40),
+  documentId: z.string().min(1, "A valid documentId is required for grounded Q&A."),
+  documentTitle: z.string().optional(),
+  language: z.enum(["en", "id"]).default("id"),
+  messages: z.array(z.unknown()).min(1, "At least one message is required.").max(50),
+  blocks: z
+    .array(
+      z.object({
+        id: z.string().default("blk"),
+        pageNumber: z.number().default(1),
+        readingOrder: z.number().default(1),
+        blockType: z.string().default("paragraph"),
+        sectionHeading: z.string().nullable().optional(),
+        contentText: z.string().default(""),
+        spokenText: z.string().nullable().optional(),
+      })
+    )
+    .optional(),
 });

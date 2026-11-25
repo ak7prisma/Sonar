@@ -35,8 +35,14 @@ export interface OcrPageInput {
   language?: "id" | "en";
 }
 
+export interface OcrExtractionResult {
+  documentTitle?: string;
+  blocks: ExtractedBlockOutput[];
+}
+
 export interface OcrProvider {
   readonly name: string;
+  extractPage(input: OcrPageInput): Promise<OcrExtractionResult>;
   extractPageBlocks(input: OcrPageInput): Promise<ExtractedBlockOutput[]>;
 }
 
@@ -74,6 +80,12 @@ const headingLevelSchema = z
   });
 
 const extractedPageSchema = z.object({
+  documentTitle: z
+    .string()
+    .optional()
+    .describe(
+      "The primary document title, chapter heading, or lecture topic visibly printed in the content at the top of the page. Do NOT output a file name or file extension."
+    ),
   blocks: z.array(
     z.object({
       blockType: blockTypeSchema,
@@ -270,9 +282,13 @@ function generateFallbackOcrBlocks(input: OcrPageInput): ExtractedBlockOutput[] 
 export class GeminiVisionOcrProvider implements OcrProvider {
   readonly name = "gemini-multimodal-vision";
 
-  async extractPageBlocks(input: OcrPageInput): Promise<ExtractedBlockOutput[]> {
+  async extractPage(input: OcrPageInput): Promise<OcrExtractionResult> {
     if (!isAiConfigured()) {
-      return generateFallbackOcrBlocks(input);
+      const fallbackBlocks = generateFallbackOcrBlocks(input);
+      const title =
+        fallbackBlocks.find((b) => b.blockType === "heading")?.contentText ||
+        "Dokumen Akademik Aksesibel";
+      return { documentTitle: title, blocks: fallbackBlocks };
     }
 
     try {
@@ -296,7 +312,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
             input.courseContext ? `Course Context: ${input.courseContext}` : "",
             input.rawTextLayer
               ? `Extracted PDF Text Layer:\n${input.rawTextLayer}`
-              : "Scanned academic PDF document page. Extract full semantic layout, clean text, tables, and mathematical formulas in standard LaTeX.",
+              : "Scanned academic PDF document page. Extract primary printed title, full semantic layout, clean text, tables, and mathematical formulas in standard LaTeX.",
           ]
             .filter(Boolean)
             .join("\n\n"),
@@ -347,18 +363,31 @@ export class GeminiVisionOcrProvider implements OcrProvider {
         output: Output.object({
           schema: extractedPageSchema,
           name: "StructuredPageBlocks",
-          description: "Ordered accessible semantic blocks extracted from an academic PDF or scanned image.",
+          description: "Ordered accessible semantic blocks extracted from an academic PDF or scanned image with detected title.",
         }),
       });
 
-      return result.output.blocks;
+      const rawBlocks = result.output.blocks;
+      const detectedTitle =
+        result.output.documentTitle?.trim() ||
+        rawBlocks.find((b) => b.blockType === "heading")?.contentText ||
+        undefined;
+
+      return {
+        documentTitle: detectedTitle,
+        blocks: rawBlocks,
+      };
     } catch (err) {
       console.error("[GeminiVisionOcrProvider] Error during OCR extraction:", err);
 
       // If a real PDF text layer is available, convert it into real blocks rather than returning dummy data!
       if (input.rawTextLayer && input.rawTextLayer.trim().length > 0) {
         console.warn("[GeminiVisionOcrProvider] Using extracted PDF text layer fallback blocks.");
-        return convertRawTextLayerToBlocks(input.rawTextLayer);
+        const layerBlocks = convertRawTextLayerToBlocks(input.rawTextLayer);
+        const title =
+          layerBlocks.find((b) => b.blockType === "heading")?.contentText ||
+          undefined;
+        return { documentTitle: title, blocks: layerBlocks };
       }
 
       // If AI is configured but failed and there's no raw text layer, throw informative error
@@ -368,8 +397,17 @@ export class GeminiVisionOcrProvider implements OcrProvider {
         );
       }
 
-      return generateFallbackOcrBlocks(input);
+      const fallbackBlocks = generateFallbackOcrBlocks(input);
+      const title =
+        fallbackBlocks.find((b) => b.blockType === "heading")?.contentText ||
+        "Dokumen Akademik Aksesibel";
+      return { documentTitle: title, blocks: fallbackBlocks };
     }
+  }
+
+  async extractPageBlocks(input: OcrPageInput): Promise<ExtractedBlockOutput[]> {
+    const res = await this.extractPage(input);
+    return res.blocks;
   }
 }
 

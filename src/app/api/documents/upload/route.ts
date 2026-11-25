@@ -6,6 +6,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { documentUploadMetaSchema } from "@/lib/validation/schemas";
 import { validatePdfBuffer } from "@/features/pdf-processing/validator";
+import { extractPdfTextPages } from "@/features/pdf-processing/text-extractor";
 import { dispatchDocumentProcessingJob } from "@/features/pdf-processing/job-dispatcher";
 
 export async function POST(req: Request) {
@@ -131,12 +132,43 @@ export async function POST(req: Request) {
     ? (createAdminSupabaseClient() ?? supabase)
     : supabase;
 
+  // Intelligently detect real document title from PDF content if user didn't customize it
+  let finalTitle = parsedMeta.data.title;
+  const isGenericFilename =
+    finalTitle === file.name ||
+    finalTitle === file.name.replace(/\.pdf$/i, "") ||
+    finalTitle.toLowerCase().endsWith(".pdf");
+
+  if (isGenericFilename) {
+    try {
+      const pages = await extractPdfTextPages(new Uint8Array(buffer));
+      const firstPage = pages[0]?.rawText;
+      if (firstPage) {
+        const lines = firstPage.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const headingLine = lines.find(
+          (l) =>
+            l.length > 3 &&
+            l.length < 90 &&
+            (l.match(/^(bab|modul|chapter|bagian|section|\d+[\.\)])/i) ||
+              (l.toUpperCase() === l && l.length > 5 && !l.includes("=")))
+        );
+        if (headingLine) {
+          finalTitle = headingLine;
+        } else if (lines[0] && lines[0].length > 3 && lines[0].length < 90) {
+          finalTitle = lines[0];
+        }
+      }
+    } catch (pdfTitleErr) {
+      console.warn("[Upload Route] PDF text title detection skipped:", pdfTitleErr);
+    }
+  }
+
   const { data: createdDoc, error: docErr } = await dbClient
     .from("documents")
     .insert({
       course_id: parsedMeta.data.courseId,
       uploaded_by: auth.userId,
-      title: parsedMeta.data.title,
+      title: finalTitle,
       original_filename: file.name,
       storage_path: storagePath,
       file_hash: validation.fileHash,
