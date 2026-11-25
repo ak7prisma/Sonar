@@ -52,6 +52,8 @@ export function AuthForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<{
     email: string;
