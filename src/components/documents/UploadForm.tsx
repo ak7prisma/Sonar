@@ -8,16 +8,21 @@ import {
   CheckCircle2,
   FileText,
   FileUp,
-  Info,
-  Trash2,
+  Loader2,
   Upload,
+  X,
 } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
+import { validatePdfFile } from "@/lib/upload/pdf-validation";
+import { formatFileSize } from "@/lib/format";
 import type { CourseRow } from "@/lib/data/workspace";
 
 export function UploadForm({
@@ -31,13 +36,15 @@ export function UploadForm({
   const { announce } = useLiveAnnouncer();
   const nativeFileRef = useRef<HTMLInputElement>(null);
 
-  const [courseId, setCourseId] = useState(
-    defaultCourseId || courses[0]?.id || "cs-201"
-  );
+  const initialCourse =
+    defaultCourseId && courses.some((c) => c.id === defaultCourseId)
+      ? defaultCourseId
+      : (courses[0]?.id ?? "");
+
+  const [courseId, setCourseId] = useState(initialCourse);
   const [title, setTitle] = useState("");
-  const [academicLevel] = useState("s1");
-  const [language, setLanguage] = useState<"en" | "id">("id");
-  const [sharingOption, setSharingOption] = useState<"personal" | "shared">("shared");
+  const [language, setLanguage] = useState<"id" | "en">("id");
+  const [shareWithCourse, setShareWithCourse] = useState(true);
   const [notes, setNotes] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -45,71 +52,32 @@ export function UploadForm({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
+  const resetPicker = () => {
+    setSelectedFile(null);
+    if (nativeFileRef.current) nativeFileRef.current.value = "";
+  };
+
   const handleSelectedFile = async (file: File | undefined) => {
     if (!file) return;
     setErrorMessage(null);
+    setStatusMessage(null);
 
-    // 1. Validasi ekstensi nama berkas (.pdf)
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith(".pdf")) {
-      const msg = `Format file "${file.name}" tidak didukung. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`;
-      setErrorMessage(msg);
-      announce(msg, "assertive");
-      setSelectedFile(null);
-      if (nativeFileRef.current) nativeFileRef.current.value = "";
+    const validation = await validatePdfFile(file);
+    if (!validation.ok) {
+      setErrorMessage(validation.message);
+      announce(validation.message, "assertive");
+      resetPicker();
       return;
-    }
-
-    // 2. Validasi MIME type browser
-    const allowedMimes = ["application/pdf", "application/x-pdf", ""];
-    if (file.type && !allowedMimes.includes(file.type.toLowerCase())) {
-      const msg = `Tipe berkas (${file.type}) tidak valid. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`;
-      setErrorMessage(msg);
-      announce(msg, "assertive");
-      setSelectedFile(null);
-      if (nativeFileRef.current) nativeFileRef.current.value = "";
-      return;
-    }
-
-    // 3. Validasi ukuran berkas (tidak boleh kosong 0 byte)
-    if (file.size === 0) {
-      const msg = "File yang dipilih kosong (0 byte). Harap pilih file PDF perkuliahan yang valid.";
-      setErrorMessage(msg);
-      announce(msg, "assertive");
-      setSelectedFile(null);
-      if (nativeFileRef.current) nativeFileRef.current.value = "";
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      const msg = "Ukuran file melebihi batas maksimal 25 MB.";
-      setErrorMessage(msg);
-      announce(msg, "assertive");
-      return;
-    }
-
-    // 4. Validasi Magic Header Signature (%PDF-)
-    try {
-      const headerSlice = file.slice(0, 5);
-      const buffer = await headerSlice.arrayBuffer();
-      const header = new TextDecoder("ascii").decode(buffer);
-      if (!header.startsWith("%PDF-")) {
-        const msg = `Berkas "${file.name}" bukan dokumen PDF asli yang valid (signature %PDF- tidak ditemukan). Hanya dokumen PDF asli yang diperbolehkan masuk.`;
-        setErrorMessage(msg);
-        announce(msg, "assertive");
-        setSelectedFile(null);
-        if (nativeFileRef.current) nativeFileRef.current.value = "";
-        return;
-      }
-    } catch {
-      // Abaikan jika lingkungan runtime tidak mengizinkan pembacaan slice
     }
 
     setSelectedFile(file);
     if (!title.trim()) {
       setTitle(file.name.replace(/\.pdf$/i, ""));
     }
-    announce(`File PDF terpilih: ${file.name}. Validasi PDF berhasil.`);
+    announce(
+      `Berkas ${file.name} siap diproses, ukuran ${formatFileSize(file.size)}.`,
+      "polite"
+    );
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -118,18 +86,16 @@ export function UploadForm({
     noClick: true,
     noKeyboard: true,
     onDrop: (accepted) => {
-      if (accepted && accepted[0]) {
-        void handleSelectedFile(accepted[0]);
-      }
+      if (accepted[0]) void handleSelectedFile(accepted[0]);
     },
-    onDropRejected: (fileRejections) => {
-      const rejectedFile = fileRejections[0]?.file;
-      const msg = rejectedFile
-        ? `Format berkas "${rejectedFile.name}" ditolak. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.`
-        : "Format berkas tidak didukung. Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.";
+    onDropRejected: (rejections) => {
+      const rejected = rejections[0]?.file;
+      const msg = rejected
+        ? `Format berkas "${rejected.name}" ditolak. Hanya dokumen PDF (.pdf) yang diperbolehkan.`
+        : "Format berkas tidak didukung. Hanya dokumen PDF (.pdf) yang diperbolehkan.";
       setErrorMessage(msg);
       announce(msg, "assertive");
-      setSelectedFile(null);
+      resetPicker();
     },
   });
 
@@ -139,343 +105,317 @@ export function UploadForm({
     setStatusMessage(null);
 
     if (!courseId) {
-      const msg = "Pilih mata kuliah terlebih dahulu sebelum memproses.";
+      const msg = "Pilih mata kuliah terlebih dahulu.";
       setErrorMessage(msg);
       announce(msg, "assertive");
       return;
     }
 
     if (!selectedFile) {
-      const msg = "Pilih atau seret file PDF sebelum mengunggah. Hanya file PDF yang diperbolehkan masuk.";
-      setErrorMessage(msg);
-      announce(msg, "assertive");
-      return;
-    }
-
-    if (!selectedFile.name.toLowerCase().endsWith(".pdf")) {
-      const msg = "Hanya berkas dokumen PDF (.pdf) yang diperbolehkan masuk.";
+      const msg = "Pilih berkas PDF kuliah sebelum mengirim.";
       setErrorMessage(msg);
       announce(msg, "assertive");
       return;
     }
 
     setSubmitting(true);
-    setUploadProgress(20);
-    announce("Memvalidasi signature PDF dan memulai analisis semantik...", "polite");
+    setUploadProgress(25);
+    announce("Mengunggah berkas PDF dan memulai konversi aksesibilitas…", "polite");
 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("courseId", courseId);
-      formData.append("title", title.trim() || selectedFile.name);
+      formData.append(
+        "title",
+        title.trim() || selectedFile.name.replace(/\.pdf$/i, "")
+      );
       formData.append("language", language);
-      formData.append("academicLevel", academicLevel);
-      formData.append("sharingOption", sharingOption);
-      formData.append("reviewerNotes", notes);
+      formData.append("academicLevel", "s1");
+      formData.append("sharingOption", shareWithCourse ? "shared" : "personal");
+      formData.append("reviewerNotes", notes.trim());
 
-      setUploadProgress(50);
+      setUploadProgress(55);
       const response = await fetch("/api/documents/upload", {
         method: "POST",
         body: formData,
       });
 
-      const payload = (await response.json()) as {
+      let payload: {
         error?: string;
         duplicate?: boolean;
         documentId?: string;
         message?: string;
-      };
+      } = {};
+      try {
+        payload = (await response.json()) as typeof payload;
+      } catch {
+        payload = {};
+      }
 
       if (!response.ok) {
-        // Fallback for demo when backend is offline
-        setUploadProgress(100);
-        setStatusMessage("Materi berhasil diproses secara lokal dan siap dibaca di Reader!");
-        announce("Materi siap dibaca.", "polite");
-        setTimeout(() => {
-          router.push(`/reader/doc-cs-01`);
-        }, 800);
+        const msg =
+          payload.error ??
+          "Gagal mengunggah dokumen. Pastikan Anda sudah masuk dan terdaftar pada mata kuliah ini.";
+        setErrorMessage(msg);
+        announce(msg, "assertive");
+        setUploadProgress(0);
         return;
       }
 
       setUploadProgress(100);
       const okMsg = payload.duplicate
-        ? payload.message ?? "Dokumen yang sama telah ditemukan dan dialihkan ke versi terverifikasi."
-        : "PDF berhasil diunggah dan siap dibaca di Accessible Reader.";
+        ? (payload.message ??
+          "Dokumen identik sudah tersedia di mata kuliah ini. Membuka versi yang ada.")
+        : "Dokumen berhasil diunggah dan sedang disiapkan untuk pembaca.";
       setStatusMessage(okMsg);
       announce(okMsg, "polite");
 
-      setTimeout(() => {
-        if (payload.documentId) {
-          router.push(`/reader/${payload.documentId}`);
-        } else {
-          router.push("/reader/doc-cs-01");
-        }
-      }, 800);
+      if (payload.documentId) {
+        router.push(`/reader/${payload.documentId}`);
+      } else {
+        router.push(`/courses/${courseId}`);
+      }
     } catch {
-      // Local fallback for interactive demo testing
-      setUploadProgress(100);
-      setStatusMessage("Pemrosesan lokal selesai. Mengalihkan ke Document Reader...");
-      announce("Mengalihkan ke Document Reader.", "polite");
-      setTimeout(() => {
-        router.push("/reader/doc-cs-01");
-      }, 800);
+      const msg =
+        "Koneksi terputus saat mengunggah dokumen. Periksa jaringan Anda lalu coba lagi.";
+      setErrorMessage(msg);
+      announce(msg, "assertive");
+      setUploadProgress(0);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 font-sans" noValidate>
-      {/* Top Notice Banner — (Inspired by Image 3 ZeroEssay banner) */}
-      <div className="rounded-xl border border-primary/25 bg-brand-mint/70 dark:bg-secondary/60 p-4 text-xs text-foreground/90 space-y-1">
-        <div className="flex items-center gap-2 font-bold font-ui text-primary">
-          <Info className="size-4 shrink-0" aria-hidden="true" />
-          <span>Konfigurasi Ekstraksi Teks, Tabel, dan MathML</span>
-        </div>
-        <p className="leading-relaxed font-sans text-muted-foreground">
-          Dokumen akan dianalisis menggunakan OCR multimodal untuk mendeteksi heading, memulihkan tabel baris-kolom,
-          mengonversi formula ke MathML standar, dan menghasilkan narasi audio.
-        </p>
-      </div>
-
-      {errorMessage && (
+    <form
+      onSubmit={handleSubmit}
+      aria-busy={submitting}
+      noValidate
+      className="rounded-3xl border border-border bg-card p-5 shadow-card sm:p-7 space-y-5 font-sans"
+    >
+      {errorMessage ? (
         <Alert variant="destructive" role="alert">
           <AlertCircle className="size-4" aria-hidden="true" />
-          <AlertTitle>Kesalahan Validasi Unggah</AlertTitle>
+          <AlertTitle>Gagal memproses unggahan</AlertTitle>
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
-      )}
+      ) : null}
 
-      {statusMessage && (
-        <Alert className="border-success/40 bg-success/10" role="status">
-          <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
-          <AlertTitle>Status Pemrosesan</AlertTitle>
+      {statusMessage ? (
+        <Alert className="border-brand-teal/40 bg-brand-mint text-brand-ink" role="status">
+          <CheckCircle2 className="size-4 text-brand-teal" aria-hidden="true" />
+          <AlertTitle>Unggahan diterima</AlertTitle>
           <AlertDescription>{statusMessage}</AlertDescription>
         </Alert>
-      )}
+      ) : null}
 
-      {/* SECTION 1: Document & Academic Settings (Inspired by ZeroEssay) */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-5">
-        <h2 className="font-heading text-lg font-bold text-foreground">
-          1. Pengaturan Mata Kuliah &amp; Izin Berbagi
-        </h2>
+      {/* Top Compact Option Selectors */}
+      <div className="grid gap-4 sm:grid-cols-2 font-ui">
+        <div className="space-y-1.5">
+          <Label htmlFor="upload-course">Mata kuliah</Label>
+          <select
+            id="upload-course"
+            value={courseId}
+            onChange={(e) => setCourseId(e.target.value)}
+            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+          >
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} — {c.title}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 font-ui">
-          <div className="space-y-1.5">
-            <Label htmlFor="upload-course">Pilih Mata Kuliah</Label>
-            <select
-              id="upload-course"
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} — {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="upload-language">Bahasa Utama Narasi Audio</Label>
-            <select
-              id="upload-language"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "id")}
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <option value="id">Bahasa Indonesia (id) — Standar</option>
-              <option value="en">English (en)</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="upload-title">Judul Modul / Materi Perkuliahan</Label>
-            <Input
-              id="upload-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Contoh: Modul 04 — Binary Search Trees & AVL Balancing"
-            />
-          </div>
-
-          {/* Sharing & Volunteer Review Permission (Crucial user requirement) */}
-          <div className="space-y-2 sm:col-span-2 pt-2 border-t border-border/60">
-            <Label className="text-xs font-bold uppercase tracking-wider text-primary">
-              Izin Berbagi &amp; Pengajuan Review Volunteer
-            </Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div
-                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${sharingOption === "shared"
-                  ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
-                  : "border-border bg-card hover:bg-muted/40"
-                  }`}
-              >
-                <input
-                  id="sharing-shared"
-                  type="radio"
-                  name="sharing"
-                  value="shared"
-                  checked={sharingOption === "shared"}
-                  onChange={() => setSharingOption("shared")}
-                  className="mt-1 size-4 accent-primary"
-                />
-                <label htmlFor="sharing-shared" className="space-y-1 text-xs cursor-pointer">
-                  <span className="font-bold text-foreground block text-sm">
-                    Ajukan Review Volunteer &amp; Bagikan Se-Kelas (Direkomendasikan)
-                  </span>
-                  <span className="text-muted-foreground leading-relaxed block">
-                    Dokumen akan masuk ke antrean volunteer untuk diverifikasi, lalu dapat digunakan bersama
-                    oleh seluruh mahasiswa tunanetra yang terdaftar di mata kuliah ini.
-                  </span>
-                </label>
-              </div>
-
-              <div
-                className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${sharingOption === "personal"
-                  ? "border-primary bg-secondary/40 ring-1 ring-primary/30"
-                  : "border-border bg-card hover:bg-muted/40"
-                  }`}
-              >
-                <input
-                  id="sharing-personal"
-                  type="radio"
-                  name="sharing"
-                  value="personal"
-                  checked={sharingOption === "personal"}
-                  onChange={() => setSharingOption("personal")}
-                  className="mt-1 size-4 accent-primary"
-                />
-                <label htmlFor="sharing-personal" className="space-y-1 text-xs cursor-pointer">
-                  <span className="font-bold text-foreground block text-sm">
-                    Dokumen Pribadi (Hanya Saya)
-                  </span>
-                  <span className="text-muted-foreground leading-relaxed block">
-                    Materi hanya dikonversi untuk konsumsi pribadi dan tidak dipublikasikan ke perpustakaan
-                    bersama mata kuliah.
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="upload-language">Bahasa narasi suara</Label>
+          <select
+            id="upload-language"
+            value={language}
+            onChange={(e) =>
+              setLanguage(e.target.value === "en" ? "en" : "id")
+            }
+            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+          >
+            <option value="id">Bahasa Indonesia</option>
+            <option value="en">English</option>
+          </select>
         </div>
       </div>
 
-      {/* SECTION 2: Upload PDF Source Dropzone (Inspired by ZeroEssay) */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4 font-ui">
-        <h2 className="font-heading text-lg font-bold text-foreground">
-          2. Unggah Berkas PDF Sumber
-        </h2>
+      {/* File Dropzone or Selected File Card */}
+      <div
+        {...getRootProps()}
+        className={cn(
+          "rounded-2xl border-2 border-dashed p-6 transition-colors",
+          isDragActive
+            ? "border-primary bg-brand-mint/50"
+            : selectedFile
+              ? "border-border bg-surface-subtle/60"
+              : "border-border bg-surface-subtle/40 hover:border-primary/50"
+        )}
+      >
+        <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />
+        <input
+          ref={nativeFileRef}
+          id="upload-pdf-file"
+          type="file"
+          accept=".pdf,application/pdf"
+          aria-label="Pilih berkas PDF perkuliahan"
+          className="sr-only"
+          onChange={(e) => void handleSelectedFile(e.target.files?.[0])}
+        />
 
-        <div
-          {...getRootProps()}
-          className={`rounded-2xl border-2 border-dashed p-8 transition-colors text-center ${isDragActive
-            ? "border-primary bg-secondary/60"
-            : "border-primary/40 bg-brand-mint/35 dark:bg-secondary/20"
-            }`}
-        >
-          <input {...getInputProps()} aria-hidden="true" tabIndex={-1} />
-          <input
-            ref={nativeFileRef}
-            id="native-pdf-input"
-            type="file"
-            accept=".pdf,application/pdf"
-            aria-label="Pilih berkas PDF perkuliahan"
-            tabIndex={-1}
-            className="sr-only"
-            onChange={(e) => handleSelectedFile(e.target.files?.[0])}
-          />
-
-          <div className="flex flex-col items-center gap-3">
-            <div className="size-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-              <Upload className="size-6" aria-hidden="true" />
-            </div>
-
+        {!selectedFile ? (
+          <div className="flex flex-col items-center gap-3 py-3 text-center">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-mint text-brand-teal">
+              <Upload className="size-5" aria-hidden="true" />
+            </span>
             <div className="space-y-1">
               <p className="font-heading text-base font-bold text-foreground">
-                Klik untuk memilih file atau seret file PDF ke sini
+                Pilih berkas PDF atau seret ke area ini
               </p>
-              <p className="text-xs text-muted-foreground font-sans">
-                Maksimal ukuran file: 25MB &bull; Khusus berkas format dokumen PDF (.pdf)
+              <p className="text-sm text-muted-foreground">
+                Hanya berkas format PDF (.pdf), maksimal 25 MB.
               </p>
             </div>
-
             <Button
               type="button"
               variant="outline"
               onClick={() => nativeFileRef.current?.click()}
-              className="mt-2 font-semibold border-primary/30 hover:bg-primary hover:text-primary-foreground"
+              className="mt-1 min-h-10 rounded-full border-border bg-card px-5 font-ui text-sm font-semibold hover:bg-brand-mint hover:text-brand-ink"
             >
-              Pilih File PDF dari Komputer
+              Pilih Berkas PDF
             </Button>
           </div>
-        </div>
-
-        {/* Selected File Card */}
-        {selectedFile && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-secondary/40 p-3.5">
-            <div className="flex items-center gap-3 min-w-0">
-              <FileText className="size-5 text-primary shrink-0" aria-hidden="true" />
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-mint text-brand-teal">
+                {submitting ? (
+                  <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <FileText className="size-5" aria-hidden="true" />
+                )}
+              </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-foreground">{selectedFile.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB &bull; PDF Dokumen
+                <p className="truncate text-sm font-semibold text-foreground font-ui">
+                  {selectedFile.name}
                 </p>
+                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground font-ui">
+                  <span className="rounded-md bg-tint-blue px-1.5 py-0.5 font-semibold text-brand-ink">
+                    PDF
+                  </span>
+                  <span>
+                    {submitting ? "Mengunggah…" : formatFileSize(selectedFile.size)}
+                  </span>
+                </div>
               </div>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setSelectedFile(null)}
-              aria-label="Hapus file terpilih"
-              className="text-muted-foreground hover:text-destructive shrink-0"
-            >
-              <Trash2 className="size-4" />
-            </Button>
+
+            <div className="flex items-center gap-2 font-ui">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={submitting}
+                onClick={() => nativeFileRef.current?.click()}
+                className="min-h-10 rounded-full px-4 text-xs"
+              >
+                Ganti berkas
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={submitting}
+                aria-label="Hapus berkas terpilih"
+                onClick={() => {
+                  resetPicker();
+                  announce("Berkas terpilih dihapus.", "polite");
+                }}
+                className="size-10 rounded-full text-muted-foreground hover:text-destructive"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* SECTION 3: Reviewer Notes (Optional) */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-3 font-ui">
-        <h2 className="font-heading text-lg font-bold text-foreground">
-          3. Catatan Aksesibilitas untuk Reviewer (Opsional)
-        </h2>
-        <p className="text-xs text-muted-foreground font-sans">
-          Berikan informasi bagian mana yang memerlukan perhatian khusus dari volunteer (misalnya nomor halaman rumus sulit atau tabel kompleks).
-        </p>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Contoh: Mohon perhatikan diagram pohon biner pada halaman 3 dan rumus faktor keseimbangan di halaman 1."
-          rows={3}
-          className="w-full rounded-lg border border-input bg-background p-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring font-sans"
-        />
+      {/* Document Title & Sharing Toggle */}
+      <div className="space-y-4 border-t border-border pt-5 font-ui">
+        <div className="space-y-1.5">
+          <Label htmlFor="upload-title">Judul modul atau materi</Label>
+          <Input
+            id="upload-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Misalnya: Modul 04 — Binary Search Trees"
+            className="h-10 rounded-xl"
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-surface-subtle/70 px-4 py-3.5">
+          <div className="space-y-0.5">
+            <Label htmlFor="upload-sharing-switch" className="text-sm font-semibold">
+              Ajukan review volunteer dan bagikan ke kelas
+            </Label>
+            <p className="text-xs text-muted-foreground font-sans">
+              {shareWithCourse
+                ? "Setelah disetujui volunteer, materi dapat digunakan kembali oleh mahasiswa lain pada mata kuliah ini."
+                : "Materi hanya disimpan untuk akses pribadi Anda dan tidak muncul di perpustakaan kelas."}
+            </p>
+          </div>
+          <Switch
+            id="upload-sharing-switch"
+            checked={shareWithCourse}
+            onCheckedChange={setShareWithCourse}
+          />
+        </div>
+
+        <details className="rounded-2xl border border-border bg-background px-4 py-3">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">
+            Tambah catatan untuk volunteer (opsional)
+          </summary>
+          <div className="mt-3 space-y-1.5">
+            <Label htmlFor="upload-reviewer-notes" className="sr-only">
+              Catatan untuk volunteer
+            </Label>
+            <Textarea
+              id="upload-reviewer-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Tulis nomor halaman yang memiliki rumus sulit, tabel kompleks, atau diagram penting."
+              className="font-sans text-sm"
+            />
+          </div>
+        </details>
       </div>
 
-      {submitting && (
-        <div className="space-y-2 rounded-xl border border-primary/20 bg-secondary/30 p-4" aria-live="polite">
-          <div className="flex justify-between text-xs font-semibold font-ui text-foreground">
-            <span>Memproses dan mengonversi struktur PDF ke MathML...</span>
-            <span>{uploadProgress}%</span>
+      {submitting ? (
+        <div className="space-y-2 rounded-2xl bg-brand-mint/50 p-4" aria-live="polite">
+          <div className="flex items-center justify-between text-xs font-semibold text-brand-ink font-ui">
+            <span>Mengunggah berkas dan menjadwalkan konversi…</span>
+            <span className="tabular-nums">{uploadProgress}%</span>
           </div>
-          <Progress value={uploadProgress} aria-label="Progres unggah PDF" />
+          <Progress value={uploadProgress} aria-label="Progres unggah dokumen" />
         </div>
-      )}
+      ) : null}
 
-      <Button
-        type="submit"
-        size="lg"
-        disabled={submitting}
-        className="w-full sm:w-auto h-12 px-8 font-ui font-semibold shadow-md text-base"
-      >
-        <FileUp className="size-5 mr-2" aria-hidden="true" />
-        <span>
-          {submitting ? "Sedang Memproses Dokumen..." : "Mulai Pemrosesan & Konversi Aksesibilitas"}
-        </span>
-      </Button>
+      <div className="flex justify-end pt-1 font-ui">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={submitting}
+          className="min-h-11 rounded-full px-6 text-sm font-semibold shadow-xs"
+        >
+          <FileUp className="size-4" aria-hidden="true" />
+          <span>{submitting ? "Memproses…" : "Proses Dokumen"}</span>
+        </Button>
+      </div>
     </form>
   );
 }

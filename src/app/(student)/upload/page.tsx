@@ -5,13 +5,13 @@ import { UploadHub } from "@/components/upload/UploadHub";
 import { loadWorkspaceSnapshot, FALLBACK_COURSES } from "@/lib/data/workspace";
 
 export const metadata: Metadata = {
-  title: "Unggah & Scan Dokumen",
+  title: "Unggah Materi Kuliah",
 };
 
 async function UploadBody({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string; mode?: "ocr" | "pdf" }>;
+  searchParams: Promise<{ courseId?: string; mode?: string }>;
 }) {
   const [snapshot, params] = await Promise.all([
     loadWorkspaceSnapshot(),
@@ -19,26 +19,23 @@ async function UploadBody({
   ]);
 
   const courses = snapshot.courses.length > 0 ? snapshot.courses : FALLBACK_COURSES;
+  const initialMode = params.mode === "ocr" ? "ocr" : "pdf";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 font-sans">
-      <div className="space-y-1 border-b border-border pb-4">
-        <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">
-          Alur Pemrosesan Dokumen Aksesibel
-        </span>
+    <div className="mx-auto w-full max-w-3xl space-y-6 py-2 font-sans sm:py-6">
+      <header className="space-y-2 text-center">
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-          Digitalisasi &amp; Scan Materi
+          Unggah Materi Kuliah
         </h1>
-        <p className="text-sm text-muted-foreground font-sans">
-          Scan halaman buku/rumus matematika dengan kamera atau unggah berkas PDF perkuliahan.
-          SONAR otomatis mengekstrak blok semantik, mengonversi formula ke MathML, dan menyediakan narasi suara.
+        <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Ubah berkas PDF perkuliahan atau hasil pindai menjadi dokumen terstruktur dengan MathML dan narasi suara.
         </p>
-      </div>
+      </header>
 
       <UploadHub
         courses={courses}
         defaultCourseId={params.courseId}
-        initialMode={params.mode === "pdf" ? "pdf" : "ocr"}
+        initialMode={initialMode}
       />
     </div>
   );
@@ -47,11 +44,17 @@ async function UploadBody({
 export default function UploadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string }>;
+  searchParams: Promise<{ courseId?: string; mode?: string }>;
 }) {
   return (
-    <WorkspaceShell pageSectionLabel="Unggah Dokumen">
-      <Suspense fallback={<p className="text-sm text-muted-foreground font-ui">Memuat formulir unggah...</p>}>
+    <WorkspaceShell>
+      <Suspense
+        fallback={
+          <p className="mx-auto max-w-3xl py-6 text-center text-sm text-muted-foreground font-ui">
+            Memuat ruang unggah dokumen…
+          </p>
+        }
+      >
         <UploadBody searchParams={searchParams} />
       </Suspense>
     </WorkspaceShell>

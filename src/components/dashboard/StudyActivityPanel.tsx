@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -21,7 +20,7 @@ export interface ActivityMetricPoint {
 
 export function StudyActivityPanel({
   data,
-  title = "Course Accessibility Pipeline Summary",
+  title = "Ringkasan Materi per Kuliah",
 }: {
   data: ActivityMetricPoint[];
   title?: string;
@@ -31,126 +30,147 @@ export function StudyActivityPanel({
   const hasData = data.some((d) => d.documents > 0 || d.verifiedBlocks > 0);
 
   return (
-    <section
-      aria-labelledby="activity-panel-heading"
-      className="rounded-xl border bg-card p-5"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2
-            id="activity-panel-heading"
-            className="font-heading text-lg font-semibold text-foreground"
-          >
-            {title}
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Includes full keyboard-accessible tabular data representation.
+          <h3 className="font-heading text-base font-bold text-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground font-ui">
+            Total dokumen vs terverifikasi
           </p>
         </div>
 
         <div
           role="group"
-          aria-label="Visualization display format"
-          className="inline-flex gap-1 rounded-lg border bg-surface-subtle p-1"
+          aria-label="Format tampilan ringkasan materi"
+          className="inline-flex gap-1 rounded-xl border border-border bg-surface-subtle p-1 font-ui"
         >
           <Button
-            size="xs"
+            type="button"
+            size="sm"
             variant={viewMode === "chart" ? "default" : "ghost"}
             aria-pressed={viewMode === "chart"}
             onClick={() => setViewMode("chart")}
+            className="h-9 rounded-lg px-2.5 text-xs"
           >
-            <BarChart3 className="mr-1 size-3.5" aria-hidden="true" />
-            Chart
+            <BarChart3 className="size-3.5" aria-hidden="true" />
+            <span>Grafik</span>
           </Button>
           <Button
-            size="xs"
+            type="button"
+            size="sm"
             variant={viewMode === "table" ? "default" : "ghost"}
             aria-pressed={viewMode === "table"}
             onClick={() => setViewMode("table")}
+            className="h-9 rounded-lg px-2.5 text-xs"
           >
-            <Table2 className="mr-1 size-3.5" aria-hidden="true" />
-            Data table
+            <Table2 className="size-3.5" aria-hidden="true" />
+            <span>Tabel</span>
           </Button>
         </div>
       </div>
 
       {!hasData ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          No course documents have been processed yet. Upload a PDF to track
-          conversion and volunteer verification metrics here.
+        <p className="rounded-xl bg-surface-subtle px-4 py-8 text-center text-sm text-muted-foreground">
+          Belum ada dokumen mata kuliah yang diproses. Unggah PDF untuk memantau progres verifikasi di sini.
         </p>
       ) : viewMode === "chart" ? (
-        <div className="mt-4">
+        <div className="rounded-xl bg-surface-subtle/60 p-3">
           <div
             role="img"
             aria-label={`${title}: ${data
               .map(
                 (d) =>
-                  `${d.label}: ${d.documents} documents, ${d.verifiedBlocks} verified`
+                  `${d.label}: ${d.documents} total materi, ${d.verifiedBlocks} terverifikasi`
               )
               .join("; ")}`}
-            className="h-64 w-full"
+            className="h-48 w-full min-w-0"
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={12} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} allowDecimals={false} />
+            <ResponsiveContainer width="100%" height={192}>
+              <BarChart data={data} barGap={6}>
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  stroke="var(--muted-foreground)"
+                  fontSize={12}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  stroke="var(--muted-foreground)"
+                  fontSize={12}
+                  allowDecimals={false}
+                  width={26}
+                />
                 <Tooltip
+                  cursor={{ fill: "var(--muted)", opacity: 0.4 }}
                   contentStyle={{
                     backgroundColor: "var(--popover)",
                     borderColor: "var(--border)",
                     color: "var(--popover-foreground)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
+                    fontSize: "12px",
                   }}
                 />
                 <Bar
                   dataKey="documents"
-                  name="Documents"
-                  fill="var(--chart-1)"
-                  radius={[4, 4, 0, 0]}
+                  name="Total Materi"
+                  fill="var(--chart-3)"
+                  radius={[6, 6, 0, 0]}
                 />
                 <Bar
                   dataKey="verifiedBlocks"
-                  name="Verified"
-                  fill="var(--chart-3)"
-                  radius={[4, 4, 0, 0]}
+                  name="Terverifikasi"
+                  fill="var(--chart-1)"
+                  radius={[6, 6, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground font-ui">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full bg-brand-blue" aria-hidden="true" />
+              <span>Total Materi</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full bg-brand-teal" aria-hidden="true" />
+              <span>Terverifikasi</span>
+            </span>
+          </div>
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full border-collapse text-left text-sm">
             <caption className="sr-only">{title}</caption>
             <thead>
-              <tr className="border-b">
-                <th scope="col" className="py-2 pr-4 font-semibold">
-                  Category
+              <tr className="border-b border-border bg-surface-subtle text-xs font-semibold text-muted-foreground font-ui">
+                <th scope="col" className="px-3 py-2.5">
+                  Mata Kuliah
                 </th>
-                <th scope="col" className="py-2 pr-4 font-semibold">
-                  Documents
+                <th scope="col" className="px-3 py-2.5">
+                  Total Materi
                 </th>
-                <th scope="col" className="py-2 font-semibold">
-                  Verified
+                <th scope="col" className="px-3 py-2.5">
+                  Terverifikasi
                 </th>
               </tr>
             </thead>
             <tbody>
               {data.map((row) => (
-                <tr key={row.label} className="border-b last:border-b-0">
-                  <th scope="row" className="py-2 pr-4 font-medium">
+                <tr key={row.label} className="border-b border-border/60 last:border-b-0">
+                  <th scope="row" className="px-3 py-2.5 font-semibold text-foreground">
                     {row.label}
                   </th>
-                  <td className="py-2 pr-4 tabular-nums">{row.documents}</td>
-                  <td className="py-2 tabular-nums">{row.verifiedBlocks}</td>
+                  <td className="px-3 py-2.5 tabular-nums text-foreground">{row.documents}</td>
+                  <td className="px-3 py-2.5 tabular-nums font-semibold text-primary">
+                    {row.verifiedBlocks}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-    </section>
+    </div>
   );
 }

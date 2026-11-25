@@ -2,25 +2,24 @@ import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { ArrowRight, CheckCircle2, FileUp, GraduationCap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, FileUp } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
 import { loadWorkspaceSnapshot, FALLBACK_COURSES } from "@/lib/data/workspace";
-import { SHARED_REVIEWED_MATERIALS } from "@/lib/data/course-materials";
+import { getCourseToneStyles } from "@/lib/course-theme";
 import { APP_IMAGES } from "@/lib/images";
+import { cn } from "cn";
 
 export const metadata: Metadata = {
-  title: "Mata Kuliah & Shared Materials",
-};
-
-const COURSE_IMAGES: Record<string, { src: string; alt: string; caption?: string }> = {
-  "cs-201": APP_IMAGES.courseCS,
-  "math-105": APP_IMAGES.courseMath,
-  "stat-210": APP_IMAGES.courseStat,
+  title: "Mata Kuliah & Materi",
 };
 
 function getCourseImage(course: { id: string; code: string; discipline: string }) {
-  if (COURSE_IMAGES[course.id]) return COURSE_IMAGES[course.id];
+  if (course.id === "math-105") return APP_IMAGES.courseMath;
+  if (course.id === "stat-210") return APP_IMAGES.courseStat;
+  if (course.id === "cs-201") return APP_IMAGES.courseCS;
+
   const code = course.code.toLowerCase();
   const disc = course.discipline.toLowerCase();
   if (code.includes("math") || disc.includes("matematika")) return APP_IMAGES.courseMath;
@@ -34,46 +33,36 @@ async function CoursesBody() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 font-sans">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-border pb-6">
-        <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-primary font-ui">
-            Katalog Mata Kuliah &bull; {courses.length} Kelas Tersedia (Supabase)
-          </span>
-          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-            Mata Kuliah &amp; Shared Reviewed Materials
-          </h1>
-          <p className="text-sm text-muted-foreground font-sans">
-            Akses materi perkuliahan terhubung ke Supabase yang telah diverifikasi volunteer dan dapat digunakan bersama oleh mahasiswa tunanetra yang terdaftar.
-          </p>
-        </div>
-
-        <Button asChild className="font-ui font-semibold shadow-xs">
-          <Link href="/upload">
-            <FileUp className="size-4 mr-2" aria-hidden="true" />
-            <span>Unggah Materi Baru</span>
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Mata Kuliah & Materi Terverifikasi"
+        description="Akses materi perkuliahan yang telah diperiksa volunteer dan dapat digunakan kembali oleh mahasiswa terdaftar pada kelas yang sama."
+        actions={
+          <Button asChild className="min-h-10 rounded-full px-5 font-ui font-semibold">
+            <Link href="/upload">
+              <FileUp className="size-4" aria-hidden="true" />
+              <span>Unggah Materi Baru</span>
+            </Link>
+          </Button>
+        }
+      />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => {
           const courseImage = getCourseImage(course);
-          const docsCount =
-            snapshot.documents.filter(
-              (d) =>
-                d.course_id === course.id ||
-                d.course_id === course.code.toLowerCase().replace(/\s+/g, "-")
-            ).length ||
-            SHARED_REVIEWED_MATERIALS.filter(
-              (m) =>
-                m.courseId === course.id ||
-                m.courseId === course.code.toLowerCase().replace(/\s+/g, "-")
-            ).length;
+          const tone = getCourseToneStyles(course);
+          const courseSlug = course.code.toLowerCase().replace(/\s+/g, "-");
+          const docs = snapshot.documents.filter(
+            (d) => d.course_id === course.id || d.course_id === courseSlug
+          );
+          const verifiedCount = docs.filter(
+            (d) => d.review_status === "verified"
+          ).length;
+          const pendingCount = docs.length - verifiedCount;
 
           return (
             <article
               key={course.id}
-              className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-md"
+              className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-colors hover:border-primary/50"
             >
               <div>
                 <div className="relative aspect-16/9 w-full overflow-hidden bg-muted">
@@ -84,49 +73,70 @@ async function CoursesBody() {
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <span className="rounded bg-primary px-2 py-0.5 text-[11px] font-bold font-ui uppercase">
-                      {course.code}
-                    </span>
-                    <p className="text-xs text-white/90 font-ui mt-1">{course.discipline}</p>
-                  </div>
                 </div>
 
-                <div className="p-5 space-y-3">
-                  <h2 className="font-heading text-lg font-bold text-foreground leading-snug">
-                    <Link href={`/courses/${course.id}`} className="hover:text-primary transition-colors">
+                <div className="space-y-3 p-5">
+                  <div className="flex flex-wrap items-center gap-2 font-ui">
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        tone.surface,
+                        "text-brand-ink"
+                      )}
+                    >
+                      {course.code}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {course.discipline}
+                    </span>
+                  </div>
+
+                  <h2 className="font-heading text-lg font-bold leading-snug text-foreground">
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="hover:text-primary hover:underline"
+                    >
                       {course.title}
                     </Link>
                   </h2>
 
-                  <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground font-sans">
+                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                     {course.description}
                   </p>
 
-                  <div className="space-y-1.5 pt-2 border-t border-border/60 text-xs font-ui">
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="size-3.5 text-success" />
-                        <span>Materi Terverifikasi (Reusable)</span>
+                  <div className="space-y-2 border-t border-border/70 pt-3 text-sm font-ui">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <CheckCircle2
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                        <span>Materi terverifikasi</span>
                       </span>
-                      <strong className="text-foreground">{docsCount} Dokumen</strong>
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {verifiedCount} dokumen
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <GraduationCap className="size-3.5 text-primary" />
-                        <span>Koleksi Terbuka</span>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <Clock className="size-4 text-muted-foreground" aria-hidden="true" />
+                        <span>Dalam proses review</span>
                       </span>
-                      <span className="text-primary font-semibold">Terkoneksi Supabase</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {pendingCount} dokumen
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-border/60 p-5 pt-3 bg-surface-subtle/40 font-ui">
-                <Button asChild size="sm" className="w-full justify-between font-semibold">
+              <div className="border-t border-border/70 bg-surface-subtle/50 p-4 font-ui">
+                <Button
+                  asChild
+                  className="min-h-10 w-full justify-between rounded-full px-4 font-semibold"
+                >
                   <Link href={`/courses/${course.id}`}>
-                    <span>Buka Materi Kuliah</span>
+                    <span>Lihat Materi Kelas</span>
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
@@ -141,8 +151,14 @@ async function CoursesBody() {
 
 export default function CoursesPage() {
   return (
-    <WorkspaceShell pageSectionLabel="Mata Kuliah">
-      <Suspense fallback={<p className="text-sm text-muted-foreground font-ui">Memuat daftar mata kuliah...</p>}>
+    <WorkspaceShell>
+      <Suspense
+        fallback={
+          <p className="text-sm text-muted-foreground font-ui">
+            Memuat daftar mata kuliah…
+          </p>
+        }
+      >
         <CoursesBody />
       </Suspense>
     </WorkspaceShell>
