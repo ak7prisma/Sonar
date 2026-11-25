@@ -11,7 +11,6 @@ import {
   Headphones,
   Loader2,
   ScanText,
-  Sparkles,
   Square,
   Upload,
   Volume2,
