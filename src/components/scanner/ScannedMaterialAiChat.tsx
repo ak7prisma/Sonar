@@ -149,11 +149,25 @@ export function ScannedMaterialAiChat({
     utter.lang = language === "id" ? "id-ID" : "en-US";
     utter.rate = 1.0;
 
+    try {
+      const voices = window.speechSynthesis.getVoices?.() || [];
+      const targetPrefix = language === "id" ? "id" : "en";
+      const matched = voices.find((v) =>
+        v.lang.toLowerCase().startsWith(targetPrefix)
+      );
+      if (matched) utter.voice = matched;
+    } catch {
+      // fallback to system default
+    }
+
     utter.onstart = () => setCurrentlySpeakingId(id);
     utter.onend = () => setCurrentlySpeakingId(null);
     utter.onerror = () => setCurrentlySpeakingId(null);
 
-    window.speechSynthesis.speak(utter);
+    // Browser delay to prevent Chrome cancel race condition
+    setTimeout(() => {
+      window.speechSynthesis.speak(utter);
+    }, 60);
   };
 
   const samplePrompts = useMemo(() => {
@@ -178,28 +192,16 @@ export function ScannedMaterialAiChat({
         aria-label="Diskusi dan Tanya Jawab AI Materi Ini"
         className="rounded-3xl border border-primary/25 bg-card p-5 shadow-card sm:p-7 space-y-5"
       >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Bot className="size-4" aria-hidden="true" />
-            </span>
-            <h3 className="font-heading text-base font-bold text-foreground">
-              {language === "id"
-                ? "Diskusi & Tanya AI Berdasarkan Materi Ini"
-                : "Ask AI & Discuss This Material"}
-            </h3>
-          </div>
-          <p className="text-xs text-muted-foreground font-ui">
+      <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Bot className="size-4" aria-hidden="true" />
+          </span>
+          <h3 className="font-heading text-base font-bold text-foreground">
             {language === "id"
-              ? "Jawaban asisten terhubung langsung (grounded RAG) dengan isi materi yang baru saja Anda pindai."
-              : "Responses are strictly grounded with real-time RAG context from the scanned document."}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-          <Sparkles className="size-3.5" aria-hidden="true" />
-          <span>Gemini RAG Aktif</span>
+              ? "Diskusi & Tanya AI Berdasarkan Materi Ini"
+              : "Ask AI & Discuss This Material"}
+          </h3>
         </div>
       </div>
 
@@ -218,9 +220,10 @@ export function ScannedMaterialAiChat({
                 type="button"
                 disabled={isStreaming}
                 onClick={() => handleSendQuery(promptText)}
-                className="rounded-full border border-border bg-surface-subtle/80 px-3.5 py-1.5 text-xs text-foreground transition-all hover:border-primary/50 hover:bg-primary/5 text-left disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-subtle/80 px-3.5 py-1.5 text-xs text-foreground transition-all hover:border-primary/50 hover:bg-primary/5 text-left disabled:opacity-50 font-ui"
               >
-                💡 {promptText}
+                <Sparkles className="size-3 shrink-0 text-primary" aria-hidden="true" />
+                <span>{promptText}</span>
               </button>
             ))}
           </div>
@@ -273,22 +276,27 @@ export function ScannedMaterialAiChat({
                   />
 
                   {!isUser && textContent && (
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-border/50 text-xs">
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-xs font-ui">
                       <Button
                         type="button"
                         size="sm"
-                        variant="ghost"
+                        variant="secondary"
                         onClick={() => handleSpeakText(msg.id, textContent)}
-                        className="h-7 px-2 text-xs rounded-full"
+                        className={cn(
+                          "h-7 px-3 text-xs rounded-full font-medium transition-colors",
+                          currentlySpeakingId === msg.id
+                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            : "bg-surface-subtle hover:bg-brand-mint hover:text-brand-ink text-foreground"
+                        )}
                       >
                         {currentlySpeakingId === msg.id ? (
                           <>
-                            <Square className="size-3 mr-1 text-destructive" />
-                            <span>Stop</span>
+                            <Square className="size-3 mr-1 text-destructive-foreground" />
+                            <span>Stop Suara</span>
                           </>
                         ) : (
                           <>
-                            <Volume2 className="size-3 mr-1" />
+                            <Volume2 className="size-3.5 mr-1.5 text-primary" />
                             <span>Dengarkan</span>
                           </>
                         )}
@@ -299,7 +307,7 @@ export function ScannedMaterialAiChat({
                         size="sm"
                         variant="ghost"
                         onClick={() => handleCopyText(msg.id, textContent)}
-                        className="h-7 px-2 text-xs rounded-full"
+                        className="h-7 px-2.5 text-xs rounded-full text-muted-foreground hover:text-foreground"
                       >
                         {copiedId === msg.id ? (
                           <>
