@@ -21,9 +21,9 @@ export async function PATCH(
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  if (!hasAnyRole(auth.roles, ["reviewer", "admin"])) {
+  if (!hasAnyRole(auth.roles, ["volunteer", "reviewer", "admin"])) {
     return NextResponse.json(
-      { error: "Reviewer or administrator role is required." },
+      { error: "Volunteer, reviewer, or administrator role is required." },
       { status: 403 }
     );
   }
