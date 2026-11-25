@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
+  ArrowDown,
   Bot,
   Copy,
   Check,
+  ChevronDown,
+  ChevronUp,
   CornerDownLeft,
   HelpCircle,
   Loader2,
@@ -40,7 +43,39 @@ export function ScannedMaterialAiChat({
   const [inputVal, setInputVal] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentlySpeakingId, setCurrentlySpeakingId] = useState<string | null>(null);
+  const [isNaturalFormVisible, setIsNaturalFormVisible] = useState(false);
+  const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
+
+  const chatSectionRef = useRef<HTMLElement>(null);
+  const naturalFormRef = useRef<HTMLFormElement>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = naturalFormRef.current;
+    if (!el || typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const checkVisibility = () => {
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      setIsNaturalFormVisible(inView);
+    };
+    checkVisibility();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsNaturalFormVisible(entry.isIntersecting);
+      },
+      {
+        root: null,
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const chatTransport = useMemo(
     () =>
@@ -84,6 +119,9 @@ export function ScannedMaterialAiChat({
     setInputVal("");
     announce(`Mengirim pertanyaan: ${q}`, "polite");
     sendMessage({ text: q });
+    setTimeout(() => {
+      scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
   };
 
   const handleCopyText = (id: string, text: string) => {
@@ -134,10 +172,12 @@ export function ScannedMaterialAiChat({
   }, [language]);
 
   return (
-    <section
-      aria-label="Diskusi dan Tanya Jawab AI Materi Ini"
-      className="rounded-3xl border border-primary/25 bg-card p-5 shadow-card sm:p-7 space-y-5"
-    >
+    <>
+      <section
+        ref={chatSectionRef}
+        aria-label="Diskusi dan Tanya Jawab AI Materi Ini"
+        className="rounded-3xl border border-primary/25 bg-card p-5 shadow-card sm:p-7 space-y-5"
+      >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -309,6 +349,7 @@ export function ScannedMaterialAiChat({
 
       {/* Input Box */}
       <form
+        ref={naturalFormRef}
         onSubmit={(e) => {
           e.preventDefault();
           handleSendQuery();
@@ -346,5 +387,127 @@ export function ScannedMaterialAiChat({
         </Button>
       </form>
     </section>
+
+    {/* Floating Bottom Chat Bar when user hasn't scrolled all the way to the bottom */}
+    {!isNaturalFormVisible && (
+      <aside
+        role="region"
+        aria-label={
+          language === "id"
+            ? "Bar chat AI materi mengambang"
+            : "Floating material AI chat bar"
+        }
+        className="fixed bottom-4 inset-x-0 mx-auto w-[calc(100%-2rem)] max-w-2xl z-40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
+      >
+        {isFloatingMinimized ? (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              onClick={() => setIsFloatingMinimized(false)}
+              className="rounded-full bg-primary/95 px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-2xl backdrop-blur-md hover:bg-primary transition-all flex items-center gap-2 border border-primary/20 ring-2 ring-primary/20"
+            >
+              <Sparkles className="size-3.5 text-primary-foreground" />
+              <span>
+                {language === "id"
+                  ? "Tanya AI Materi Ini"
+                  : "Ask AI This Material"}
+              </span>
+              {messages.length > 0 && (
+                <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 text-[10px] font-bold">
+                  {messages.length}
+                </span>
+              )}
+              <ChevronUp className="size-3.5 ml-1" />
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-primary/30 bg-card/95 p-3 shadow-2xl backdrop-blur-md ring-1 ring-black/5 dark:ring-white/10">
+            <div className="flex items-center justify-between pb-2 px-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Bot className="size-3.5" aria-hidden="true" />
+                </span>
+                <span className="truncate text-xs font-bold text-foreground font-heading">
+                  {language === "id"
+                    ? "Tanya AI Berdasarkan Materi Ini"
+                    : "Ask AI About This Material"}
+                </span>
+                {messages.length > 0 && (
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    {messages.length} {language === "id" ? "pesan" : "messages"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 font-ui">
+                {messages.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded-full"
+                  >
+                    <ArrowDown className="size-3 mr-1" />
+                    <span>{language === "id" ? "Lihat Chat" : "View Chat"}</span>
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Ciutkan bar chat"
+                  onClick={() => setIsFloatingMinimized(true)}
+                  className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronDown className="size-4" />
+                </Button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendQuery();
+              }}
+              className="flex items-center gap-2"
+            >
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={inputVal}
+                  disabled={isStreaming}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder={
+                    language === "id"
+                      ? "Tanyakan konsep, rumus, atau soal dari materi ini..."
+                      : "Ask any question about this material..."
+                  }
+                  className="w-full h-10 rounded-full border border-input bg-background/90 px-4 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={!inputVal.trim() || isStreaming}
+                className="h-10 rounded-full px-4 font-semibold text-xs min-w-20 shadow-xs"
+              >
+                {isStreaming ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <span>Kirim</span>
+                    <CornerDownLeft className="size-3 ml-1" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+        )}
+      </aside>
+    )}
+  </>
   );
 }
