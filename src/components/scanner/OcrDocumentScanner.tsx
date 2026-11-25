@@ -128,9 +128,6 @@ export function OcrDocumentScanner({
     }
 
     setSelectedPdfFile(file);
-    if (!documentTitle.trim()) {
-      setDocumentTitle(file.name.replace(/\.pdf$/i, ""));
-    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -223,6 +220,9 @@ export function OcrDocumentScanner({
 
       setTimeout(() => {
         setScanResult(data);
+        if (data.documentTitle) {
+          setDocumentTitle(data.documentTitle);
+        }
         setTranslationCache({ [language]: data.blocks });
         announce(
           `Pemindaian selesai. Terdeteksi ${data.stats.totalBlocks} blok materi.`,
@@ -445,12 +445,17 @@ export function OcrDocumentScanner({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ocr-title">Judul bacaan</Label>
+            <Label htmlFor="ocr-title">
+              Judul bacaan{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                (otomatis dideteksi dari isi PDF)
+              </span>
+            </Label>
             <Input
               id="ocr-title"
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
-              placeholder="Misalnya: Catatan Integral Lipat"
+              placeholder="Otomatis mendeteksi judul di dalam dokumen PDF..."
               className="h-10 rounded-xl"
             />
           </div>

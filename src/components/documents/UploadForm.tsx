@@ -71,9 +71,6 @@ export function UploadForm({
     }
 
     setSelectedFile(file);
-    if (!title.trim()) {
-      setTitle(file.name.replace(/\.pdf$/i, ""));
-    }
     announce(
       `Berkas ${file.name} siap diproses, ukuran ${formatFileSize(file.size)}.`,
       "polite"
@@ -347,12 +344,17 @@ export function UploadForm({
       {/* Document Title & Sharing Toggle */}
       <div className="space-y-4 border-t border-border pt-5 font-ui">
         <div className="space-y-1.5">
-          <Label htmlFor="upload-title">Judul modul atau materi</Label>
+          <Label htmlFor="upload-title">
+            Judul modul atau materi{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              (otomatis dideteksi dari isi PDF jika dikosongkan)
+            </span>
+          </Label>
           <Input
             id="upload-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Misalnya: Modul 04 — Binary Search Trees"
+            placeholder="Otomatis mendeteksi judul di dalam isi dokumen PDF..."
             className="h-10 rounded-xl"
           />
         </div>

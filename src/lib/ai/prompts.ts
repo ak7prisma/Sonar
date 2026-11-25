@@ -37,6 +37,7 @@ export const STRUCTURED_PAGE_EXTRACTION_PROMPT = [
   "Convert the provided academic page (text layer and/or page image) into an ordered sequence of accessible semantic blocks.",
   "Preserve logical reading order across multi-column layouts, sidebars, callouts, and footnotes.",
   "Rules:",
+  "- For document title: extract the primary subject, chapter title, or lecture title visibly printed in the document content at the top of the page (e.g. 'Bab 04 — Vektor dan Aljabar Linier' or 'Analisis Struktur Data BST'). NEVER output a filename, path, or .pdf extension.",
   "- For tables: extract explicit column headers and aligned row cells; never flatten tables into messy single lines.",
   "- For mathematical formulas and equations:",
   "  * Separate prominent standalone equations, theorems, definitions, and calculation steps into dedicated 'equation' blocks.",

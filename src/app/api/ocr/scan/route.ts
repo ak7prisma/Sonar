@@ -117,13 +117,44 @@ export async function POST(req: Request) {
 
     // Call OCR Provider
     const ocrProvider = getDefaultOcrProvider();
-    const rawBlocks = await ocrProvider.extractPageBlocks({
+    const ocrResult = await ocrProvider.extractPage({
       pageNumber: 1,
       pageImageBase64: imageBase64,
       rawTextLayer,
       courseContext: `Course: ${courseId}, Document: ${documentTitle}`,
       language,
     });
+
+    const rawBlocks = ocrResult.blocks;
+
+    // Detect actual document title from PDF content:
+    // 1. Direct page title extracted from PDF by vision model
+    // 2. Or first prominent heading block in the document content
+    // 3. Or first line of text layer if structured like a heading
+    let detectedPdfTitle = ocrResult.documentTitle?.trim() || "";
+
+    if (!detectedPdfTitle || detectedPdfTitle.toLowerCase().endsWith(".pdf")) {
+      const firstHeading = rawBlocks.find(
+        (b) => b.blockType === "heading" && b.contentText.trim().length > 0
+      )?.contentText?.trim();
+      if (firstHeading) {
+        detectedPdfTitle = firstHeading.replace(/^#+\s*/, "").trim();
+      }
+    }
+
+    // Determine resolvedDocumentTitle:
+    // If user explicitly typed a custom title (that is not empty, default, or raw filename with .pdf), respect it.
+    // Otherwise, use the real title extracted from inside the PDF content!
+    const rawPassedTitle = documentTitle.trim();
+    const isGenericOrFilename =
+      !rawPassedTitle ||
+      rawPassedTitle === "Hasil Pindai Dokumen OCR" ||
+      rawPassedTitle.toLowerCase().endsWith(".pdf");
+
+    const resolvedDocumentTitle =
+      (!isGenericOrFilename && rawPassedTitle.length > 0)
+        ? rawPassedTitle
+        : (detectedPdfTitle || rawPassedTitle.replace(/\.pdf$/i, "") || "Hasil Pindai Dokumen OCR");
 
     // Enrich blocks with MathML and Speech Narration
     const enrichedBlocks: ExtractedBlockOutput[] = rawBlocks.map((block) => {
@@ -168,8 +199,8 @@ export async function POST(req: Request) {
       id: docId,
       course_id: course.id,
       uploaded_by: "usr-student-001",
-      title: documentTitle,
-      original_filename: `${documentTitle.replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
+      title: resolvedDocumentTitle,
+      original_filename: `${(documentTitle || resolvedDocumentTitle).replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
       storage_path: `scans/${courseId}/${docId}.pdf`,
       file_hash: nanoid(32),
       file_size_bytes: Math.round(cleanBase64.length * 0.75),
@@ -256,8 +287,8 @@ export async function POST(req: Request) {
               .insert({
                 course_id: targetCourseId,
                 uploaded_by: uploaderId,
-                title: documentTitle,
-                original_filename: `${documentTitle.replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
+                title: resolvedDocumentTitle,
+                original_filename: `${(documentTitle || resolvedDocumentTitle).replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
                 storage_path: `scans/${targetCourseId}/${docId}.pdf`,
                 file_hash: nanoid(32),
                 file_size_bytes: Math.round(cleanBase64.length * 0.75),
@@ -323,7 +354,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       documentId: savedDocumentId ?? docId,
-      documentTitle,
+      documentTitle: resolvedDocumentTitle,
       courseId,
       language,
       confidence: Math.round(overallConfidence * 100),
