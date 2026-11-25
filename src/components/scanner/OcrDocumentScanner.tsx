@@ -11,7 +11,6 @@ import {
   Headphones,
   Loader2,
   ScanText,
-  Sparkles,
   Square,
   Upload,
   Volume2,
@@ -573,52 +572,73 @@ export function OcrDocumentScanner({
                   role="status"
                   aria-live="polite"
                   aria-label="Status konversi dokumen OCR"
-                  className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left shadow-xs transition-all"
+                  className="rounded-2xl border border-primary/25 bg-surface-subtle/80 p-4 sm:p-5 space-y-3.5 text-left shadow-xs transition-all"
                 >
-                  <div className="flex items-center justify-between text-xs font-ui">
-                    <div className="flex items-center gap-2 text-primary font-bold min-w-0">
-                      <Sparkles className="size-4 animate-spin text-primary shrink-0" aria-hidden="true" />
-                      <span className="truncate">{scanStageMessage}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="relative flex size-2.5 shrink-0 items-center justify-center" aria-hidden="true">
+                        <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/40" />
+                        <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                      </span>
+                      <p className="truncate text-xs sm:text-sm font-medium text-foreground">
+                        {scanStageMessage}
+                      </p>
                     </div>
-                    <span className="font-mono font-bold text-foreground bg-primary/15 px-2 py-0.5 rounded-full text-[11px] shrink-0">
-                      {scanProgress}%
-                    </span>
+
+                    <div className="flex items-baseline gap-0.5 rounded-full bg-primary/10 px-3 py-1 text-primary ring-1 ring-primary/25 shrink-0 shadow-2xs font-ui">
+                      <span className="font-mono text-sm sm:text-base font-bold tabular-nums">
+                        {scanProgress}
+                      </span>
+                      <span className="font-mono text-xs font-semibold opacity-75">%</span>
+                    </div>
                   </div>
 
                   <Progress
                     value={scanProgress}
                     aria-label={`Progres konversi OCR: ${scanProgress}%`}
-                    className="h-2.5 rounded-full bg-muted/80"
+                    className="h-2 rounded-full bg-muted/80"
                   />
 
-                  <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-ui text-center">
-                    <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-0.5 text-center font-ui">
+                    <div
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-1.5 text-[11px] sm:text-xs font-medium transition-all",
                         scanProgress >= 25
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
-                      }`}
+                          ? "bg-primary/15 text-primary font-semibold ring-1 ring-primary/25"
+                          : "bg-muted/50 text-muted-foreground"
+                      )}
                     >
-                      1. Analisis Visual
-                    </span>
-                    <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                      {scanProgress >= 60 ? (
+                        <CheckCircle2 className="size-3 text-primary shrink-0" aria-hidden="true" />
+                      ) : null}
+                      <span>1. Analisis Visual</span>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-1.5 text-[11px] sm:text-xs font-medium transition-all",
                         scanProgress >= 60
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
-                      }`}
+                          ? "bg-primary/15 text-primary font-semibold ring-1 ring-primary/25"
+                          : "bg-muted/50 text-muted-foreground"
+                      )}
                     >
-                      2. Rumus MathML
-                    </span>
-                    <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                      {scanProgress >= 85 ? (
+                        <CheckCircle2 className="size-3 text-primary shrink-0" aria-hidden="true" />
+                      ) : null}
+                      <span>2. Rumus MathML</span>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-1.5 text-[11px] sm:text-xs font-medium transition-all",
                         scanProgress >= 85
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
-                      }`}
+                          ? "bg-primary/15 text-primary font-semibold ring-1 ring-primary/25"
+                          : "bg-muted/50 text-muted-foreground"
+                      )}
                     >
-                      3. Narasi Suara
-                    </span>
+                      {scanProgress >= 100 ? (
+                        <CheckCircle2 className="size-3 text-primary shrink-0" aria-hidden="true" />
+                      ) : null}
+                      <span>3. Narasi Suara</span>
+                    </div>
                   </div>
                 </div>
               )}

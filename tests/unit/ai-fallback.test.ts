@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   isRateLimitOrQuotaError,
   resolveFallbackChain,
-  DEFAULT_FALLBACK_MODELS,
 } from "@/lib/ai/fallback-resolver";
 
 describe("AI Fallback System", () => {
@@ -93,7 +92,8 @@ describe("AI Fallback System", () => {
         doStream: vi.fn(),
       };
 
-      const models = [primaryMock, fallbackMock];
+      type MockModel = { doGenerate: (options: unknown) => Promise<{ text: string }> };
+      const models: MockModel[] = [primaryMock, fallbackMock];
 
       // Simulated proxy logic
       const proxyModel = new Proxy(primaryMock, {
@@ -102,7 +102,7 @@ describe("AI Fallback System", () => {
             return async (options: unknown) => {
               for (let i = 0; i < models.length; i++) {
                 try {
-                  return await (models[i] as any).doGenerate(options);
+                  return await models[i].doGenerate(options);
                 } catch (err) {
                   if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
                     continue;
@@ -116,7 +116,7 @@ describe("AI Fallback System", () => {
         },
       });
 
-      const res = await (proxyModel as any).doGenerate({});
+      const res = await (proxyModel as MockModel).doGenerate({});
 
       expect(primaryMock.doGenerate).toHaveBeenCalledTimes(1);
       expect(fallbackMock.doGenerate).toHaveBeenCalledTimes(1);
