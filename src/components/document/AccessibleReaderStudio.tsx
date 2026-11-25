@@ -1,36 +1,58 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowLeft,
   Bookmark,
   BookOpen,
-  CheckCircle2,
-  ChevronRight,
+  Check,
+  Copy,
   ExternalLink,
-  Flag,
-  Lightbulb,
   ListTree,
+  MessageSquare,
   Pause,
   Play,
   Search,
   Send,
   SkipBack,
   SkipForward,
-  Sparkles,
   Square,
   Volume2,
+  X,
 } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
+import { EmptyState } from "@/components/app/EmptyState";
+import { StructuredTable } from "@/components/app/StructuredTable";
 import { useAccessibilityStore } from "@/stores/accessibility-store";
 import { useAudioReader } from "@/features/audio/use-audio-reader";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { sanitizeDocumentHtml } from "@/lib/accessibility/sanitize";
-import { APP_IMAGES } from "@/lib/images";
+import { formatPageCount, formatVersion } from "@/lib/format";
+import { useDocumentBookmarks } from "@/components/document/useDocumentBookmarks";
+import {
+  answerFromDocumentBlocks,
+  type LocalQaCitation,
+} from "@/components/document/grounded-local-qa";
 import type {
   DocumentBlockRow,
   DocumentEquationRow,
@@ -38,6 +60,14 @@ import type {
   DocumentRow,
   DocumentTableRow,
 } from "@/lib/data/workspace";
+import type { ReviewStatus } from "@/types/database";
+
+export interface RelatedDocumentLink {
+  id: string;
+  title: string;
+  courseCode?: string;
+  reviewStatus: ReviewStatus;
+}
 
 export interface ReaderStudioProps {
   document: DocumentRow;
@@ -48,60 +78,110 @@ export interface ReaderStudioProps {
   figures: DocumentFigureRow[];
   signedPdfUrl?: string | null;
   aiEnabled?: boolean;
-  isReferencePreview?: boolean;
+  relatedDocuments?: RelatedDocumentLink[];
+  versionNotice?: string | null;
 }
 
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  citations?: string[];
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const SUGGESTION_CHIPS = [
+  "Ringkas materi ini",
+  "Jelaskan rumus utama",
+  "Sebutkan istilah penting",
+  "Buat soal latihan",
+];
+
+function useIsXlDesktop(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => undefined;
+      const media = window.matchMedia("(min-width: 1280px)");
+      media.addEventListener("change", onStoreChange);
+      return () => media.removeEventListener("change", onStoreChange);
+    },
+    () =>
+      typeof window !== "undefined"
+        ? window.matchMedia("(min-width: 1280px)").matches
+        : false,
+    () => false
+  );
+}
+
+function extractMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is { type: "text"; text: string } => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+}
+
+function blockKindLabel(type: DocumentBlockRow["block_type"]) {
+  switch (type) {
+    case "heading":
+      return "Bab";
+    case "equation":
+      return "Rumus";
+    case "table":
+      return "Tabel";
+    case "figure":
+      return "Gambar";
+    default:
+      return "Paragraf";
+  }
 }
 
 export function AccessibleReaderStudio({
   document,
   courseLabel,
   blocks,
+  tables,
   equations,
   figures,
   signedPdfUrl,
-  aiEnabled = true,
+  aiEnabled = false,
+  relatedDocuments = [],
+  versionNotice,
 }: ReaderStudioProps) {
-  const [showOutline, setShowOutline] = useState(true);
-  const [showAssistant, setShowAssistant] = useState(aiEnabled);
+  // Starts closed so the reading paper immediately gets spacious, calm, full-focus width.
+  const [activePanel, setActivePanel] = useState<"outline" | "ai" | null>(null);
+  const [outlineTab, setOutlineTab] = useState<"outline" | "bookmarks" | "search">(
+    "outline"
+  );
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeBlockId, setActiveBlockId] = useState<string | null>(
     blocks[0]?.id ?? null
   );
   const [chatInput, setChatInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSidebarTab, setActiveSidebarTab] = useState<"outline" | "bookmarks" | "search">("outline");
-  const [bookmarks, setBookmarks] = useState<string[]>([]);
-  const [reportingBlockId, setReportingBlockId] = useState<string | null>(null);
-  const [reportSuccess, setReportSuccess] = useState(false);
-  const [reportIssueType, setReportIssueType] = useState("ocr");
-  const [reportText, setReportText] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [localCitationsByMsgId, setLocalCitationsByMsgId] = useState<
+    Record<string, LocalQaCitation[]>
+  >({});
+  const [aiStatusNotice, setAiStatusNotice] = useState<string | null>(null);
+  const lastSubmittedQueryRef = useRef<string>("");
+
+  const isXlDesktop = useIsXlDesktop();
 
   const language = useAccessibilityStore((s) => s.language);
   const setLanguage = useAccessibilityStore((s) => s.setLanguage);
   const narrationSpeed = useAccessibilityStore((s) => s.narrationSpeed);
   const setNarrationSpeed = useAccessibilityStore((s) => s.setNarrationSpeed);
-  const { announce } = useLiveAnnouncer();
+  const fontSizePx = useAccessibilityStore((s) => s.fontSizePx);
+  const setFontSizePx = useAccessibilityStore((s) => s.setFontSizePx);
 
-  // Preset assistant responses for instant interactive feedback
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "msg-welcome",
-      role: "assistant",
-      text: `Halo! Saya Asisten Dokumen SONAR. Materi "${document.title}" telah diverifikasi oleh volunteer. Anda dapat memilih pertanyaan cepat di bawah atau mengetik pertanyaan tentang konsep, rumus MathML, maupun tabel di dokumen ini.`,
-      citations: ["Halaman 1", "Verifikasi Volunteer Dewi Sartika, S.Kom."],
-    },
-  ]);
+  const { announce } = useLiveAnnouncer();
+  const { bookmarks, toggleBookmark } = useDocumentBookmarks(document.id);
 
   const equationsByBlock = useMemo(() => {
     const map = new Map<string, DocumentEquationRow>();
     for (const eq of equations) map.set(eq.block_id, eq);
     return map;
   }, [equations]);
+
+  const tablesByBlock = useMemo(() => {
+    const map = new Map<string, DocumentTableRow>();
+    for (const tbl of tables) map.set(tbl.block_id, tbl);
+    return map;
+  }, [tables]);
 
   const figuresByBlock = useMemo(() => {
     const map = new Map<string, DocumentFigureRow>();
@@ -121,17 +201,25 @@ export function AccessibleReaderStudio({
         return {
           id: block.id,
           spokenText: eqSpoken ?? block.spoken_text ?? block.content_text,
-          label: `${block.block_type} pada halaman ${block.page_number}`,
+          label: `${blockKindLabel(block.block_type)} halaman ${block.page_number}`,
         };
       }),
     [blocks, equationsByBlock, language]
   );
 
+  const handleAudioBlockChange = useCallback((blockId: string) => {
+    setActiveBlockId(blockId);
+    const el = window.document.getElementById(`block-${blockId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, []);
+
   const audio = useAudioReader({
     blocks: audioBlocks,
     rate: narrationSpeed,
     language,
-    onBlockChange: (id) => setActiveBlockId(id),
+    onBlockChange: handleAudioBlockChange,
     onAnnounce: (msg) => announce(msg, "polite"),
   });
 
@@ -147,6 +235,11 @@ export function AccessibleReaderStudio({
     [blocks]
   );
 
+  const bookmarkedBlocks = useMemo(
+    () => blocks.filter((b) => bookmarks.includes(b.id)),
+    [blocks, bookmarks]
+  );
+
   const filteredBlocks = useMemo(() => {
     if (!searchQuery.trim()) return blocks;
     const q = searchQuery.toLowerCase();
@@ -155,722 +248,1041 @@ export function AccessibleReaderStudio({
 
   const jumpToBlock = (blockId: string) => {
     setActiveBlockId(blockId);
-    const el = window.document.getElementById(`block-${blockId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      el.focus({ preventScroll: true });
+    if (!isXlDesktop) {
+      setActivePanel(null);
+    }
+    requestAnimationFrame(() => {
+      const el = window.document.getElementById(`block-${blockId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.focus({ preventScroll: true });
+      }
+    });
+    const target = blocks.find((b) => b.id === blockId);
+    if (target) {
+      announce(
+        `Berpindah ke ${blockKindLabel(target.block_type)} halaman ${target.page_number}.`
+      );
     }
   };
 
-  const toggleBookmark = (blockId: string) => {
-    setBookmarks((prev) =>
-      prev.includes(blockId) ? prev.filter((id) => id !== blockId) : [...prev, blockId]
-    );
-    announce("Status penanda halaman diperbarui.", "polite");
+  const togglePanel = (panel: "outline" | "ai") => {
+    setActivePanel((prev) => {
+      const next = prev === panel ? null : panel;
+      announce(
+        next === "outline"
+          ? "Panel daftar isi dibuka."
+          : next === "ai"
+            ? "Panel Tanya AI dibuka."
+            : "Panel samping ditutup.",
+        "polite"
+      );
+      return next;
+    });
   };
 
-  const handleQuickAction = (action: string) => {
-    let userQuery = "";
-    let assistantReply = "";
-    let citations: string[] = [];
+  const canUseRemoteAi = aiEnabled && UUID_REGEX.test(document.id);
 
-    if (action === "summary") {
-      userQuery = "Ringkas bab ini dalam 3 poin utama.";
-      assistantReply =
-        "Ringkasan Inti Dokumen:\n1. Binary Search Tree (BST) biasa rentan membentuk rantai linier O(n) saat data berurutan.\n2. Pohon AVL menerapkan invariant ketinggian dengan faktor keseimbangan BF(v) = height(left) - height(right) yang bernilai {-1, 0, 1}.\n3. Saat terjadi ketidakseimbangan (+2 atau -2), dilakukan operasi Single Rotation (LL/RR) atau Double Rotation (LR/RL) dalam waktu O(1).";
-      citations = ["Halaman 1, Bab 1.1", "Halaman 2, Tabel 1"];
-    } else if (action === "equation") {
-      userQuery = "Jelaskan rumus faktor keseimbangan BF(v).";
-      assistantReply =
-        "Rumus BF(v) = height(left(v)) - height(right(v)) menyatakan selisih antara tinggi subpohon anak kiri dikurangi tinggi anak kanan. Pohon AVL menjamin selisih ini tidak boleh melebihi 1, sehingga tinggi total pohon selalu O(log n).";
-      citations = ["Halaman 1, Rumus BF(v)"];
-    } else if (action === "rotations") {
-      userQuery = "Apa perbedaan rotasi LL dan rotasi LR?";
-      assistantReply =
-        "Perbedaan Rotasi AVL:\n• LL (Left-Left): Penyisipan terjadi pada subpohon kiri dari anak kiri; diselesaikan dengan SATU rotasi kanan pada simpul kakek.\n• LR (Left-Right): Penyisipan terjadi pada subpohon kanan dari anak kiri; memerlukan DUA rotasi: rotasi kiri pada anak, lalu rotasi kanan pada kakek.";
-      citations = ["Halaman 2, Tabel 1"];
-    } else if (action === "quiz") {
-      userQuery = "Buat 1 soal kuis latihan untuk konsep ini.";
-      assistantReply =
-        "Latihan Konsep AVL:\nSoal: Jika sebuah simpul memiliki subpohon kiri setinggi 3 dan subpohon kanan setinggi 1, berapakah nilai Balance Factor simpul tersebut dan apakah simpul tersebut masih seimbang?\nJawaban: BF = 3 - 1 = +2 (Tidak seimbang, memerlukan rotasi LL atau LR).";
-      citations = ["Halaman 1, Definisi 1.1"];
-    }
+  const chatTransport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/ai/chat",
+        body: () => ({
+          documentId: document.id,
+          language,
+        }),
+      }),
+    [document.id, language]
+  );
 
-    setMessages((prev) => [
-      ...prev,
-      { id: `user-${Date.now()}`, role: "user", text: userQuery },
-      { id: `asst-${Date.now()}`, role: "assistant", text: assistantReply, citations },
-    ]);
-  };
+  const onErrorFallbackRef = useRef<(query: string) => void>(() => undefined);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    const query = chatInput.trim();
-    setChatInput("");
-
-    setMessages((prev) => [
-      ...prev,
-      { id: `user-${Date.now()}`, role: "user", text: query },
-      {
-        id: `asst-${Date.now()}`,
-        role: "assistant",
-        text: `Berdasarkan dokumen "${document.title}": Pertanyaan Anda mengenai "${query}" berkaitan dengan struktur pohon biner dan invariant AVL di Bab 1. Seluruh operasi pencarian dan penyisipan dijamin beroperasi dalam batas O(log n).`,
-        citations: ["Halaman 1, Paragraf 2", "Halaman 2, Tabel 1"],
+  const { messages, sendMessage, status, error, setMessages, clearError } =
+    useChat({
+      id: `reader-chat-${document.id}`,
+      transport: chatTransport,
+      onError: () => {
+        if (lastSubmittedQueryRef.current) {
+          onErrorFallbackRef.current(lastSubmittedQueryRef.current);
+          lastSubmittedQueryRef.current = "";
+        }
       },
-    ]);
+    });
+
+  const appendLocalAnswer = useCallback(
+    (query: string, appendUserMessage: boolean) => {
+      const answer = answerFromDocumentBlocks(query, {
+        documentTitle: document.title,
+        blocks,
+        equations,
+        tables,
+        figures,
+        language,
+        activeBlockId,
+      });
+
+      const assistantMsgId = `local-asst-${Date.now()}`;
+      setLocalCitationsByMsgId((prev) => ({
+        ...prev,
+        [assistantMsgId]: answer.citations,
+      }));
+
+      setMessages((prev) => {
+        const extra: UIMessage[] = [];
+        if (appendUserMessage) {
+          extra.push({
+            id: `local-user-${Date.now()}`,
+            role: "user",
+            parts: [{ type: "text", text: query }],
+          });
+        }
+        extra.push({
+          id: assistantMsgId,
+          role: "assistant",
+          parts: [{ type: "text", text: answer.text }],
+        });
+        return [...prev, ...extra];
+      });
+    },
+    [
+      activeBlockId,
+      blocks,
+      document.title,
+      equations,
+      figures,
+      language,
+      setMessages,
+      tables,
+    ]
+  );
+
+  useEffect(() => {
+    onErrorFallbackRef.current = (query: string) => {
+      setAiStatusNotice("Menampilkan jawaban ekstraktif dari teks dokumen ini.");
+      appendLocalAnswer(query, false);
+    };
+  }, [appendLocalAnswer]);
+
+  const isStreaming = status === "submitted" || status === "streaming";
+
+  const submitAiQuestion = async (rawQuery: string) => {
+    const query = rawQuery.trim();
+    if (!query || isStreaming) return;
+    setChatInput("");
+    setAiStatusNotice(null);
+    clearError();
+
+    if (!canUseRemoteAi) {
+      appendLocalAnswer(query, true);
+      announce("Jawaban asisten dokumen tersedia.", "polite");
+      return;
+    }
+
+    lastSubmittedQueryRef.current = query;
+    try {
+      await sendMessage({ text: query });
+    } catch {
+      setAiStatusNotice("Menampilkan jawaban ekstraktif dari teks dokumen ini.");
+      appendLocalAnswer(query, false);
+    } finally {
+      lastSubmittedQueryRef.current = "";
+    }
   };
 
-  const submitReportIssue = (e: React.FormEvent) => {
-    e.preventDefault();
-    setReportSuccess(true);
-    announce("Laporan isu berhasil dikirim ke volunteer reviewer.", "polite");
-    setTimeout(() => {
-      setReportingBlockId(null);
-      setReportSuccess(false);
-      setReportText("");
-    }, 1500);
+  const handleCopyText = async (msgId: string, text: string) => {
+    if (!navigator.clipboard) return;
+    await navigator.clipboard.writeText(text);
+    setCopiedId(msgId);
+    announce("Teks jawaban disalin.", "polite");
+    window.setTimeout(() => setCopiedId(null), 1600);
   };
+
+  const speakSingleText = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utteranceSetLang(utter, language, narrationSpeed);
+    window.speechSynthesis.speak(utter);
+  };
+
+  const courseShort = courseLabel ? courseLabel.split("—")[0].trim() : "Mata Kuliah";
+
+  const outlinePanelBody = (
+    <div className="flex min-h-0 flex-1 flex-col font-ui">
+      <div className="space-y-3 border-b border-border p-4">
+        <div
+          role="tablist"
+          aria-label="Filter daftar isi"
+          className="grid grid-cols-3 gap-1 rounded-xl bg-surface-subtle p-1 text-xs"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={outlineTab === "outline"}
+            onClick={() => setOutlineTab("outline")}
+            className={cn(
+              "min-h-9 rounded-lg font-semibold transition-colors",
+              outlineTab === "outline"
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Isi
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={outlineTab === "bookmarks"}
+            onClick={() => setOutlineTab("bookmarks")}
+            className={cn(
+              "min-h-9 rounded-lg font-semibold transition-colors",
+              outlineTab === "bookmarks"
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Penanda ({bookmarks.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={outlineTab === "search"}
+            onClick={() => setOutlineTab("search")}
+            className={cn(
+              "min-h-9 rounded-lg font-semibold transition-colors",
+              outlineTab === "search"
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Cari
+          </button>
+        </div>
+
+        {outlineTab === "search" ? (
+          <div>
+            <label htmlFor="reader-search-input" className="sr-only">
+              Cari teks dalam dokumen
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                id="reader-search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari kata dalam materi…"
+                className="h-10 rounded-xl pl-9 font-sans text-sm"
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
+        {outlineTab === "bookmarks" ? (
+          bookmarkedBlocks.length === 0 ? (
+            <p className="rounded-xl bg-surface-subtle p-4 font-sans text-sm text-muted-foreground">
+              Belum ada penanda. Pilih tombol Tandai pada bagian bacaan untuk menyimpannya di sini.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {bookmarkedBlocks.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => jumpToBlock(item.id)}
+                    aria-current={activeBlockId === item.id ? "true" : undefined}
+                    className={cn(
+                      "flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+                      activeBlockId === item.id
+                        ? "bg-primary font-semibold text-primary-foreground"
+                        : "text-foreground/85 hover:bg-brand-mint hover:text-brand-ink"
+                    )}
+                  >
+                    <span className="truncate">{item.content_text}</span>
+                    <span className="shrink-0 text-xs opacity-80">
+                      Hlm {item.page_number}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : outlineTab === "search" ? (
+          filteredBlocks.length === 0 ? (
+            <p className="rounded-xl bg-surface-subtle p-4 font-sans text-sm text-muted-foreground">
+              Tidak ada bagian yang cocok dengan pencarian Anda.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {filteredBlocks.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => jumpToBlock(item.id)}
+                    aria-current={activeBlockId === item.id ? "true" : undefined}
+                    className={cn(
+                      "flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+                      activeBlockId === item.id
+                        ? "bg-primary font-semibold text-primary-foreground"
+                        : "text-foreground/85 hover:bg-brand-mint hover:text-brand-ink"
+                    )}
+                  >
+                    <span className="truncate">{item.content_text}</span>
+                    <span className="shrink-0 text-xs opacity-80">
+                      Hlm {item.page_number}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
+          <nav aria-label="Daftar isi bab dan elemen">
+            <ul className="space-y-1">
+              {outlineItems.map((item) => {
+                const isActive = activeBlockId === item.id;
+                const isSubHeading =
+                  item.block_type === "heading" && (item.heading_level ?? 1) >= 2;
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => jumpToBlock(item.id)}
+                      aria-current={isActive ? "true" : undefined}
+                      className={cn(
+                        "flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+                        isSubHeading && "pl-6",
+                        isActive
+                          ? "bg-primary font-semibold text-primary-foreground"
+                          : "text-foreground/85 hover:bg-brand-mint hover:text-brand-ink dark:hover:bg-muted dark:hover:text-foreground"
+                      )}
+                    >
+                      <span className="truncate">
+                        {item.block_type !== "heading"
+                          ? `${blockKindLabel(item.block_type)}: `
+                          : ""}
+                        {item.content_text}
+                      </span>
+                      <span className="shrink-0 text-xs opacity-80">
+                        {item.page_number}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+
+        {relatedDocuments.length > 0 ? (
+          <div className="space-y-2 border-t border-border pt-4">
+            <p className="px-2 text-xs font-semibold text-muted-foreground">
+              Materi lain di kelas ini
+            </p>
+            <ul className="space-y-1">
+              {relatedDocuments.map((rel) => (
+                <li key={rel.id}>
+                  <Link
+                    href={`/reader/${rel.id}`}
+                    className="block rounded-xl px-3 py-2 text-sm transition-colors hover:bg-brand-mint hover:text-brand-ink dark:hover:bg-muted"
+                  >
+                    <p className="truncate font-medium text-foreground">{rel.title}</p>
+                    <div className="mt-1">
+                      <ReviewStatusChip status={rel.reviewStatus} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const aiPanelBody = (
+    <div className="flex min-h-0 flex-1 flex-col font-sans">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="Percakapan tanya jawab dokumen"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 text-sm"
+      >
+        {messages.length === 0 ? (
+          <div className="space-y-2 rounded-2xl bg-surface-subtle p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Tanyakan ringkasan, rumus, tabel, atau konsep dari dokumen ini.
+            </p>
+            <p className="text-xs">
+              Jawaban disusun mengacu pada isi materi yang sedang Anda baca.
+            </p>
+          </div>
+        ) : (
+          messages.map((m) => {
+            const text = extractMessageText(m);
+            const citations = localCitationsByMsgId[m.id] ?? [];
+            const isUser = m.role === "user";
+
+            return (
+              <div
+                key={m.id}
+                className={cn("space-y-2", isUser ? "flex justify-end" : "")}
+              >
+                {isUser ? (
+                  <div className="max-w-[85%] rounded-2xl bg-tint-blue px-4 py-2.5 text-sm font-medium text-brand-ink">
+                    {text}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="whitespace-pre-line leading-relaxed text-foreground">
+                      {text}
+                    </p>
+                    {citations.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 font-ui">
+                        {citations.map((cit) => (
+                          <button
+                            key={`${m.id}-${cit.blockId}`}
+                            type="button"
+                            onClick={() => jumpToBlock(cit.blockId)}
+                            className="min-h-7 rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink transition-colors hover:bg-brand-aqua/40"
+                          >
+                            {cit.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="flex items-center gap-1 font-ui">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Salin jawaban"
+                        onClick={() => void handleCopyText(m.id, text)}
+                        className="h-8 rounded-full px-2 text-xs text-muted-foreground"
+                      >
+                        {copiedId === m.id ? (
+                          <Check className="size-3.5 text-primary" aria-hidden="true" />
+                        ) : (
+                          <Copy className="size-3.5" aria-hidden="true" />
+                        )}
+                        <span>Salin</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Dengarkan jawaban"
+                        onClick={() => speakSingleText(text)}
+                        className="h-8 rounded-full px-2 text-xs text-muted-foreground"
+                      >
+                        <Volume2 className="size-3.5" aria-hidden="true" />
+                        <span>Dengarkan</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {isStreaming ? (
+          <p className="font-ui text-xs text-muted-foreground">
+            Menyusun jawaban dari isi dokumen…
+          </p>
+        ) : null}
+
+        {aiStatusNotice ? (
+          <p className="rounded-xl bg-tint-gold px-3 py-2 text-xs text-brand-ink">
+            {aiStatusNotice}
+          </p>
+        ) : null}
+
+        {error && !aiStatusNotice ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          >
+            Gagal menghubungi asisten AI: {error.message}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="space-y-2.5 border-t border-border p-3 font-ui">
+        <div className="flex flex-wrap gap-1.5">
+          {SUGGESTION_CHIPS.map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              disabled={isStreaming}
+              onClick={() => void submitAiQuestion(chip)}
+              className="min-h-8 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-brand-mint hover:text-brand-ink disabled:opacity-50"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitAiQuestion(chatInput);
+          }}
+          className="flex items-center gap-2 rounded-2xl border border-border bg-background p-1.5 pl-3"
+        >
+          <label htmlFor="reader-ai-input" className="sr-only">
+            Tanyakan isi dokumen ini
+          </label>
+          <input
+            id="reader-ai-input"
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Tanyakan isi dokumen ini…"
+            className="min-w-0 flex-1 bg-transparent font-sans text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!chatInput.trim() || isStreaming}
+            aria-label="Kirim pertanyaan"
+            className="size-9 shrink-0 rounded-full"
+          >
+            <Send className="size-4" aria-hidden="true" />
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-4 font-sans">
-      {/* TOP HEADER: Inspired by Image 2 (bookmind.com) */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between font-ui">
-        <div className="space-y-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Link
-              href="/courses"
-              className="font-bold text-primary hover:underline flex items-center gap-1"
-            >
-              <ArrowLeft className="size-3.5" />
-              <span>{courseLabel ? courseLabel.split("—")[0].trim() : "Mata Kuliah"}</span>
-            </Link>
-            <span className="text-muted-foreground">&bull;</span>
-            <span className="inline-flex items-center gap-1 rounded bg-success/15 px-2 py-0.5 font-bold text-success text-[11px]">
-              <CheckCircle2 className="size-3" />
-              Verified by Dewi Sartika, S.Kom. &bull; v2.1
+    <div className="mx-auto w-full max-w-6xl space-y-6 font-sans">
+      {/* Clean Document Header */}
+      <header className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+          <Link
+            href={`/courses/${document.course_id}`}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-md text-sm font-semibold text-secondary-foreground hover:underline"
+          >
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            <span>Kembali ke {courseShort}</span>
+          </Link>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <ReviewStatusChip status={document.review_status} />
+            <span className="rounded-full bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-foreground">
+              Versi {formatVersion(document.current_version_id)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatPageCount(document.page_count)}
             </span>
           </div>
+        </div>
 
-          <h1 className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <h1 className="min-w-0 font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {document.title}
           </h1>
-        </div>
 
-        {/* View toggles & actions */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            aria-expanded={showOutline}
-            onClick={() => setShowOutline((v) => !v)}
-            className="text-xs h-9 border-border font-semibold"
-          >
-            <ListTree className="size-3.5 mr-1.5" aria-hidden="true" />
-            <span>{showOutline ? "Tutup Outline" : "Buka Outline"}</span>
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            aria-expanded={showAssistant}
-            onClick={() => setShowAssistant((v) => !v)}
-            className="text-xs h-9 border-border font-semibold"
-          >
-            <Sparkles className="size-3.5 mr-1.5 text-primary" aria-hidden="true" />
-            <span>{showAssistant ? "Tutup AI" : "Tanya AI"}</span>
-          </Button>
-
-          {signedPdfUrl && (
-            <Button size="sm" variant="ghost" asChild className="text-xs h-9">
-              <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer">
-                <span>PDF Asli</span>
-                <ExternalLink className="size-3 ml-1" />
-              </a>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* STICKY AUDIO PLAYER TOOLBAR: Inspired by Image 2 (bookmind.com) */}
-      <section
-        aria-label="Kontrol Pemutar Audio Reader"
-        className="sticky top-16 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-card/95 px-4 py-3 shadow-sm backdrop-blur-md font-ui"
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={audio.previous}
-            disabled={!audio.isSupported || audio.activeIndex === 0}
-            aria-label="Paragraf sebelumnya"
-            className="size-8 p-0"
-          >
-            <SkipBack className="size-4" aria-hidden="true" />
-          </Button>
-
-          {audio.isPlaying ? (
-            <Button size="sm" onClick={audio.pause} className="h-8 px-3 font-semibold">
-              <Pause className="size-4 mr-1.5 fill-current" aria-hidden="true" />
-              <span>Jeda</span>
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={() =>
-                audio.isPaused ? audio.resume() : audio.playFrom(audio.activeIndex)
-              }
-              disabled={!audio.isSupported || audioBlocks.length === 0}
-              className="h-8 px-3 font-semibold"
-            >
-              <Play className="size-4 mr-1.5 fill-current" aria-hidden="true" />
-              <span>{audio.isPaused ? "Lanjutkan" : "Dengarkan Audio"}</span>
-            </Button>
-          )}
-
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={audio.next}
-            disabled={!audio.isSupported || audio.activeIndex >= audioBlocks.length - 1}
-            aria-label="Paragraf berikutnya"
-            className="size-8 p-0"
-          >
-            <SkipForward className="size-4" aria-hidden="true" />
-          </Button>
-
-          {(audio.isPlaying || audio.isPaused) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={audio.stop}
-              aria-label="Hentikan pembacaan"
-              className="size-8 p-0 text-muted-foreground hover:text-foreground"
-            >
-              <Square className="size-3.5" aria-hidden="true" />
-            </Button>
-          )}
-
-          <span className="ml-2 text-xs font-semibold tabular-nums text-muted-foreground">
-            Blok {audioBlocks.length === 0 ? 0 : audio.activeIndex + 1} dari {audioBlocks.length}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <label className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Kecepatan:</span>
-            <select
-              aria-label="Kecepatan pembacaan suara"
-              value={narrationSpeed}
-              onChange={(e) => setNarrationSpeed(Number(e.target.value))}
-              className="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground font-semibold"
-            >
-              <option value="0.75">0.75&times;</option>
-              <option value="1">1.0&times; (Normal)</option>
-              <option value="1.25">1.25&times;</option>
-              <option value="1.5">1.5&times;</option>
-              <option value="2">2.0&times;</option>
-            </select>
-          </label>
-
-          <label className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Bahasa:</span>
-            <select
-              aria-label="Bahasa audio"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value === "id" ? "id" : "en")}
-              className="h-7 rounded border border-input bg-background px-1.5 text-xs text-foreground font-semibold"
-            >
-              <option value="id">Bahasa Indonesia</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      {/* 3-PANE STUDIO LAYOUT: Left Navigator | Center Reader | Right AI Assistant (Image 2) */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* LEFT NAVIGATOR PANE (Chapters, Bookmarks, Search) */}
-        {showOutline && (
-          <aside
-            id="reader-outline-pane"
-            aria-label="Navigasi Dokumen &amp; Bab"
-            className="rounded-2xl border border-border bg-card p-4 shadow-xs lg:col-span-3 space-y-4 font-ui"
-          >
-            {/* Book Info Card in Sidebar (Image 2 style) */}
-            <div className="flex items-center gap-3 border-b border-border pb-3">
-              <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
-                <Image
-                  src={APP_IMAGES.courseCS.src}
-                  alt={APP_IMAGES.courseCS.alt}
-                  fill
-                  className="object-cover"
-                  sizes="48px"
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-primary uppercase">CS 201 Modul</p>
-                <p className="text-xs font-bold text-foreground truncate">AVL Balancing Trees</p>
-                <p className="text-[10px] text-muted-foreground">24 Halaman &bull; v2.1</p>
-              </div>
-            </div>
-
-            {/* Sidebar Tabs */}
-            <div className="grid grid-cols-3 gap-1 rounded-lg bg-surface-subtle p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setActiveSidebarTab("outline")}
-                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "outline" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                  }`}
-              >
-                Bab &amp; Hlm
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveSidebarTab("bookmarks")}
-                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "bookmarks" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                  }`}
-              >
-                Penanda ({bookmarks.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveSidebarTab("search")}
-                className={`rounded py-1 font-semibold transition-colors ${activeSidebarTab === "search" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
-                  }`}
-              >
-                Cari
-              </button>
-            </div>
-
-            {activeSidebarTab === "search" && (
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari teks di dokumen..."
-                  className="pl-8 text-xs h-8"
-                />
-              </div>
-            )}
-
-            {/* Heading Tree */}
-            <nav aria-label="Hierarki Bab Dokumen" className="max-h-[500px] overflow-y-auto pr-1">
-              <ul className="space-y-1 text-xs">
-                {outlineItems.map((item) => {
-                  const isActive = activeBlockId === item.id;
-                  const isH1 = item.block_type === "heading" && (!item.heading_level || item.heading_level === 1);
-                  const isH2 = item.block_type === "heading" && item.heading_level === 2;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => jumpToBlock(item.id)}
-                        className={`w-full text-left rounded-lg px-2.5 py-1.5 transition-colors flex items-center justify-between ${isActive
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                          : "text-foreground/80 hover:bg-muted hover:text-foreground"
-                          } ${isH2 ? "pl-5 text-[11px]" : isH1 ? "font-bold text-xs" : "text-[11px]"}`}
-                      >
-                        <span className="truncate">{item.content_text}</span>
-                        <span
-                          className={`text-[10px] ml-1 shrink-0 ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                            }`}
-                        >
-                          Hlm {item.page_number}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
-          </aside>
-        )}
-
-        {/* CENTER READING CANVAS (Atkinson Hyperlegible, Paper Reading Mode) */}
-        <article
-          aria-label="Isi Materi Perkuliahan Terstruktur"
-          className={`rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-xs transition-colors ${showOutline && showAssistant
-            ? "lg:col-span-5"
-            : showOutline || showAssistant
-              ? "lg:col-span-8"
-              : "lg:col-span-12"
-            }`}
-        >
-          <div className="sonar-reader-prose max-w-none space-y-6">
-            {filteredBlocks.map((block, index) => {
-              const isCurrent = activeBlockId === block.id;
-              const isBookmarked = bookmarks.includes(block.id);
-              const eqData = equationsByBlock.get(block.id);
-              const figData = figuresByBlock.get(block.id);
-
-              return (
-                <section
-                  key={block.id}
-                  id={`block-${block.id}`}
-                  tabIndex={-1}
-                  aria-label={`Halaman ${block.page_number}, ${block.block_type}`}
-                  className={`group relative scroll-mt-36 rounded-xl p-3 transition-colors ${isCurrent ? "ring-2 ring-primary/50 bg-secondary/30" : "hover:bg-surface-subtle/50"
-                    }`}
-                >
-                  {/* Quick Action Overlay (Bookmark & Report Issue) */}
-                  <div className="absolute right-2 top-2 hidden group-hover:flex items-center gap-1 bg-background/90 rounded-md p-1 shadow-xs border border-border">
-                    <button
-                      type="button"
-                      onClick={() => toggleBookmark(block.id)}
-                      aria-label={isBookmarked ? "Hapus penanda" : "Tambah penanda"}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Bookmark className={`size-3.5 ${isBookmarked ? "fill-primary text-primary" : ""}`} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setReportingBlockId(block.id)}
-                      aria-label="Laporkan masalah pada bagian ini"
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Flag className="size-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Block Content Renderers */}
-                  {block.block_type === "heading" && (!block.heading_level || block.heading_level === 1) && (
-                    <h2 className="font-heading text-2xl font-extrabold text-foreground tracking-tight pt-2">
-                      {block.content_text}
-                    </h2>
-                  )}
-
-                  {block.block_type === "heading" && block.heading_level === 2 && (
-                    <h3 className="font-heading text-xl font-bold text-foreground tracking-tight pt-2">
-                      {block.content_text}
-                    </h3>
-                  )}
-
-                  {block.block_type === "heading" && block.heading_level === 3 && (
-                    <h4 className="font-heading text-lg font-bold text-foreground pt-1">
-                      {block.content_text}
-                    </h4>
-                  )}
-
-                  {block.block_type === "paragraph" && (
-                    <p className="text-foreground text-base leading-relaxed font-sans">
-                      {block.content_text}
-                    </p>
-                  )}
-
-                  {block.block_type === "table" && (
-                    <div className="my-3 space-y-2">
-                      <div className="overflow-x-auto rounded-xl border border-border">
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeDocumentHtml(block.content_html ?? ""),
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground font-ui">
-                        Tabel dapat dinavigasi menggunakan panah keyboard. Kolom dan baris memiliki header terasosiasi.
-                      </p>
-                    </div>
-                  )}
-
-                  {block.block_type === "equation" && (
-                    <div className="my-4 rounded-xl border-2 border-primary/25 bg-secondary/30 p-5 space-y-3">
-                      <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                        <span className="rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground font-ui uppercase">
-                          MathML &bull; Formula Matematika
-                        </span>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => audio.playFrom(index)}
-                          className="font-ui text-xs h-7 border-border"
-                        >
-                          <Volume2 className="mr-1 size-3.5 text-primary" aria-hidden="true" />
-                          <span>Dengarkan Rumus</span>
-                        </Button>
-                      </div>
-
-                      {/* Rendered MathML */}
-                      <div
-                        className="overflow-x-auto py-2 text-xl font-serif text-foreground"
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeDocumentHtml(eqData?.mathml ?? block.content_html ?? ""),
-                        }}
-                      />
-
-                      <div className="rounded-lg bg-background p-3 text-xs text-foreground/90 font-ui border border-border">
-                        <span className="font-bold text-primary">Narasi Audio: </span>
-                        <span>
-                          {eqData?.narration_id ?? "B F dari v sama dengan tinggi anak kiri dikurang tinggi anak kanan."}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {block.block_type === "figure" && (
-                    <div className="my-4 rounded-xl border border-border bg-surface-subtle p-5 space-y-3">
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeDocumentHtml(block.content_html ?? ""),
-                        }}
-                      />
-                      <div className="rounded-lg bg-card p-3.5 border border-border text-xs space-y-1.5 font-sans">
-                        <p className="font-bold font-ui text-primary flex items-center gap-1.5">
-                          <EyeOff className="size-3.5" aria-hidden="true" />
-                          <span>Deskripsi Taktil untuk Screen Reader:</span>
-                        </p>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {figData?.summary ??
-                            "Struktur pohon AVL menunjukkan proses rotasi kanan searah jarum jam untuk memulihkan ketinggian pohon."}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        </article>
-
-        {/* RIGHT GROUNDED AI ASSISTANT PANE: Inspired by Image 2 (bookmind.com) */}
-        {showAssistant && (
-          <aside
-            id="reader-assistant-pane"
-            aria-label="Asisten Dokumen AI &amp; Ringkasan"
-            className="flex flex-col rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs lg:col-span-4 space-y-4 font-ui"
-          >
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <div className="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <Sparkles className="size-4" />
-                </div>
-                <div>
-                  <h2 className="font-heading text-sm font-bold text-foreground">
-                    Tanya AI &bull; Asisten Dokumen
-                  </h2>
-                  <p className="text-[10px] text-muted-foreground">Tersitasi ketat dari modul ini</p>
-                </div>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setShowAssistant(false)}
-                aria-label="Tutup panel asisten"
-                className="size-7"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-
-            {/* Quick Action Chips (Image 2 right pane feature!) */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                Tindakan Cepat:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction("summary")}
-                  className="text-xs h-7 px-2.5 border-primary/30 hover:bg-primary/10 font-semibold"
-                >
-                  <BookOpen className="size-3 mr-1 text-primary" />
-                  Ringkas Bab Ini
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction("equation")}
-                  className="text-xs h-7 px-2.5 border-primary/30 hover:bg-primary/10 font-semibold"
-                >
-                  <Lightbulb className="size-3 mr-1 text-warning" />
-                  Jelaskan Rumus BF(v)
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction("rotations")}
-                  className="text-xs h-7 px-2.5 border-primary/30 hover:bg-primary/10 font-semibold"
-                >
-                  Perbedaan LL &amp; LR
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction("quiz")}
-                  className="text-xs h-7 px-2.5 border-primary/30 hover:bg-primary/10 font-semibold"
-                >
-                  Kuis Latihan
-                </Button>
-              </div>
-            </div>
-
-            {/* Chat History Container */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2 font-ui">
             <div
-              className="flex-1 space-y-3 overflow-y-auto pr-1 max-h-[380px] text-xs font-sans"
-              aria-label="Riwayat Tanya Jawab AI"
+              role="group"
+              aria-label="Ukuran huruf bacaan"
+              className="inline-flex items-center rounded-full border border-border bg-background p-0.5"
             >
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`rounded-xl p-3.5 space-y-1.5 ${m.role === "user"
-                    ? "ml-4 bg-primary text-primary-foreground font-medium"
-                    : "mr-2 border border-border bg-surface-subtle text-foreground"
-                    }`}
-                >
-                  <p className="font-bold font-ui text-[11px] opacity-85">
-                    {m.role === "user" ? "Anda" : "Asisten Dokumen SONAR"}
-                  </p>
-                  <p className="leading-relaxed whitespace-pre-line">{m.text}</p>
-                  {m.citations && (
-                    <div className="pt-2 border-t border-border/40 flex flex-wrap gap-1 font-ui text-[10px]">
-                      {m.citations.map((c, idx) => (
-                        <span
-                          key={idx}
-                          className="rounded bg-primary/10 px-1.5 py-0.5 text-primary font-bold"
-                        >
-                          Sitasi: {c}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Chat Input */}
-            <form onSubmit={handleSendMessage} className="space-y-2 border-t border-border pt-3 font-ui">
-              <label htmlFor="ai-chat-input" className="sr-only">
-                Ajukan pertanyaan tentang materi ini
-              </label>
-              <div className="relative flex items-center">
-                <Input
-                  id="ai-chat-input"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Tanyakan rumus, tabel, atau konsep..."
-                  className="pr-10 text-xs h-10 font-sans"
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!chatInput.trim()}
-                  aria-label="Kirim pertanyaan ke AI"
-                  className="absolute right-1 size-8"
-                >
-                  <Send className="size-3.5" />
-                </Button>
-              </div>
-            </form>
-          </aside>
-        )}
-      </div>
-
-      {/* REPORT ISSUE MODAL / DIALOG */}
-      {reportingBlockId && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="report-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs font-ui"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h2 id="report-modal-title" className="font-heading text-lg font-bold text-foreground">
-                Laporkan Masalah Aksesibilitas
-              </h2>
               <Button
+                type="button"
                 size="sm"
                 variant="ghost"
-                onClick={() => setReportingBlockId(null)}
-                aria-label="Tutup dialog"
+                onClick={() => {
+                  const next = Math.max(14, fontSizePx - 1);
+                  setFontSizePx(next);
+                  announce(`Ukuran huruf ${next} piksel.`);
+                }}
+                className="h-9 rounded-full px-3 text-xs font-semibold"
               >
-                &times;
+                <span aria-hidden="true">A−</span>
+                <span className="sr-only">Perkecil ukuran teks</span>
+              </Button>
+              <span className="px-1 text-xs tabular-nums text-muted-foreground">
+                {fontSizePx}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const next = Math.min(28, fontSizePx + 1);
+                  setFontSizePx(next);
+                  announce(`Ukuran huruf ${next} piksel.`);
+                }}
+                className="h-9 rounded-full px-3 text-xs font-semibold"
+              >
+                <span aria-hidden="true">A+</span>
+                <span className="sr-only">Perbesar ukuran teks</span>
               </Button>
             </div>
 
-            {reportSuccess ? (
-              <div className="p-6 text-center space-y-2 text-success">
-                <CheckCircle2 className="size-10 mx-auto" />
-                <p className="font-bold text-sm">Laporan Terkirim!</p>
-                <p className="text-xs text-muted-foreground">Volunteer reviewer akan meninjau bagian ini.</p>
-              </div>
-            ) : (
-              <form onSubmit={submitReportIssue} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="issue-type" className="text-xs font-semibold text-foreground">
-                    Jenis Kendala:
-                  </label>
-                  <select
-                    id="issue-type"
-                    value={reportIssueType}
-                    onChange={(e) => setReportIssueType(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs text-foreground"
-                  >
-                    <option value="ocr">Kesalahan Teks / OCR Terpotong</option>
-                    <option value="math">Rumus MathML / Narasi Suara Salah</option>
-                    <option value="table">Struktur Tabel Tidak Terbaca</option>
-                    <option value="figure">Deskripsi Gambar / Diagram Kurang Jelas</option>
-                    <option value="version">Versi Sumber Telah Diperbarui Dosen</option>
-                  </select>
-                </div>
+            <Button
+              type="button"
+              size="sm"
+              variant={activePanel === "outline" ? "default" : "outline"}
+              aria-pressed={activePanel === "outline"}
+              onClick={() => togglePanel("outline")}
+              className="min-h-10 rounded-full px-4 text-xs font-semibold"
+            >
+              <ListTree className="size-4" aria-hidden="true" />
+              <span>Daftar Isi</span>
+            </Button>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="issue-desc" className="text-xs font-semibold text-foreground">
-                    Deskripsi Masalah:
-                  </label>
-                  <Textarea
-                    id="issue-desc"
-                    value={reportText}
-                    onChange={(e) => setReportText(e.target.value)}
-                    placeholder="Jelaskan secara singkat apa yang perlu diperbaiki oleh volunteer..."
-                    rows={3}
-                    className="text-xs font-sans"
-                  />
-                </div>
+            <Button
+              type="button"
+              size="sm"
+              variant={activePanel === "ai" ? "default" : "outline"}
+              aria-pressed={activePanel === "ai"}
+              onClick={() => togglePanel("ai")}
+              className="min-h-10 rounded-full px-4 text-xs font-semibold"
+            >
+              <MessageSquare className="size-4" aria-hidden="true" />
+              <span>Tanya AI</span>
+            </Button>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setReportingBlockId(null)}
-                  >
-                    Batal
-                  </Button>
-                  <Button type="submit" size="sm" className="font-semibold">
-                    Kirim Laporan Isu
-                  </Button>
-                </div>
-              </form>
-            )}
+            {signedPdfUrl ? (
+              <Button
+                size="sm"
+                variant="outline"
+                asChild
+                className="min-h-10 rounded-full px-4 text-xs font-semibold"
+              >
+                <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer">
+                  <span>PDF asli</span>
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
-      )}
+      </header>
+
+      {versionNotice ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-brand-gold bg-tint-gold p-4 text-sm text-brand-ink"
+        >
+          {versionNotice}
+        </div>
+      ) : null}
+
+      {/* Main Spacious Reading Area + Optional Single Docked Companion on xl+ */}
+      <div
+        className={cn(
+          "items-start gap-6",
+          activePanel && isXlDesktop ? "xl:grid xl:grid-cols-12" : "block"
+        )}
+      >
+        <div
+          className={cn(
+            "min-w-0 space-y-6",
+            activePanel && isXlDesktop ? "xl:col-span-8" : "mx-auto max-w-3xl"
+          )}
+        >
+          {filteredBlocks.length === 0 ? (
+            <EmptyState
+              icon={BookOpen}
+              title="Tidak ada bagian yang cocok"
+              description="Bersihkan kata kunci pencarian di Daftar Isi untuk melihat seluruh materi."
+            />
+          ) : (
+            <article
+              aria-label={document.title}
+              className="rounded-3xl border border-border bg-card px-5 py-7 shadow-card sm:px-10 sm:py-10"
+            >
+              <div className="sonar-reader-prose mx-auto max-w-[var(--reader-max-width)] space-y-6">
+                {filteredBlocks.map((block, index) => {
+                  const isCurrent = activeBlockId === block.id;
+                  const isBookmarked = bookmarks.includes(block.id);
+                  const eqData = equationsByBlock.get(block.id);
+                  const tblData = tablesByBlock.get(block.id);
+                  const figData = figuresByBlock.get(block.id);
+
+                  return (
+                    <section
+                      key={block.id}
+                      id={`block-${block.id}`}
+                      tabIndex={-1}
+                      aria-current={isCurrent ? "true" : undefined}
+                      aria-label={`Halaman ${block.page_number}, ${blockKindLabel(block.block_type)}`}
+                      className={cn(
+                        "group relative scroll-mt-24 rounded-2xl p-4 transition-colors outline-none",
+                        isCurrent
+                          ? "bg-brand-mint/45 ring-2 ring-primary/45 dark:bg-secondary/40"
+                          : "hover:bg-surface-subtle/60"
+                      )}
+                    >
+                      {block.block_type === "heading" &&
+                        (!block.heading_level || block.heading_level === 1) && (
+                          <h2 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
+                            {block.content_text}
+                          </h2>
+                        )}
+
+                      {block.block_type === "heading" &&
+                        block.heading_level === 2 && (
+                          <h3 className="font-heading text-xl font-bold tracking-tight text-foreground">
+                            {block.content_text}
+                          </h3>
+                        )}
+
+                      {block.block_type === "heading" &&
+                        (block.heading_level ?? 0) >= 3 && (
+                          <h4 className="font-heading text-lg font-bold text-foreground">
+                            {block.content_text}
+                          </h4>
+                        )}
+
+                      {block.block_type === "paragraph" && (
+                        <p className="text-foreground">{block.content_text}</p>
+                      )}
+
+                      {block.block_type === "table" && (
+                        <div
+                          tabIndex={0}
+                          role="region"
+                          aria-label={`Tabel halaman ${block.page_number}`}
+                          className="overflow-x-auto rounded-xl border border-border"
+                        >
+                          <StructuredTable
+                            html={block.content_html}
+                            table={tblData}
+                            fallbackText={block.content_text}
+                          />
+                        </div>
+                      )}
+
+                      {block.block_type === "equation" && (
+                        <div className="space-y-3 rounded-2xl border border-brand-teal/30 bg-brand-mint/35 p-5 dark:bg-secondary/35">
+                          <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+                            <span className="rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink">
+                              Rumus MathML
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => audio.playFrom(index)}
+                              className="h-9 rounded-full bg-card px-3 text-xs"
+                            >
+                              <Volume2 className="size-3.5" aria-hidden="true" />
+                              <span>Dengarkan rumus</span>
+                            </Button>
+                          </div>
+
+                          <div
+                            tabIndex={0}
+                            role="region"
+                            aria-label={`Rumus matematika halaman ${block.page_number}`}
+                            className="overflow-x-auto py-2 text-lg text-foreground"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeDocumentHtml(
+                                eqData?.mathml ?? block.content_html ?? ""
+                              ),
+                            }}
+                          />
+
+                          <details className="rounded-xl border border-border bg-card p-3 text-sm font-ui">
+                            <summary className="cursor-pointer font-semibold text-foreground">
+                              Narasi teks rumus
+                            </summary>
+                            <p className="mt-2 font-sans text-muted-foreground">
+                              {(language === "id"
+                                ? eqData?.narration_id
+                                : eqData?.narration_en) ??
+                                block.spoken_text ??
+                                block.content_text}
+                            </p>
+                          </details>
+                        </div>
+                      )}
+
+                      {block.block_type === "figure" && (
+                        <div className="space-y-3 rounded-2xl border border-border bg-surface-subtle/60 p-4">
+                          {block.content_html?.trim() ? (
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeDocumentHtml(block.content_html),
+                              }}
+                            />
+                          ) : null}
+                          <div className="rounded-xl border border-border bg-card p-4 text-sm">
+                            <p className="font-ui text-xs font-semibold text-secondary-foreground">
+                              Deskripsi gambar untuk screen reader
+                            </p>
+                            <p className="mt-1 text-foreground">
+                              {figData?.summary ??
+                                block.spoken_text ??
+                                block.content_text}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quiet block actions: visible when active, hovered, or keyboard-focused */}
+                      <div
+                        className={cn(
+                          "mt-2 flex items-center justify-end gap-1 font-ui transition-opacity",
+                          isCurrent
+                            ? "opacity-100"
+                            : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                        )}
+                      >
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => audio.playFrom(index)}
+                          aria-label={`Dengarkan ${blockKindLabel(block.block_type)} halaman ${block.page_number}`}
+                          className="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <Volume2 className="size-3.5" aria-hidden="true" />
+                          <span>Dengarkan</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-pressed={isBookmarked}
+                          onClick={() => {
+                            const saved = toggleBookmark(block.id);
+                            announce(
+                              saved ? "Penanda disimpan." : "Penanda dihapus.",
+                              "polite"
+                            );
+                          }}
+                          className="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <Bookmark
+                            className={cn(
+                              "size-3.5",
+                              isBookmarked && "fill-primary text-primary"
+                            )}
+                            aria-hidden="true"
+                          />
+                          <span>{isBookmarked ? "Ditandai" : "Tandai"}</span>
+                          <span className="sr-only">
+                            {" "}
+                            blok halaman {block.page_number}
+                          </span>
+                        </Button>
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </article>
+          )}
+
+          {/* Sticky Floating Audio Transport Bar */}
+          <div
+            role="region"
+            aria-label="Pemutar audio pembaca dokumen"
+            className="sticky bottom-20 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 font-ui shadow-nav backdrop-blur-md lg:bottom-4"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={audio.previous}
+                disabled={!audio.isSupported || audio.activeIndex === 0}
+                aria-label="Blok sebelumnya"
+                className="size-9 rounded-full"
+              >
+                <SkipBack className="size-4" aria-hidden="true" />
+              </Button>
+
+              {audio.isPlaying ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={audio.pause}
+                  className="h-9 rounded-full px-4 text-xs font-semibold"
+                >
+                  <Pause className="size-4" aria-hidden="true" />
+                  <span>Jeda</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() =>
+                    audio.isPaused ? audio.resume() : audio.playFrom(audio.activeIndex)
+                  }
+                  disabled={!audio.isSupported || audioBlocks.length === 0}
+                  className="h-9 rounded-full px-4 text-xs font-semibold"
+                >
+                  <Play className="size-4" aria-hidden="true" />
+                  <span>{audio.isPaused ? "Lanjut" : "Dengarkan"}</span>
+                </Button>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={audio.next}
+                disabled={
+                  !audio.isSupported || audio.activeIndex >= audioBlocks.length - 1
+                }
+                aria-label="Blok berikutnya"
+                className="size-9 rounded-full"
+              >
+                <SkipForward className="size-4" aria-hidden="true" />
+              </Button>
+
+              {audio.isPlaying || audio.isPaused ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={audio.stop}
+                  aria-label="Hentikan audio"
+                  className="size-9 rounded-full"
+                >
+                  <Square className="size-3.5" aria-hidden="true" />
+                </Button>
+              ) : null}
+
+              <span className="ml-1 text-xs font-medium tabular-nums text-muted-foreground">
+                Blok {audioBlocks.length === 0 ? 0 : audio.activeIndex + 1} dari{" "}
+                {audioBlocks.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs">
+              <label className="flex items-center gap-1.5 text-muted-foreground">
+                <span>Kecepatan</span>
+                <select
+                  aria-label="Kecepatan suara"
+                  value={narrationSpeed}
+                  onChange={(e) => setNarrationSpeed(Number(e.target.value))}
+                  className="h-9 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground"
+                >
+                  <option value="0.75">0.75×</option>
+                  <option value="1">1.0×</option>
+                  <option value="1.25">1.25×</option>
+                  <option value="1.5">1.5×</option>
+                  <option value="2">2.0×</option>
+                </select>
+              </label>
+
+              <label className="flex items-center gap-1.5 text-muted-foreground">
+                <span>Bahasa</span>
+                <select
+                  aria-label="Bahasa narasi"
+                  value={language}
+                  onChange={(e) =>
+                    setLanguage(e.target.value === "id" ? "id" : "en")
+                  }
+                  className="h-9 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground"
+                >
+                  <option value="id">ID</option>
+                  <option value="en">EN</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Docked Single Companion Panel on xl+ */}
+        {activePanel && isXlDesktop ? (
+          <aside
+            aria-label={
+              activePanel === "outline"
+                ? "Daftar isi dokumen"
+                : "Tanya asisten dokumen"
+            }
+            className="sticky top-20 flex max-h-[calc(100dvh-6.5rem)] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card xl:col-span-4"
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 font-ui">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActivePanel("outline")}
+                  className={cn(
+                    "min-h-9 rounded-full px-3 text-xs font-semibold transition-colors",
+                    activePanel === "outline"
+                      ? "bg-brand-mint text-brand-ink"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Daftar Isi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivePanel("ai")}
+                  className={cn(
+                    "min-h-9 rounded-full px-3 text-xs font-semibold transition-colors",
+                    activePanel === "ai"
+                      ? "bg-tint-blue text-brand-ink"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Tanya AI
+                </button>
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label="Tutup panel samping"
+                onClick={() => setActivePanel(null)}
+                className="size-9 rounded-full"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
+            {activePanel === "outline" ? outlinePanelBody : aiPanelBody}
+          </aside>
+        ) : null}
+      </div>
+
+      {/* Responsive Slide-over Sheet on < xl (< 1280px) so reading paper never gets squeezed */}
+      <Sheet
+        open={Boolean(activePanel) && !isXlDesktop}
+        onOpenChange={(open) => {
+          if (!open) setActivePanel(null);
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-full max-w-sm flex-col gap-0 p-0 sm:max-w-md"
+        >
+          <SheetHeader className="border-b border-border px-4 py-3.5 text-left">
+            <SheetTitle className="font-heading text-base font-bold">
+              {activePanel === "ai" ? "Tanya AI" : "Daftar Isi & Materi"}
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              {activePanel === "ai"
+                ? "Jawaban mengacu pada isi dokumen yang sedang dibuka."
+                : "Lompat langsung ke bab, rumus, tabel, atau penanda Anda."}
+            </SheetDescription>
+          </SheetHeader>
+          {activePanel === "ai" ? aiPanelBody : outlinePanelBody}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
 
-function EyeOff(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .698 10.747 10.747 0 0 1-5.111 5.372" />
-      <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
-      <path d="M17.479 17.499A10.75 10.75 0 0 1 2.062 12.35a1 1 0 0 1 0-.698 10.75 10.75 0 0 1 2.883-4.148" />
-      <line x1="2" x2="22" y1="2" y2="22" />
-    </svg>
-  );
+function utteranceSetLang(
+  utterance: SpeechSynthesisUtterance,
+  language: "id" | "en",
+  rate: number
+) {
+  utterance.lang = language === "id" ? "id-ID" : "en-US";
+  utterance.rate = rate;
 }

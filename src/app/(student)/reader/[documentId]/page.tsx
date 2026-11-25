@@ -1,14 +1,20 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { BookOpen } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
-import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
+import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
-import { loadDocumentDetail } from "@/lib/data/workspace";
+import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
+import {
+  loadCourseDetailWithMaterials,
+  loadDocumentDetail,
+} from "@/lib/data/workspace";
+import { getSharedMaterialById } from "@/lib/data/course-materials";
 import { isAiConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "Document Reader",
+  title: "Pembaca Dokumen",
 };
 
 async function ReaderDetailBody({
@@ -21,36 +27,52 @@ async function ReaderDetailBody({
 
   if (!detail) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 rounded-xl border bg-card p-8 text-center">
-        <h1 className="font-heading text-2xl font-bold">
-          Document unavailable or access denied
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          You may only open documents belonging to your enrolled courses or
-          explicitly shared with your account.
-        </p>
-        <Button asChild>
-          <Link href="/reader">Return to reader workspace</Link>
-        </Button>
+      <div className="mx-auto max-w-2xl px-4 py-12 space-y-4">
+        <h1 className="sr-only">Dokumen tidak tersedia</h1>
+        <EmptyState
+          icon={BookOpen}
+          title="Dokumen tidak tersedia atau akses ditolak"
+          description="Anda hanya dapat membuka dokumen dari mata kuliah yang Anda ikuti atau yang dibagikan ke akun Anda."
+          action={
+            <Button asChild className="rounded-full">
+              <Link href="/reader">Kembali ke pembaca</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
 
+  const courseDetail = detail.course
+    ? await loadCourseDetailWithMaterials(detail.course.id)
+    : null;
+
+  const relatedDocuments = (courseDetail?.documents ?? [])
+    .filter((d) => d.id !== detail.document.id)
+    .slice(0, 6)
+    .map((d) => ({
+      id: d.id,
+      title: d.title,
+      reviewStatus: d.review_status,
+    }));
+
+  const sharedMeta = getSharedMaterialById(detail.document.id);
+
   return (
-    <div className="mx-auto max-w-7xl">
-      <AccessibleReaderStudio
-        document={detail.document}
-        courseLabel={
-          detail.course ? `${detail.course.code} — ${detail.course.title}` : undefined
-        }
-        blocks={detail.blocks}
-        tables={detail.tables}
-        equations={detail.equations}
-        figures={detail.figures}
-        signedPdfUrl={detail.signedPdfUrl}
-        aiEnabled={isAiConfigured()}
-      />
-    </div>
+    <AccessibleReaderStudio
+      document={detail.document}
+      courseLabel={
+        detail.course ? `${detail.course.code} — ${detail.course.title}` : undefined
+      }
+      blocks={detail.blocks}
+      tables={detail.tables}
+      equations={detail.equations}
+      figures={detail.figures}
+      signedPdfUrl={detail.signedPdfUrl}
+      aiEnabled={isAiConfigured()}
+      relatedDocuments={relatedDocuments}
+      versionNotice={sharedMeta?.versionNotice ?? null}
+    />
   );
 }
 
@@ -60,8 +82,14 @@ export default function ReaderDetailPage({
   params: Promise<{ documentId: string }>;
 }) {
   return (
-    <WorkspaceShell pageSectionLabel="Document Reader">
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading document...</p>}>
+    <WorkspaceShell>
+      <Suspense
+        fallback={
+          <p className="p-6 text-sm text-muted-foreground font-ui">
+            Memuat dokumen…
+          </p>
+        }
+      >
         <ReaderDetailBody params={params} />
       </Suspense>
     </WorkspaceShell>
