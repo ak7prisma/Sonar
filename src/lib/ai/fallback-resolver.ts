@@ -1,9 +1,9 @@
 export const DEFAULT_FALLBACK_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-2.5-pro",
-  "gemini-1.5-pro",
+  "gemini-3.6-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.5-flash",
+  "gemini-3-flash-preview",
 ];
 
 export function isRateLimitOrQuotaError(error: unknown): boolean {
@@ -31,6 +31,8 @@ export function isRateLimitOrQuotaError(error: unknown): boolean {
     "too many requests",
     "overloaded",
     "model is overloaded",
+    "high demand",
+    "spikes in demand",
     "temporarily unavailable",
     "capacity",
     "try again later",
@@ -41,6 +43,7 @@ export function isRateLimitOrQuotaError(error: unknown): boolean {
     "is not found",
     "unsupported model",
     "deprecated",
+    "no longer available",
   ];
 
   return patterns.some((p) => message.includes(p));

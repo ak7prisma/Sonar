@@ -11,9 +11,9 @@ const serverEnvSchema = publicEnvSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
   AI_PROVIDER: z.enum(["google"]).default("google"),
-  AI_CHAT_MODEL: z.string().min(1).default("gemini-3-flash-preview"),
-  AI_VISION_MODEL: z.string().min(1).default("gemini-3-flash-preview"),
-  AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-2"),
+  AI_CHAT_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+  AI_VISION_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+  AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-001"),
   AI_FALLBACK_CHAT_MODELS: z.string().optional(),
   AI_FALLBACK_VISION_MODELS: z.string().optional(),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
@@ -56,9 +56,9 @@ export function getServerEnv() {
   if (!parsed.success) {
     return {
       AI_PROVIDER: "google" as const,
-      AI_CHAT_MODEL: "gemini-3-flash-preview",
-      AI_VISION_MODEL: "gemini-3-flash-preview",
-      AI_EMBEDDING_MODEL: "gemini-embedding-2",
+      AI_CHAT_MODEL: "gemini-3.8-flash",
+      AI_VISION_MODEL: "gemini-3.8-flash",
+      AI_EMBEDDING_MODEL: "gemini-embedding-001",
       AI_FALLBACK_CHAT_MODELS: undefined,
       AI_FALLBACK_VISION_MODELS: undefined,
     };
