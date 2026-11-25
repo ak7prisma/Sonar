@@ -521,11 +521,7 @@ export function OcrDocumentScanner({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tint-blue text-brand-blue-strong">
-                    {scanning ? (
-                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <FileText className="size-5" aria-hidden="true" />
-                    )}
+                    <FileText className="size-5" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground font-ui">
@@ -536,7 +532,7 @@ export function OcrDocumentScanner({
                         PDF
                       </span>
                       <span>
-                        {scanning ? "Memindai…" : formatFileSize(selectedPdfFile.size)}
+                        {scanning ? `Memproses OCR (${scanProgress}%)…` : formatFileSize(selectedPdfFile.size)}
                       </span>
                     </div>
                   </div>
@@ -573,14 +569,11 @@ export function OcrDocumentScanner({
                   role="status"
                   aria-live="polite"
                   aria-label="Status konversi dokumen OCR"
-                  className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left shadow-xs transition-all"
+                  className="rounded-2xl border border-border bg-surface-subtle/70 p-4 space-y-3 text-left transition-all font-ui shadow-xs"
                 >
-                  <div className="flex items-center justify-between text-xs font-ui">
-                    <div className="flex items-center gap-2 text-primary font-bold min-w-0">
-                      <Sparkles className="size-4 animate-spin text-primary shrink-0" aria-hidden="true" />
-                      <span className="truncate">{scanStageMessage}</span>
-                    </div>
-                    <span className="font-mono font-bold text-foreground bg-primary/15 px-2 py-0.5 rounded-full text-[11px] shrink-0">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground truncate">{scanStageMessage}</span>
+                    <span className="font-mono font-bold text-primary tabular-nums">
                       {scanProgress}%
                     </span>
                   </div>
@@ -588,33 +581,33 @@ export function OcrDocumentScanner({
                   <Progress
                     value={scanProgress}
                     aria-label={`Progres konversi OCR: ${scanProgress}%`}
-                    className="h-2.5 rounded-full bg-muted/80"
+                    className="h-2 rounded-full bg-muted"
                   />
 
-                  <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-ui text-center">
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-ui text-center">
                     <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                      className={`py-1 px-1 rounded-md transition-colors ${
                         scanProgress >= 25
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-muted-foreground"
                       }`}
                     >
                       1. Analisis Visual
                     </span>
                     <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                      className={`py-1 px-1 rounded-md transition-colors ${
                         scanProgress >= 60
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-muted-foreground"
                       }`}
                     >
                       2. Rumus MathML
                     </span>
                     <span
-                      className={`py-1 px-1 rounded transition-colors ${
+                      className={`py-1 px-1 rounded-md transition-colors ${
                         scanProgress >= 85
-                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
-                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-muted-foreground"
                       }`}
                     >
                       3. Narasi Suara
@@ -634,12 +627,8 @@ export function OcrDocumentScanner({
             onClick={executeOcrScan}
             className="min-h-11 rounded-full px-6 text-sm font-semibold shadow-xs"
           >
-            {scanning ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <ScanText className="size-4" aria-hidden="true" />
-            )}
-            <span>{scanning ? "Memindai…" : "Mulai Pindai OCR"}</span>
+            {!scanning && <ScanText className="size-4 mr-2" aria-hidden="true" />}
+            <span>{scanning ? `Memindai (${scanProgress}%)…` : "Mulai Pindai OCR"}</span>
           </Button>
         </div>
       </div>

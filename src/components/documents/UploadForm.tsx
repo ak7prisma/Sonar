@@ -303,11 +303,7 @@ export function UploadForm({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-mint text-brand-teal">
-                {submitting ? (
-                  <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                ) : (
-                  <FileText className="size-5" aria-hidden="true" />
-                )}
+                <FileText className="size-5" aria-hidden="true" />
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground font-ui">
