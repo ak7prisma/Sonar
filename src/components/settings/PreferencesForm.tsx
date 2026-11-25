@@ -78,7 +78,7 @@ export function PreferencesForm({
       >
         <div
           className={cn(
-            "rounded-2xl border border-border p-5 transition-colors",
+            "rounded-2xl border border-border px-3.5 py-3 transition-colors sm:px-4 sm:py-3.5",
             store.readingSurface === "warm"
               ? "bg-[#faf6ee] text-[#1c1d1b] dark:bg-[#1a1916] dark:text-[#f4ede0]"
               : "bg-background text-foreground"

@@ -998,7 +998,7 @@ export function AccessibleReaderStudio({
           ) : (
             <article
               aria-label={document.title}
-              className="w-full rounded-3xl border border-border bg-card px-5 py-7 shadow-card sm:px-10 sm:py-10"
+              className="w-full rounded-2xl border border-border bg-card px-3 py-5 shadow-card sm:px-4 sm:py-6"
             >
               <div className="sonar-reader-prose w-full space-y-6">
                 {filteredBlocks.map((block, index) => {
@@ -1016,7 +1016,7 @@ export function AccessibleReaderStudio({
                       aria-current={isCurrent ? "true" : undefined}
                       aria-label={`Halaman ${block.page_number}, ${blockKindLabel(block.block_type)}`}
                       className={cn(
-                        "group relative scroll-mt-24 rounded-2xl p-4 transition-colors outline-none",
+                        "group relative scroll-mt-24 rounded-xl p-2 transition-colors outline-none sm:p-2.5",
                         isCurrent
                           ? "bg-brand-mint/45 ring-2 ring-primary/45 dark:bg-secondary/40"
                           : "hover:bg-surface-subtle/60"
