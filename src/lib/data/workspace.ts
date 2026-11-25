@@ -31,6 +31,30 @@ export interface WorkspaceSnapshot {
   jobs: ProcessingJobRow[];
 }
 
+export interface ScannedDocumentEntry {
+  document: DocumentRow;
+  course: CourseRow;
+  blocks: DocumentBlockRow[];
+  tables: DocumentTableRow[];
+  equations: DocumentEquationRow[];
+  figures: DocumentFigureRow[];
+  signedPdfUrl?: string | null;
+}
+
+const SCANNED_DOCUMENTS_STORE = new Map<string, ScannedDocumentEntry>();
+
+export function registerScannedDocument(entry: ScannedDocumentEntry): void {
+  SCANNED_DOCUMENTS_STORE.set(entry.document.id, entry);
+}
+
+export function getScannedDocument(documentId: string): ScannedDocumentEntry | undefined {
+  return SCANNED_DOCUMENTS_STORE.get(documentId);
+}
+
+export function listScannedDocuments(): DocumentRow[] {
+  return Array.from(SCANNED_DOCUMENTS_STORE.values()).map((e) => e.document);
+}
+
 export const FALLBACK_COURSES: CourseRow[] = [
   {
     id: "cs-201",
@@ -305,12 +329,19 @@ export const loadWorkspaceSnapshot = cache(async function loadWorkspaceSnapshot(
     }
   }
 
+  const scannedDocs = listScannedDocuments();
+  const baseDocs = documents.length > 0 ? documents : FALLBACK_DOCUMENTS;
+  const mergedDocs = [
+    ...scannedDocs,
+    ...baseDocs.filter((d) => !scannedDocs.some((s) => s.id === d.id)),
+  ];
+
   return {
     configured: isSupabaseConfigured(),
     missingServices: [],
     user: authUser,
     courses: courses.length > 0 ? courses : FALLBACK_COURSES,
-    documents: documents.length > 0 ? documents : FALLBACK_DOCUMENTS,
+    documents: mergedDocs,
     jobs: includeJobs ? (jobs.length > 0 ? jobs : FALLBACK_JOBS) : [],
   };
 });
@@ -445,6 +476,21 @@ export const loadRelatedDocuments = cache(async function loadRelatedDocuments(
 
 export const loadDocumentDetail = cache(async function loadDocumentDetail(documentId: string) {
   await connection();
+  // Check dynamically scanned documents first (ensures real scanned results load immediately)
+  const scanned = getScannedDocument(documentId);
+  if (scanned) {
+    return {
+      document: scanned.document,
+      course: scanned.course,
+      blocks: scanned.blocks,
+      tables: scanned.tables,
+      equations: scanned.equations,
+      figures: scanned.figures,
+      reviews: [],
+      signedPdfUrl: scanned.signedPdfUrl ?? null,
+      viewerRoles: ["student", "reviewer"] as AppRole[],
+    };
+  }
   const demoUser = await getCurrentAppUser();
   const fallbackDoc = FALLBACK_DOCUMENTS.find((d) => d.id === documentId) ?? FALLBACK_DOCUMENTS[0];
   const fallbackCourse = FALLBACK_COURSES.find((c) => c.id === fallbackDoc.course_id) ?? FALLBACK_COURSES[0];

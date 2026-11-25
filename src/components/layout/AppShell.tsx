@@ -266,6 +266,7 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background lg:flex">
+      {/* Desktop Sidebar (Sticky on viewport) */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
         <div className="flex h-16 items-center px-5">
           <Link

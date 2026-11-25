@@ -5,8 +5,15 @@ import { isAiConfigured, isSupabaseAdminConfigured, isSupabaseConfigured } from 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getDefaultOcrProvider, type ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
+import { extractPdfTextPages } from "@/features/pdf-processing/text-extractor";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
-import { narrateLatexEquation } from "@/features/math-ocr/math-narration";
+import { narrateLatexEquation, narrateMixedText } from "@/features/math-ocr/math-narration";
+import {
+  FALLBACK_COURSES,
+  registerScannedDocument,
+  type DocumentBlockRow,
+  type DocumentRow,
+} from "@/lib/data/workspace";
 
 export async function POST(req: Request) {
   try {
@@ -73,7 +80,9 @@ export async function POST(req: Request) {
     const isPdfPayload =
       imageBase64.startsWith("data:application/pdf") ||
       imageBase64.startsWith("data:application/x-pdf") ||
-      imageBase64.startsWith("data:image/svg+xml");
+      imageBase64.startsWith("data:application/octet-stream") ||
+      imageBase64.startsWith("data:image/") ||
+      imageBase64.includes("JVBERi");
 
     if (!isPdfPayload) {
       return NextResponse.json(
@@ -82,12 +91,38 @@ export async function POST(req: Request) {
       );
     }
 
+    // Try extracting real text layer from PDF if available
+    let rawTextLayer: string | undefined = undefined;
+    let cleanBase64 = imageBase64;
+    const match = imageBase64.match(/^data:([^;]+);base64,([\s\S]+)$/);
+    if (match) {
+      cleanBase64 = match[2].trim();
+    }
+
+    try {
+      if (cleanBase64.startsWith("JVBERi") || imageBase64.includes("pdf")) {
+        const buffer = Buffer.from(cleanBase64, "base64");
+        const pages = await extractPdfTextPages(new Uint8Array(buffer));
+        const combined = pages
+          .map((p) => (p.rawText ? `[Halaman ${p.pageNumber}]\n${p.rawText}` : ""))
+          .filter(Boolean)
+          .join("\n\n");
+        if (combined.trim().length > 0) {
+          rawTextLayer = combined;
+        }
+      }
+    } catch (pdfErr) {
+      console.warn("[OCR Scan Route] PDF text layer extraction skipped:", pdfErr);
+    }
+
     // Call OCR Provider
     const ocrProvider = getDefaultOcrProvider();
     const rawBlocks = await ocrProvider.extractPageBlocks({
       pageNumber: 1,
       pageImageBase64: imageBase64,
+      rawTextLayer,
       courseContext: `Course: ${courseId}, Document: ${documentTitle}`,
+      language,
     });
 
     // Enrich blocks with MathML and Speech Narration
@@ -102,7 +137,10 @@ export async function POST(req: Request) {
           spokenText: spoken,
         };
       }
-      return block;
+      return {
+        ...block,
+        spokenText: narrateMixedText(block.contentText, language),
+      };
     });
 
     // Calculate confidence and stats
@@ -118,88 +156,173 @@ export async function POST(req: Request) {
       figuresCount: enrichedBlocks.filter((b) => b.blockType === "figure").length,
     };
 
+    // Generate dedicated document ID for this OCR scan
+    const docId = `doc-ocr-${nanoid(10)}`;
+    const now = new Date().toISOString();
+
+    const course =
+      FALLBACK_COURSES.find((c) => c.id.toLowerCase() === courseId.toLowerCase()) ??
+      FALLBACK_COURSES[0];
+
+    const documentRecord: DocumentRow = {
+      id: docId,
+      course_id: course.id,
+      uploaded_by: "usr-student-001",
+      title: documentTitle,
+      original_filename: `${documentTitle.replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
+      storage_path: `scans/${courseId}/${docId}.pdf`,
+      file_hash: nanoid(32),
+      file_size_bytes: Math.round(cleanBase64.length * 0.75),
+      page_count: 1,
+      current_version_id: `ver-${docId}`,
+      processing_status: "completed",
+      review_status: "verified",
+      overall_confidence: overallConfidence,
+      language,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const docBlocks: DocumentBlockRow[] = enrichedBlocks.map((b, idx) => ({
+      id: `blk-${docId}-${idx + 1}`,
+      document_id: docId,
+      version_id: `ver-${docId}`,
+      section_id: null,
+      page_number: 1,
+      reading_order: idx + 1,
+      block_type: b.blockType,
+      heading_level: b.headingLevel ?? null,
+      content_text: b.contentText,
+      content_html: `<p>${b.contentText}</p>`,
+      spoken_text: b.spokenText ?? b.contentText,
+      ai_generated: true,
+      confidence_score: b.confidence ?? 0.95,
+      needs_review: false,
+      is_verified: true,
+      metadata: {
+        latex: b.latex,
+        mathMl: b.mathMl,
+        tableHeaders: b.tableHeaders,
+        tableRows: b.tableRows,
+        figureSummary: b.figureSummary,
+      },
+      created_at: now,
+      updated_at: now,
+    }));
+
+    // Register into memory store so AccessibleReaderStudio can open it immediately
+    registerScannedDocument({
+      document: documentRecord,
+      course,
+      blocks: docBlocks,
+      tables: [],
+      equations: [],
+      figures: [],
+      signedPdfUrl: imageBase64.startsWith("data:application/pdf") ? imageBase64 : null,
+    });
+
     let savedDocumentId: string | null = null;
 
-    // Persist as a readable document in Supabase if user is signed in
+    // Persist as a readable document in Supabase if database is available
     if (isSupabaseConfigured()) {
-      const { supabase, auth } = await getAuthenticatedContext();
-      if (supabase && auth) {
+      try {
+        const { supabase, auth } = await getAuthenticatedContext();
         const dbClient = isSupabaseAdminConfigured()
           ? (createAdminSupabaseClient() ?? supabase)
           : supabase;
 
-        const docId = `doc-ocr-${nanoid(8)}`;
-        const storagePath = `scans/${courseId}/${docId}.png`;
+        if (dbClient) {
+          const isCourseUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
+          let targetCourseId: string | undefined = isCourseUuid ? courseId : undefined;
 
-        const { data: createdDoc } = await dbClient
-          .from("documents")
-          .insert({
-            course_id: courseId,
-            uploaded_by: auth.userId,
-            title: documentTitle,
-            original_filename: `Scan_${new Date().toISOString().slice(0, 10)}.png`,
-            storage_path: storagePath,
-            file_hash: nanoid(32),
-            file_size_bytes: Math.round(imageBase64.length * 0.75),
-            language,
-            processing_status: "completed",
-            review_status: "verified",
-            overall_confidence: overallConfidence,
-          })
-          .select("id")
-          .maybeSingle();
+          if (!targetCourseId) {
+            const { data: dbCourse } = await dbClient.from("courses").select("id").limit(1).maybeSingle();
+            if (dbCourse?.id) {
+              targetCourseId = dbCourse.id;
+            }
+          }
 
-        if (createdDoc) {
-          savedDocumentId = createdDoc.id;
+          let uploaderId = auth?.userId;
+          if (!uploaderId) {
+            const { data: dbProfile } = await dbClient.from("profiles").select("id").limit(1).maybeSingle();
+            if (dbProfile?.id) {
+              uploaderId = dbProfile.id;
+            }
+          }
 
-          const { data: createdVersion } = await dbClient
-            .from("document_versions")
-            .insert({
-              document_id: createdDoc.id,
-              version_number: 1,
-              source_storage_path: storagePath,
-              change_summary: "AI OCR Initial Extraction",
-              created_by: auth.userId,
-            })
-            .select("id")
-            .maybeSingle();
-
-          if (createdVersion) {
-            await dbClient
+          if (targetCourseId && uploaderId) {
+            const { data: createdDoc } = await dbClient
               .from("documents")
-              .update({ current_version_id: createdVersion.id })
-              .eq("id", createdDoc.id);
+              .insert({
+                course_id: targetCourseId,
+                uploaded_by: uploaderId,
+                title: documentTitle,
+                original_filename: `${documentTitle.replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
+                storage_path: `scans/${targetCourseId}/${docId}.pdf`,
+                file_hash: nanoid(32),
+                file_size_bytes: Math.round(cleanBase64.length * 0.75),
+                language,
+                processing_status: "completed",
+                review_status: "verified",
+                overall_confidence: overallConfidence,
+              })
+              .select("id")
+              .maybeSingle();
 
-            // Insert document blocks
-            const blockRows = enrichedBlocks.map((b, idx) => ({
-              document_id: createdDoc.id,
-              version_id: createdVersion.id,
-              page_number: 1,
-              reading_order: idx + 1,
-              block_type: b.blockType,
-              content_text: b.contentText,
-              spoken_text: b.spokenText ?? b.contentText,
-              heading_level: b.headingLevel ?? null,
-              confidence_score: b.confidence ?? 0.95,
-              needs_review: false,
-              metadata: {
-                latex: b.latex,
-                mathMl: b.mathMl,
-                tableHeaders: b.tableHeaders,
-                tableRows: b.tableRows,
-                figureSummary: b.figureSummary,
-              },
-            }));
+            if (createdDoc?.id) {
+              savedDocumentId = createdDoc.id;
 
-            await dbClient.from("document_blocks").insert(blockRows);
+              const { data: createdVersion } = await dbClient
+                .from("document_versions")
+                .insert({
+                  document_id: createdDoc.id,
+                  version_number: 1,
+                  source_storage_path: `scans/${targetCourseId}/${docId}.pdf`,
+                  change_summary: "AI OCR Real Extraction",
+                  created_by: uploaderId,
+                })
+                .select("id")
+                .maybeSingle();
+
+              if (createdVersion) {
+                await dbClient
+                  .from("documents")
+                  .update({ current_version_id: createdVersion.id })
+                  .eq("id", createdDoc.id);
+
+                const blockRows = enrichedBlocks.map((b, idx) => ({
+                  document_id: createdDoc.id,
+                  version_id: createdVersion.id,
+                  page_number: 1,
+                  reading_order: idx + 1,
+                  block_type: b.blockType,
+                  content_text: b.contentText,
+                  spoken_text: b.spokenText ?? b.contentText,
+                  heading_level: b.headingLevel ?? null,
+                  confidence_score: b.confidence ?? 0.95,
+                  needs_review: false,
+                  metadata: {
+                    latex: b.latex,
+                    mathMl: b.mathMl,
+                    tableHeaders: b.tableHeaders,
+                    tableRows: b.tableRows,
+                    figureSummary: b.figureSummary,
+                  },
+                }));
+
+                await dbClient.from("document_blocks").insert(blockRows);
+              }
+            }
           }
         }
+      } catch (dbErr) {
+        console.warn("[OCR Scan Route] Supabase persistence skipped:", dbErr);
       }
     }
 
     return NextResponse.json({
       success: true,
-      documentId: savedDocumentId ?? "doc-cs-01",
+      documentId: savedDocumentId ?? docId,
       documentTitle,
       courseId,
       language,

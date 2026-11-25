@@ -7,9 +7,11 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
+  FileUp,
   Headphones,
   Loader2,
   ScanText,
+  Sparkles,
   Square,
   Upload,
   Volume2,
@@ -19,10 +21,16 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { validatePdfFile } from "@/lib/upload/pdf-validation";
 import { formatFileSize } from "@/lib/format";
+import {
+  FormattedMathText,
+  MathEquationView,
+} from "@/components/document/FormattedMathText";
+import { narrateMixedText } from "@/features/math-ocr/math-narration";
 import type { CourseRow } from "@/lib/data/workspace";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
@@ -64,12 +72,22 @@ export function OcrDocumentScanner({
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStageMessage, setScanStageMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResultData | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [currentlyPlayingIndex, setCurrentlyPlayingIndex] = useState<number | null>(
     null
   );
+  const [isSharing, setIsSharing] = useState(false);
+  const [hasShared, setHasShared] = useState(false);
+  const [shareSuccessMessage, setShareSuccessMessage] = useState<string | null>(null);
+  const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
+  const [sharingNotes, setSharingNotes] = useState("");
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationCache, setTranslationCache] = useState<Record<string, ExtractedBlockOutput[]>>({});
 
   useEffect(() => {
     return () => {
@@ -83,6 +101,11 @@ export function OcrDocumentScanner({
     setSelectedPdfFile(null);
     setPdfDataUrl(null);
     setScanResult(null);
+    setHasShared(false);
+    setShareSuccessMessage(null);
+    setShareErrorMessage(null);
+    setSharingNotes("");
+    setShowShareOptions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -90,6 +113,11 @@ export function OcrDocumentScanner({
     if (!file) return;
     setErrorMessage(null);
     setScanResult(null);
+    setScanProgress(0);
+    setScanStageMessage("");
+    setHasShared(false);
+    setShareSuccessMessage(null);
+    setShareErrorMessage(null);
 
     const validation = await validatePdfFile(file);
     if (!validation.ok) {
@@ -139,10 +167,36 @@ export function OcrDocumentScanner({
       return;
     }
 
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+
     try {
       setScanning(true);
+      setScanProgress(12);
+      setScanStageMessage("Membaca halaman PDF & mengonfigurasi model AI Vision...");
       setErrorMessage(null);
       announce("Memulai ekstraksi OCR dan konversi MathML…", "polite");
+
+      progressTimer = setInterval(() => {
+        setScanProgress((prev) => {
+          if (prev < 35) {
+            setScanStageMessage("Menganalisis hierarki heading, paragraf, dan tata letak halaman...");
+            return prev + 6;
+          }
+          if (prev < 65) {
+            setScanStageMessage("Mendeteksi formula matematika & mengonversi ke MathML standar...");
+            return prev + 5;
+          }
+          if (prev < 85) {
+            setScanStageMessage("Menyusun tabel matriks semantik & deskripsi visual...");
+            return prev + 3;
+          }
+          if (prev < 96) {
+            setScanStageMessage("Menghasilkan audio narasi lisan dan mengindeks dokumen...");
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 400);
 
       const response = await fetch("/api/ocr/scan", {
         method: "POST",
@@ -158,22 +212,95 @@ export function OcrDocumentScanner({
 
       const data = (await response.json()) as ScanResultData & { error?: string };
 
+      if (progressTimer) clearInterval(progressTimer);
+
       if (!response.ok || data.error) {
         throw new Error(data.error ?? "Gagal memindai dokumen PDF.");
       }
 
-      setScanResult(data);
-      announce(
-        `Pemindaian selesai. Terdeteksi ${data.stats.totalBlocks} blok materi.`,
-        "polite"
-      );
+      setScanProgress(100);
+      setScanStageMessage("Konversi OCR selesai! Menyajikan struktur dokumen aksesibel...");
+
+      setTimeout(() => {
+        setScanResult(data);
+        setTranslationCache({ [language]: data.blocks });
+        announce(
+          `Pemindaian selesai. Terdeteksi ${data.stats.totalBlocks} blok materi.`,
+          "polite"
+        );
+      }, 350);
     } catch (err) {
+      if (progressTimer) clearInterval(progressTimer);
+      setScanProgress(0);
+      setScanStageMessage("");
       const msg =
         err instanceof Error ? err.message : "Gagal memproses pemindaian OCR.";
       setErrorMessage(msg);
       announce(msg, "assertive");
     } finally {
-      setScanning(false);
+      setTimeout(() => {
+        setScanning(false);
+      }, 400);
+    }
+  };
+
+  const handleSwitchLanguage = async (targetLang: "id" | "en") => {
+    if (targetLang === language) return;
+    if (!scanResult) {
+      setLanguage(targetLang);
+      return;
+    }
+
+    stopAllAudio();
+    setLanguage(targetLang);
+
+    // If cached in target language, use immediately
+    if (translationCache[targetLang] && translationCache[targetLang].length > 0) {
+      setScanResult((prev) => (prev ? { ...prev, blocks: translationCache[targetLang] } : null));
+      announce(
+        `Bahasa dokumen dialihkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+      return;
+    }
+
+    // Call translation endpoint to translate blocks
+    setIsTranslating(true);
+    announce(
+      `Menerjemahkan dokumen ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}...`,
+      "polite"
+    );
+
+    try {
+      const res = await fetch("/api/documents/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blocks: scanResult.blocks,
+          targetLanguage: targetLang,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Gagal menerjemahkan dokumen.");
+      }
+
+      const translatedBlocks: ExtractedBlockOutput[] = json.blocks;
+      setTranslationCache((prev) => ({
+        ...prev,
+        [targetLang]: translatedBlocks,
+      }));
+      setScanResult((prev) => (prev ? { ...prev, blocks: translatedBlocks } : null));
+      announce(
+        `Dokumen berhasil diterjemahkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+    } catch (translateErr) {
+      console.error("[OcrDocumentScanner] Translation error:", translateErr);
+      announce("Gagal menerjemahkan teks, tetap menggunakan teks saat ini.", "assertive");
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -190,7 +317,8 @@ export function OcrDocumentScanner({
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const naturalSpokenText = narrateMixedText(text, language);
+    const utterance = new SpeechSynthesisUtterance(naturalSpokenText);
     utterance.lang = language === "id" ? "id-ID" : "en-US";
     utterance.rate = 1.0;
 
@@ -213,7 +341,7 @@ export function OcrDocumentScanner({
   const speakAllDocument = () => {
     if (!scanResult || scanResult.blocks.length === 0) return;
     const fullText = scanResult.blocks
-      .map((b) => b.spokenText || b.contentText)
+      .map((b) => narrateMixedText(b.spokenText || b.contentText, language))
       .join(". ");
     speakText(fullText, -1);
   };
@@ -224,6 +352,52 @@ export function OcrDocumentScanner({
     }
     setIsPlayingAudio(false);
     setCurrentlyPlayingIndex(null);
+  };
+
+  const handleShareWithCourse = async () => {
+    if (!selectedPdfFile || !courseId) return;
+    setIsSharing(true);
+    setShareErrorMessage(null);
+    announce("Mengunggah dan membagikan materi ke mata kuliah…", "polite");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedPdfFile);
+      formData.append("courseId", courseId);
+      formData.append(
+        "title",
+        scanResult?.documentTitle || documentTitle || selectedPdfFile.name.replace(/\.pdf$/i, "")
+      );
+      formData.append("language", language);
+      formData.append("academicLevel", "s1");
+      formData.append("sharingOption", "shared");
+      formData.append("reviewerNotes", sharingNotes.trim());
+
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membagikan dokumen ke mata kuliah.");
+      }
+
+      const selectedCourseObj = courses.find((c) => c.id === courseId);
+      const successMsg = `Dokumen berhasil disimpan & dibagikan ke ${
+        selectedCourseObj ? selectedCourseObj.code + " — " + selectedCourseObj.title : "mata kuliah"
+      }.`;
+      setShareSuccessMessage(successMsg);
+      setHasShared(true);
+      announce(successMsg, "polite");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat membagikan dokumen.";
+      setShareErrorMessage(msg);
+      announce(msg, "assertive");
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -327,53 +501,111 @@ export function OcrDocumentScanner({
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tint-blue text-brand-blue-strong">
-                  {scanning ? (
-                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <FileText className="size-5" aria-hidden="true" />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground font-ui">
-                    {selectedPdfFile.name}
-                  </p>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground font-ui">
-                    <span className="rounded-md bg-brand-mint px-1.5 py-0.5 font-semibold text-brand-ink">
-                      PDF
-                    </span>
-                    <span>
-                      {scanning ? "Memindai…" : formatFileSize(selectedPdfFile.size)}
-                    </span>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-xs">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tint-blue text-brand-blue-strong">
+                    {scanning ? (
+                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <FileText className="size-5" aria-hidden="true" />
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground font-ui">
+                      {selectedPdfFile.name}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground font-ui">
+                      <span className="rounded-md bg-brand-mint px-1.5 py-0.5 font-semibold text-brand-ink">
+                        PDF
+                      </span>
+                      <span>
+                        {scanning ? "Memindai…" : formatFileSize(selectedPdfFile.size)}
+                      </span>
+                    </div>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 font-ui">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={scanning}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="min-h-10 rounded-full px-4 text-xs"
+                  >
+                    Ganti berkas
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={scanning}
+                    aria-label="Hapus berkas PDF"
+                    onClick={clearSelection}
+                    className="size-10 rounded-full text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 font-ui">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={scanning}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="min-h-10 rounded-full px-4 text-xs"
+              {/* Live Loading Progress Bar during OCR Conversion */}
+              {scanning && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Status konversi dokumen OCR"
+                  className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left shadow-xs transition-all"
                 >
-                  Ganti berkas
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={scanning}
-                  aria-label="Hapus berkas PDF"
-                  onClick={clearSelection}
-                  className="size-10 rounded-full text-muted-foreground hover:text-destructive"
-                >
-                  <X className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
+                  <div className="flex items-center justify-between text-xs font-ui">
+                    <div className="flex items-center gap-2 text-primary font-bold min-w-0">
+                      <Sparkles className="size-4 animate-spin text-primary shrink-0" aria-hidden="true" />
+                      <span className="truncate">{scanStageMessage}</span>
+                    </div>
+                    <span className="font-mono font-bold text-foreground bg-primary/15 px-2 py-0.5 rounded-full text-[11px] shrink-0">
+                      {scanProgress}%
+                    </span>
+                  </div>
+
+                  <Progress
+                    value={scanProgress}
+                    aria-label={`Progres konversi OCR: ${scanProgress}%`}
+                    className="h-2.5 rounded-full bg-muted/80"
+                  />
+
+                  <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-ui text-center">
+                    <span
+                      className={`py-1 px-1 rounded transition-colors ${
+                        scanProgress >= 25
+                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      1. Analisis Visual
+                    </span>
+                    <span
+                      className={`py-1 px-1 rounded transition-colors ${
+                        scanProgress >= 60
+                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      2. Rumus MathML
+                    </span>
+                    <span
+                      className={`py-1 px-1 rounded transition-colors ${
+                        scanProgress >= 85
+                          ? "bg-primary/20 text-primary font-bold border border-primary/30"
+                          : "bg-muted/70 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      3. Narasi Suara
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -415,6 +647,45 @@ export function OcrDocumentScanner({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 font-ui">
+              <div
+                className="flex items-center rounded-full border border-border bg-background/80 p-0.5 text-xs"
+                role="group"
+                aria-label="Pilihan bahasa teks dokumen"
+              >
+                <button
+                  type="button"
+                  disabled={isTranslating}
+                  onClick={() => handleSwitchLanguage("id")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors disabled:opacity-50",
+                    language === "id"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {isTranslating && language !== "id" ? (
+                    <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  <span>Indonesia</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isTranslating}
+                  onClick={() => handleSwitchLanguage("en")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors disabled:opacity-50",
+                    language === "en"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {isTranslating && language !== "en" ? (
+                    <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  <span>English</span>
+                </button>
+              </div>
+
               <Button
                 type="button"
                 variant="outline"
@@ -446,6 +717,86 @@ export function OcrDocumentScanner({
                 </Link>
               </Button>
             </div>
+          </div>
+
+          {/* Post-Scan Sharing Option to Course Materials */}
+          <div className="rounded-2xl border border-primary/25 bg-surface-subtle/70 p-4 space-y-3 font-ui text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <p className="font-heading font-bold text-sm text-foreground flex items-center gap-2">
+                  <FileUp className="size-4 text-primary shrink-0" aria-hidden="true" />
+                  <span>Unggah &amp; Bagikan ke Mata Kuliah</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Ingin membagikan materi ini? Hasil pindai akan disimpan ke katalog perkuliahan agar dapat diakses teman sekelas dan ditinjau reviewer.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowShareOptions((prev) => !prev)}
+                  className="min-h-10 rounded-full px-3 text-xs"
+                >
+                  {showShareOptions ? "Tutup Catatan" : "Tambah Catatan"}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleShareWithCourse}
+                  disabled={isSharing || hasShared}
+                  className="min-h-10 rounded-full px-4 text-xs font-semibold shadow-xs"
+                >
+                  {isSharing ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                      <span>Membagikan…</span>
+                    </>
+                  ) : hasShared ? (
+                    <>
+                      <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden="true" />
+                      <span>Telah Dibagikan</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="size-3.5" aria-hidden="true" />
+                      <span>Bagikan ke {courses.find((c) => c.id === courseId)?.code || "Mata Kuliah"}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {showShareOptions && !hasShared && (
+              <div className="pt-2 border-t border-border/50 space-y-2">
+                <Label htmlFor="sharing-notes" className="text-xs font-medium text-foreground">
+                  Catatan untuk reviewer atau mahasiswa lain (opsional)
+                </Label>
+                <Input
+                  id="sharing-notes"
+                  value={sharingNotes}
+                  onChange={(e) => setSharingNotes(e.target.value)}
+                  placeholder="Contoh: Dokumen mencakup materi bab 1 s.d. 3 untuk persiapan kuis."
+                  className="h-9 text-xs rounded-xl"
+                />
+              </div>
+            )}
+
+            {shareSuccessMessage && (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                <span>{shareSuccessMessage}</span>
+              </div>
+            )}
+
+            {shareErrorMessage && (
+              <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive">
+                <AlertCircle className="size-4 text-destructive shrink-0" aria-hidden="true" />
+                <span>{shareErrorMessage}</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-ui">
@@ -520,26 +871,22 @@ export function OcrDocumentScanner({
 
                   {block.blockType === "heading" ? (
                     <h3 className="font-heading text-lg font-bold text-foreground">
-                      {block.contentText}
+                      <FormattedMathText text={block.contentText} as="span" />
                     </h3>
                   ) : block.blockType === "equation" ? (
-                    <div className="space-y-2">
-                      <p className="overflow-x-auto rounded-xl bg-card p-3 font-mono text-sm text-foreground">
-                        {block.latex || block.contentText}
-                      </p>
-                      {block.spokenText ? (
-                        <p className="text-sm text-muted-foreground">
-                          Narasi: {block.spokenText}
-                        </p>
-                      ) : null}
-                    </div>
+                    <MathEquationView
+                      latex={block.latex}
+                      contentText={block.contentText}
+                      mathMl={block.mathMl}
+                      spokenText={block.spokenText}
+                    />
                   ) : block.blockType === "table" &&
                     block.tableHeaders &&
                     block.tableRows ? (
                     <div className="overflow-x-auto rounded-xl border border-border bg-card">
                       <table className="w-full border-collapse text-left text-sm">
                         <caption className="px-3 py-2 text-left font-medium">
-                          {block.contentText}
+                          <FormattedMathText text={block.contentText} as="span" />
                         </caption>
                         <thead>
                           <tr className="border-b border-border bg-surface-subtle">
@@ -549,7 +896,7 @@ export function OcrDocumentScanner({
                                 scope="col"
                                 className="px-3 py-2 font-semibold text-foreground"
                               >
-                                {header}
+                                <FormattedMathText text={header} as="span" />
                               </th>
                             ))}
                           </tr>
@@ -562,7 +909,7 @@ export function OcrDocumentScanner({
                             >
                               {row.map((cell, cIdx) => (
                                 <td key={cIdx} className="px-3 py-2 text-foreground">
-                                  {cell}
+                                  <FormattedMathText text={cell} as="span" />
                                 </td>
                               ))}
                             </tr>
@@ -571,7 +918,10 @@ export function OcrDocumentScanner({
                       </table>
                     </div>
                   ) : (
-                    <p className="text-foreground">{block.contentText}</p>
+                    <FormattedMathText
+                      text={block.contentText}
+                      className="text-foreground leading-relaxed"
+                    />
                   )}
                 </div>
               );

@@ -104,15 +104,58 @@ function translateSimpleTokens(
     .replace(/\\right\s*\]/g, "]")
     .replace(/\\left\s*\|/g, "|")
     .replace(/\\right\s*\|/g, "|")
-    .replace(/\\cdot|\\times/g, lang === "id" ? " dikali " : " times ")
-    .replace(/\\div/g, lang === "id" ? " dibagi " : " divided by ")
-    .replace(/\\pm/g, lang === "id" ? " plus minus " : " plus or minus ")
-    .replace(/\\leq|\\le/g, lang === "id" ? " kurang dari atau sama dengan " : " less than or equal to ")
-    .replace(/\\geq|\\ge/g, lang === "id" ? " lebih dari atau sama dengan " : " greater than or equal to ")
-    .replace(/\\neq|\\ne/g, lang === "id" ? " tidak sama dengan " : " is not equal to ")
-    .replace(/\\approx/g, lang === "id" ? " kira-kira sama dengan " : " is approximately equal to ")
-    .replace(/\\to|\\rightarrow/g, lang === "id" ? " menuju " : " approaches ")
-    .replace(/\\in/g, lang === "id" ? " anggota " : " in ");
+    .replace(/\\left\s*\\\{/g, "{")
+    .replace(/\\right\s*\\\}/g, "}")
+    .replace(/\^\{\\circ\}|\^\\circ/g, lang === "id" ? " derajat" : " degrees")
+    // Set operations
+    .replace(/\\cap\b|\\bigcap\b/g, lang === "id" ? " irisan " : " intersection ")
+    .replace(/\\cup\b|\\bigcup\b/g, lang === "id" ? " gabungan " : " union ")
+    .replace(/\\setminus\b/g, lang === "id" ? " selisih himpunan " : " set minus ")
+    .replace(/\\subset\b/g, lang === "id" ? " himpunan bagian dari " : " subset of ")
+    .replace(/\\subseteq\b/g, lang === "id" ? " bagian atau sama dengan " : " subset or equal to ")
+    .replace(/\\supset\b/g, lang === "id" ? " himpunan superset dari " : " superset of ")
+    .replace(/\\supseteq\b/g, lang === "id" ? " superset atau sama dengan " : " superset or equal to ")
+    .replace(/\\notin\b/g, lang === "id" ? " bukan anggota dari " : " not in ")
+    .replace(/\\in\b/g, lang === "id" ? " anggota dari " : " in ")
+    .replace(/\\emptyset\b|\\varnothing\b/g, lang === "id" ? " himpunan kosong " : " empty set ")
+    // Comparisons
+    .replace(/\\leqslant\b|\\leq\b|\\le\b/g, lang === "id" ? " kurang dari atau sama dengan " : " less than or equal to ")
+    .replace(/\\geqslant\b|\\geq\b|\\ge\b/g, lang === "id" ? " lebih dari atau sama dengan " : " greater than or equal to ")
+    .replace(/\\ll\b/g, lang === "id" ? " jauh lebih kecil dari " : " much less than ")
+    .replace(/\\gg\b/g, lang === "id" ? " jauh lebih besar dari " : " much greater than ")
+    .replace(/\\neq\b|\\ne\b/g, lang === "id" ? " tidak sama dengan " : " is not equal to ")
+    .replace(/\\approx\b/g, lang === "id" ? " kira-kira sama dengan " : " is approximately equal to ")
+    .replace(/\\equiv\b/g, lang === "id" ? " ekuivalen dengan " : " is equivalent to ")
+    .replace(/\\propto\b/g, lang === "id" ? " sebanding dengan " : " is proportional to ")
+    .replace(/<=/g, lang === "id" ? " kurang dari atau sama dengan " : " less than or equal to ")
+    .replace(/>=/g, lang === "id" ? " lebih dari atau sama dengan " : " greater than or equal to ")
+    .replace(/!=/g, lang === "id" ? " tidak sama dengan " : " is not equal to ")
+    .replace(/</g, lang === "id" ? " kurang dari " : " less than ")
+    .replace(/>/g, lang === "id" ? " lebih dari " : " greater than ")
+    // Logic
+    .replace(/\\forall\b/g, lang === "id" ? " untuk setiap " : " for all ")
+    .replace(/\\exists\b/g, lang === "id" ? " terdapat " : " there exists ")
+    .replace(/\\nexists\b/g, lang === "id" ? " tidak ada " : " there does not exist ")
+    .replace(/\\land\b|\\wedge\b/g, lang === "id" ? " dan " : " and ")
+    .replace(/\\lor\b|\\vee\b/g, lang === "id" ? " atau " : " or ")
+    .replace(/\\neg\b|\\sim\b/g, lang === "id" ? " bukan " : " not ")
+    .replace(/\\implies\b|\\Rightarrow\b/g, lang === "id" ? " berimplikasi pada " : " implies ")
+    .replace(/\\iff\b|\\Leftrightarrow\b/g, lang === "id" ? " jika dan hanya jika " : " if and only if ")
+    .replace(/\\to\b|\\rightarrow\b/g, lang === "id" ? " menuju " : " approaches ")
+    .replace(/\\leftarrow\b/g, lang === "id" ? " dari " : " from ")
+    // Common operators
+    .replace(/\\cdot\b/g, lang === "id" ? " dot " : " dot ")
+    .replace(/\\times\b/g, lang === "id" ? " dikali " : " times ")
+    .replace(/\\div\b/g, lang === "id" ? " dibagi " : " divided by ")
+    .replace(/\\pm\b/g, lang === "id" ? " plus minus " : " plus or minus ")
+    .replace(/\\mp\b/g, lang === "id" ? " minus plus " : " minus or plus ")
+    .replace(/\\dots\b|\\cdots\b|\\ldots\b/g, lang === "id" ? " dan seterusnya " : " and so on ")
+    .replace(/\\circ\b/g, lang === "id" ? " derajat " : " degrees ")
+    .replace(/\\infty\b/g, lang === "id" ? " tak hingga " : " infinity ")
+    .replace(/\\%/g, lang === "id" ? " persen " : " percent ")
+    // Unwrap formatting and text wrappers
+    .replace(/\\(?:text|mathrm|mathbf|mathit|textbf|operatorname)\s*\{([^}]+)\}/g, "$1")
+    .replace(/\\(?:quad|qquad|hspace|vspace)\*?(?:\{[^}]*\})?/g, " ");
 
   for (const [macro, labels] of Object.entries(FUNCTION_MAP)) {
     out = out.replaceAll(macro, ` ${labels[lang]} `);
@@ -149,6 +192,8 @@ function translateSimpleTokens(
       lang === "id" ? `${a}kurang ${b}` : `${a}minus ${b}`
     )
     .replace(/[{}]/g, " ")
+    // Strip leftover backslashes so speech synthesizer never speaks literal "backslash"
+    .replace(/\\([a-zA-Z]+)/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -246,6 +291,39 @@ function translateExpression(
       }
       i = radicand.nextIdx;
       continue;
+    }
+
+    if (src.startsWith("\\vec", i)) {
+      flushBuffer();
+      const target = readBracedGroup(src, i + 4);
+      const inner = translateExpression(target.content, lang);
+      parts.push(lang === "id" ? `vektor ${inner}` : `vector ${inner}`);
+      i = target.nextIdx;
+      continue;
+    }
+
+    if (src.startsWith("\\hat", i)) {
+      flushBuffer();
+      const target = readBracedGroup(src, i + 4);
+      const inner = translateExpression(target.content, lang);
+      parts.push(lang === "id" ? `vektor satuan ${inner}` : `unit vector ${inner}`);
+      i = target.nextIdx;
+      continue;
+    }
+
+    if (src.startsWith("\\|", i) || src.startsWith("\\Vert", i)) {
+      flushBuffer();
+      const skipLen = src.startsWith("\\Vert", i) ? 5 : 2;
+      const endIdx = src.indexOf("\\|", i + skipLen);
+      const endVertIdx = src.indexOf("\\Vert", i + skipLen);
+      const closingIdx = endIdx !== -1 ? endIdx : endVertIdx;
+      if (closingIdx !== -1) {
+        const innerContent = src.slice(i + skipLen, closingIdx);
+        const inner = translateExpression(innerContent, lang);
+        parts.push(lang === "id" ? `panjang ${inner}` : `norm of ${inner}`);
+        i = closingIdx + (endIdx !== -1 ? 2 : 5);
+        continue;
+      }
     }
 
     if (src.startsWith("\\int", i)) {
@@ -392,16 +470,69 @@ export function narrateLatexEquation(latex: string): EquationNarrationResult {
     "\\times",
     "\\div",
     "\\pm",
+    "\\mp",
     "\\leq",
     "\\le",
+    "\\leqslant",
     "\\geq",
     "\\ge",
+    "\\geqslant",
+    "\\lt",
+    "\\gt",
+    "\\ll",
+    "\\gg",
     "\\neq",
     "\\ne",
     "\\approx",
+    "\\equiv",
+    "\\propto",
+    "\\cap",
+    "\\bigcap",
+    "\\cup",
+    "\\bigcup",
+    "\\setminus",
+    "\\subset",
+    "\\subseteq",
+    "\\supset",
+    "\\supseteq",
+    "\\in",
+    "\\notin",
+    "\\emptyset",
+    "\\varnothing",
+    "\\forall",
+    "\\exists",
+    "\\nexists",
+    "\\land",
+    "\\wedge",
+    "\\lor",
+    "\\vee",
+    "\\neg",
+    "\\sim",
+    "\\implies",
+    "\\Rightarrow",
+    "\\iff",
+    "\\Leftrightarrow",
     "\\to",
     "\\rightarrow",
-    "\\in",
+    "\\leftarrow",
+    "\\vec",
+    "\\hat",
+    "\\circ",
+    "\\Vert",
+    "\\infty",
+    "\\dots",
+    "\\cdots",
+    "\\ldots",
+    "\\text",
+    "\\mathrm",
+    "\\mathbf",
+    "\\mathit",
+    "\\textbf",
+    "\\operatorname",
+    "\\quad",
+    "\\qquad",
+    "\\hspace",
+    "\\vspace",
     ...Object.keys(GREEK_MAP),
     ...Object.keys(FUNCTION_MAP),
   ]);
@@ -443,4 +574,64 @@ export function narrateLatexEquation(latex: string): EquationNarrationResult {
             },
           ],
   };
+}
+
+/**
+ * Transforms any prose or mixed document text containing embedded LaTeX
+ * delimiters (\(...\), \[...\], $...$, $$...$$) into fluent, accessible speech text
+ * for screen readers and speech synthesis engines, avoiding reading raw LaTeX code.
+ */
+export function narrateMixedText(
+  text: string,
+  lang: ReaderLanguage = "id"
+): string {
+  if (!text) return "";
+
+  // Match:
+  // 1. \[ ... \]
+  // 2. \( ... \)
+  // 3. $$ ... $$
+  // 4. $ ... $
+  const mathRegex =
+    /\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)|\$\$([\s\S]*?)\$\$|\$([^\$\n]+)\$/g;
+
+  let result = text.replace(mathRegex, (_m, disp1, in1, disp2, in2) => {
+    const rawFormula = (disp1 || in1 || disp2 || in2 || "").trim();
+    if (!rawFormula) return "";
+    const narration = narrateLatexEquation(rawFormula);
+    const spoken = lang === "id" ? narration.narrationId : narration.narrationEn;
+    // Strip parenthetical warnings from spoken text in paragraphs for cleaner listening
+    const cleanSpoken = spoken.replace(/\s*\((?:Peringatan|Warning):[^)]+\)/g, "");
+    return ` ${cleanSpoken} `;
+  });
+
+  // Also replace any stray raw LaTeX symbols that may exist in unescaped prose
+  result = result
+    .replace(/\\cap\b|\\bigcap\b/g, lang === "id" ? " irisan " : " intersection ")
+    .replace(/\\cup\b|\\bigcup\b/g, lang === "id" ? " gabungan " : " union ")
+    .replace(/\\subset\b/g, lang === "id" ? " himpunan bagian dari " : " subset of ")
+    .replace(/\\subseteq\b/g, lang === "id" ? " bagian atau sama dengan " : " subset or equal to ")
+    .replace(/\\in\b/g, lang === "id" ? " anggota dari " : " in ")
+    .replace(/\\notin\b/g, lang === "id" ? " bukan anggota dari " : " not in ")
+    .replace(/\\emptyset\b|\\varnothing\b/g, lang === "id" ? " himpunan kosong " : " empty set ")
+    .replace(/\\leqslant\b|\\leq\b|\\le\b/g, lang === "id" ? " kurang dari atau sama dengan " : " less than or equal to ")
+    .replace(/\\geqslant\b|\\geq\b|\\ge\b/g, lang === "id" ? " lebih dari atau sama dengan " : " greater than or equal to ")
+    .replace(/\\neq\b|\\ne\b/g, lang === "id" ? " tidak sama dengan " : " is not equal to ")
+    .replace(/\\approx\b/g, lang === "id" ? " kira-kira sama dengan " : " is approximately equal to ")
+    .replace(/\\equiv\b/g, lang === "id" ? " ekuivalen dengan " : " is equivalent to ")
+    .replace(/\\propto\b/g, lang === "id" ? " sebanding dengan " : " is proportional to ")
+    .replace(/\\to\b|\\rightarrow\b/g, lang === "id" ? " menuju " : " approaches ")
+    .replace(/\\cdot\b/g, " dot ")
+    .replace(/\\times\b/g, lang === "id" ? " dikali " : " times ")
+    .replace(/\\div\b/g, lang === "id" ? " dibagi " : " divided by ")
+    .replace(/\\pm\b/g, lang === "id" ? " plus minus " : " plus or minus ")
+    .replace(/\\infty\b/g, lang === "id" ? " tak hingga " : " infinity ")
+    .replace(/\\circ\b/g, lang === "id" ? " derajat " : " degrees ")
+    // Strip any remaining backslashes before words so speech synthesizer doesn't pronounce "backslash"
+    .replace(/\\([a-zA-Z]+)/g, "$1")
+    .replace(/[{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return result;
 }
