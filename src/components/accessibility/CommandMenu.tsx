@@ -39,7 +39,14 @@ const COMMAND_ROUTES = [
   { label: "Pusat Bantuan", href: "/help", icon: CircleHelp },
 ];
 
-export function CommandMenu({ compact = false }: { compact?: boolean }) {
+export function CommandMenu({
+  compact = false,
+  bar = false,
+}: {
+  compact?: boolean;
+  /** Wide pill-shaped search field used in the workspace header. */
+  bar?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -56,7 +63,24 @@ export function CommandMenu({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      {compact ? (
+      {bar ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          className="flex size-10 items-center justify-center gap-2.5 rounded-full border border-border bg-card text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground sm:h-11 sm:w-full sm:justify-start sm:px-4"
+        >
+          <Search className="size-4 shrink-0" aria-hidden="true" />
+          <span className="hidden flex-1 truncate text-left sm:inline">Cari halaman…</span>
+          <span className="sr-only sm:hidden">Cari halaman</span>
+          <kbd
+            aria-hidden="true"
+            className="hidden rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground lg:inline"
+          >
+            Ctrl K
+          </kbd>
+        </button>
+      ) : compact ? (
         <Button
           variant="ghost"
           size="icon"
