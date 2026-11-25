@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
-import { toast } from "sonner";
 
 export function CourseCreateForm({
   isConfigured,
@@ -20,7 +20,7 @@ export function CourseCreateForm({
 
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
-  const [discipline, setDiscipline] = useState("STEM & Engineering");
+  const [discipline, setDiscipline] = useState("Ilmu Komputer");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,14 +36,14 @@ export function CourseCreateForm({
 
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
-        const msg = payload.error ?? "Failed to create course.";
+        const msg = payload.error ?? "Gagal membuat mata kuliah baru.";
         toast.error(msg);
         announce(msg, "assertive");
         return;
       }
 
-      toast.success(`Course ${code.toUpperCase()} created.`);
-      announce(`Course ${title} created.`, "polite");
+      toast.success(`Mata kuliah ${code.toUpperCase()} berhasil ditambahkan.`);
+      announce(`Mata kuliah ${title} berhasil ditambahkan.`, "polite");
       setCode("");
       setTitle("");
       setDescription("");
@@ -54,53 +54,61 @@ export function CourseCreateForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 font-ui">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="course-code">Course code</Label>
+          <Label htmlFor="course-code">Kode mata kuliah</Label>
           <Input
             id="course-code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="e.g. MATH-101"
+            placeholder="Contoh: MATH-101"
+            className="h-10 rounded-xl"
             required
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="course-discipline">Academic discipline</Label>
+          <Label htmlFor="course-discipline">Bidang ilmu</Label>
           <Input
             id="course-discipline"
             value={discipline}
             onChange={(e) => setDiscipline(e.target.value)}
+            className="h-10 rounded-xl"
             required
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="course-title">Course title</Label>
+        <Label htmlFor="course-title">Nama mata kuliah</Label>
         <Input
           id="course-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Calculus & Analytical Geometry"
+          placeholder="Contoh: Kalkulus dan Geometri Analitik"
+          className="h-10 rounded-xl"
           required
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="course-desc">Description (optional)</Label>
+        <Label htmlFor="course-desc">Deskripsi singkat (opsional)</Label>
         <Textarea
           id="course-desc"
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="font-sans text-sm"
         />
       </div>
 
-      <Button type="submit" disabled={!isConfigured || submitting}>
+      <Button
+        type="submit"
+        disabled={!isConfigured || submitting}
+        className="min-h-10 rounded-full px-5 text-sm font-semibold"
+      >
         <PlusCircle className="size-4" aria-hidden="true" />
-        <span>{submitting ? "Creating course..." : "Create course"}</span>
+        <span>{submitting ? "Menambahkan…" : "Tambah Mata Kuliah"}</span>
       </Button>
     </form>
   );
