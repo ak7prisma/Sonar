@@ -20,7 +20,7 @@ export const registerSchema = loginSchema.extend({
     .max(120, "Program studi maksimal 120 karakter.")
     .optional(),
   role: z
-    .enum(["student", "volunteer", "reviewer", "admin"])
+    .enum(["student", "volunteer"])
     .default("student"),
 });
 

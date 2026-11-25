@@ -37,19 +37,26 @@ interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  access?: "reviewer" | "admin";
 }
 
-const CORE_MENU_ITEMS: NavItem[] = [
+const STUDENT_MENU_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mata Kuliah", href: "/courses", icon: BookOpen },
   { label: "Unggah Materi", href: "/upload", icon: FileUp },
   { label: "Pembaca", href: "/reader", icon: Headphones },
 ];
 
-const ROLE_MENU_ITEMS: NavItem[] = [
-  { label: "Antrean Review", href: "/review", icon: ClipboardCheck, access: "reviewer" },
-  { label: "Administrasi", href: "/admin", icon: ShieldCheck, access: "admin" },
+const VOLUNTEER_MENU_ITEMS: NavItem[] = [
+  { label: "Dashboard Volunteer", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Antrean Review", href: "/review", icon: ClipboardCheck },
+];
+
+const ADMIN_MENU_ITEMS: NavItem[] = [
+  { label: "Dashboard Admin", href: "/admin", icon: ShieldCheck },
+  { label: "Mata Kuliah", href: "/courses", icon: BookOpen },
+  { label: "Antrean Review", href: "/review", icon: ClipboardCheck },
+  { label: "Unggah Materi", href: "/upload", icon: FileUp },
+  { label: "Pembaca", href: "/reader", icon: Headphones },
 ];
 
 const ACCOUNT_ITEMS: NavItem[] = [
@@ -95,26 +102,24 @@ function NavListItems({
 }
 
 /** Inner component: safe to call usePathname() inside a <Suspense> boundary. */
-function RoleNavMenuItemsInner({ userRoles }: { userRoles: AppRole[] }) {
+function DynamicNavMenuItemsInner({ userRoles }: { userRoles: AppRole[] }) {
   const pathname = usePathname();
   const isAdmin = userRoles.includes("admin");
-  const isReviewer =
-    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
+  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
 
-  const visibleRoleItems = ROLE_MENU_ITEMS.filter((item) => {
-    if (item.access === "admin") return isAdmin;
-    if (item.access === "reviewer") return isReviewer;
-    return true;
-  });
+  const navItems = isAdmin
+    ? ADMIN_MENU_ITEMS
+    : isVolunteer
+    ? VOLUNTEER_MENU_ITEMS
+    : STUDENT_MENU_ITEMS;
 
-  if (visibleRoleItems.length === 0) return null;
-  return <NavListItems items={visibleRoleItems} pathname={pathname} />;
+  return <NavListItems items={navItems} pathname={pathname} />;
 }
 
 export function RoleNavMenuItems({ userRoles = ["student"] }: { userRoles?: AppRole[] }) {
   return (
     <Suspense fallback={null}>
-      <RoleNavMenuItemsInner userRoles={userRoles} />
+      <DynamicNavMenuItemsInner userRoles={userRoles} />
     </Suspense>
   );
 }
@@ -228,12 +233,6 @@ export function HeaderUserMenu({
   );
 }
 
-/** Renders core nav links with active state — must stay inside a Suspense boundary. */
-function CoreNavItemsInner() {
-  const pathname = usePathname();
-  return <NavListItems items={CORE_MENU_ITEMS} pathname={pathname} />;
-}
-
 /** Renders account nav links with active state — must stay inside a Suspense boundary. */
 function AccountNavItemsInner() {
   const pathname = usePathname();
@@ -287,9 +286,6 @@ export function AppShell({
               Menu
             </p>
             <ul className="space-y-1 font-ui">
-              <Suspense fallback={null}>
-                <CoreNavItemsInner />
-              </Suspense>
               {roleNavSlot !== undefined ? roleNavSlot : <RoleNavMenuItems userRoles={userRoles} />}
             </ul>
           </div>

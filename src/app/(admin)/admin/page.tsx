@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   AlertTriangle,
@@ -27,6 +28,11 @@ export const metadata: Metadata = {
 
 async function AdminBody() {
   const snapshot = await loadWorkspaceSnapshot(true);
+  const userRoles = snapshot.user?.roles ?? ["student"];
+  if (!userRoles.includes("admin")) {
+    redirect("/forbidden");
+  }
+
   const courses = snapshot.courses;
   const documents = snapshot.documents;
   const jobs = snapshot.jobs;

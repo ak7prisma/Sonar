@@ -10,7 +10,6 @@ import {
   Headphones,
   LayoutDashboard,
   Settings,
-  ShieldCheck,
 } from "lucide-react";
 import { cn } from "cn";
 import type { AppRole } from "@/types/database";
@@ -24,19 +23,55 @@ function MobileBottomNavInner({
 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const isAdmin = userRoles.includes("admin");
-  const isReviewer =
-    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
+  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+
+  if (isVolunteer) {
+    const volunteerItems = [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Antrean Review", href: "/review", icon: ClipboardCheck },
+      { label: "Pengaturan", href: "/settings", icon: Settings },
+    ];
+
+    return (
+      <nav
+        aria-label="Navigasi utama seluler volunteer"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md lg:hidden shadow-[0_-4px_16px_rgb(41_59_57/0.06)]"
+      >
+        <div className="relative mx-auto flex h-16 max-w-md items-center justify-around px-2 font-ui">
+          {volunteerItems.map((item) => {
+            const Icon = item.icon;
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex min-w-16 flex-col items-center gap-1 py-1 text-[11px] font-medium transition-colors",
+                  active
+                    ? "font-semibold text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="size-5" aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
 
   const leftItems = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Dashboard", href: isAdmin ? "/admin" : "/dashboard", icon: LayoutDashboard },
     { label: "Kuliah", href: "/courses", icon: BookOpen },
   ];
 
   const trailingItem = isAdmin
-    ? { label: "Admin", href: "/admin", icon: ShieldCheck }
-    : isReviewer
-      ? { label: "Review", href: "/review", icon: ClipboardCheck }
-      : { label: "Setelan", href: "/settings", icon: Settings };
+    ? { label: "Review", href: "/review", icon: ClipboardCheck }
+    : { label: "Setelan", href: "/settings", icon: Settings };
 
   const rightItems = [
     { label: "Pembaca", href: "/reader", icon: Headphones },

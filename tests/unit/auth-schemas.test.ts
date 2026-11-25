@@ -60,6 +60,16 @@ describe("Authentication Schemas & Validation", () => {
     }
   });
 
+  it("rejects admin role during public registration", () => {
+    const invalid = registerSchema.safeParse({
+      email: "admin@kampus.ac.id",
+      password: "passwordkuat123",
+      fullName: "Admin Palsu",
+      role: "admin",
+    });
+    expect(invalid.success).toBe(false);
+  });
+
   it("validates forgot password email", () => {
     const valid = forgotPasswordSchema.safeParse({
       email: "test@domain.com",

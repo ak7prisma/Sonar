@@ -17,6 +17,7 @@ import {
   type ReadyMaterialItem,
 } from "@/components/dashboard/DashboardReadyList";
 import { Button } from "@/components/ui/button";
+import { VolunteerDashboardView } from "@/components/dashboard/VolunteerDashboardView";
 import { loadWorkspaceSnapshot, type CourseRow } from "@/lib/data/workspace";
 import { getCourseToneStyles } from "@/lib/course-theme";
 import { formatPageCount, splitDocumentTitle } from "@/lib/format";
@@ -80,6 +81,20 @@ async function DashboardBody() {
   const greetingName = displayName.split(",")[0].trim() || displayName;
 
   const userRoles = snapshot.user?.roles ?? ["student"];
+  const isAdmin = userRoles.includes("admin");
+  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+
+  // If user is a volunteer, show the dedicated volunteer curation dashboard
+  if (isVolunteer) {
+    return (
+      <VolunteerDashboardView
+        displayName={greetingName}
+        documents={snapshot.documents}
+        courses={snapshot.courses}
+      />
+    );
+  }
+
   const canReview =
     userRoles.includes("admin") ||
     userRoles.includes("reviewer") ||

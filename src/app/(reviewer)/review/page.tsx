@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { ReviewQueueSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -16,6 +17,14 @@ export const metadata: Metadata = {
 
 async function ReviewQueueBody() {
   const snapshot = await loadWorkspaceSnapshot();
+  const userRoles = snapshot.user?.roles ?? ["student"];
+  const canReview = userRoles.some(
+    (role) => role === "reviewer" || role === "volunteer" || role === "admin"
+  );
+  if (!canReview) {
+    redirect("/forbidden");
+  }
+
   const allDocs =
     snapshot.documents.length > 0 ? snapshot.documents : FALLBACK_DOCUMENTS;
   const courses =
