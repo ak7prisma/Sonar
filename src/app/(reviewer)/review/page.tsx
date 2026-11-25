@@ -1,43 +1,47 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { PageHeader } from "@/components/app/PageHeader";
 import { ReviewQueueTable } from "@/components/reviewer/ReviewQueueTable";
-import { loadWorkspaceSnapshot, FALLBACK_DOCUMENTS } from "@/lib/data/workspace";
+import {
+  loadWorkspaceSnapshot,
+  FALLBACK_DOCUMENTS,
+  FALLBACK_COURSES,
+} from "@/lib/data/workspace";
 
 export const metadata: Metadata = {
-  title: "Volunteer Review Queue & Overview",
+  title: "Antrean Review Volunteer",
 };
 
 async function ReviewQueueBody() {
   const snapshot = await loadWorkspaceSnapshot();
-  const allDocs = snapshot.documents.length > 0 ? snapshot.documents : FALLBACK_DOCUMENTS;
+  const allDocs =
+    snapshot.documents.length > 0 ? snapshot.documents : FALLBACK_DOCUMENTS;
+  const courses =
+    snapshot.courses.length > 0 ? snapshot.courses : FALLBACK_COURSES;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 font-sans">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-border pb-6">
-        <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-blue-strong dark:text-brand-blue font-ui">
-            Volunteer Quality Assurance &amp; Verification
-          </span>
-          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-            Antrean Review &amp; Ikhtisar Kualitas Dokumen
-          </h1>
-          <p className="text-sm text-muted-foreground font-sans max-w-3xl">
-            Periksa hasil ekstraksi OCR, rumus matematika MathML, dan deskripsi taktil gambar.
-            Dokumen yang Anda setujui akan langsung tersedia untuk seluruh mahasiswa se-kelas.
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 font-sans">
+      <PageHeader
+        title="Antrean Review Volunteer"
+        description="Periksa keakuratan teks hasil OCR, rumus MathML, tabel, dan deskripsi gambar agar materi layak dibagikan kepada mahasiswa se-kelas."
+      />
 
-      <ReviewQueueTable documents={allDocs} />
+      <ReviewQueueTable documents={allDocs} courses={courses} />
     </div>
   );
 }
 
 export default function ReviewQueuePage() {
   return (
-    <WorkspaceShell pageSectionLabel="Volunteer Review Queue">
-      <Suspense fallback={<p className="text-sm text-muted-foreground font-ui">Memuat antrean review...</p>}>
+    <WorkspaceShell>
+      <Suspense
+        fallback={
+          <p className="text-sm text-muted-foreground font-ui">
+            Memuat antrean review…
+          </p>
+        }
+      >
         <ReviewQueueBody />
       </Suspense>
     </WorkspaceShell>
