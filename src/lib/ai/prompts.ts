@@ -38,7 +38,11 @@ export const STRUCTURED_PAGE_EXTRACTION_PROMPT = [
   "Preserve logical reading order across multi-column layouts, sidebars, callouts, and footnotes.",
   "Rules:",
   "- For tables: extract explicit column headers and aligned row cells; never flatten tables into messy single lines.",
-  "- For mathematical equations: extract clean LaTeX and note whether the equation is partial or visually degraded.",
+  "- For mathematical formulas and equations:",
+  "  * Separate prominent standalone equations, theorems, definitions, and calculation steps into dedicated 'equation' blocks.",
+  "  * In 'equation' blocks: provide standard clean LaTeX in 'latex' and 'contentText' without unnecessary outer delimiters (e.g. \\|\\vec{a}\\| = \\sqrt{a_1^2 + a_2^2}).",
+  "  * For inline formulas within 'paragraph' or 'heading' blocks: wrap each mathematical expression in standard \\( ... \\) delimiters (e.g., Hasil kali vektor \\(\\vec{a} = 2\\hat{i}\\) dan \\(\\vec{b} = 2\\hat{j}\\)).",
+  "  * Accurately transcribe complex mathematics: vectors (\\vec{a}), unit vectors (\\hat{i}, \\hat{j}), norms (\\|\\vec{a}\\|), square roots (\\sqrt{...}), fractions (\\frac{a}{b}), degrees (45^\\circ), dot products (\\cdot), cross products (\\times), matrices, summations, integrals, and Greek letters (\\alpha, \\theta, etc.).",
   "- For figures/charts/diagrams: describe figure type, summary, axes/units, trends, key data points, and explicitly state uncertainty without inventing unreadable numbers.",
   "- Never hallucinate content that is not visible or present on the page.",
 ].join("\n");

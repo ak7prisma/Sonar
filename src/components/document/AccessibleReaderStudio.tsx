@@ -48,6 +48,10 @@ import { useAudioReader } from "@/features/audio/use-audio-reader";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { sanitizeDocumentHtml } from "@/lib/accessibility/sanitize";
 import { formatPageCount, formatVersion } from "@/lib/format";
+import {
+  FormattedMathText,
+  MathEquationView,
+} from "@/components/document/FormattedMathText";
 import { useDocumentBookmarks } from "@/components/document/useDocumentBookmarks";
 import {
   answerFromDocumentBlocks,
@@ -945,7 +949,10 @@ export function AccessibleReaderStudio({
                         )}
 
                       {block.block_type === "paragraph" && (
-                        <p className="text-foreground">{block.content_text}</p>
+                        <FormattedMathText
+                          text={block.content_text}
+                          className="text-foreground leading-relaxed font-reader"
+                        />
                       )}
 
                       {block.block_type === "table" && (
@@ -967,7 +974,7 @@ export function AccessibleReaderStudio({
                         <div className="space-y-3 rounded-2xl border border-brand-teal/30 bg-brand-mint/35 p-5 dark:bg-secondary/35">
                           <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
                             <span className="rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink">
-                              Rumus MathML
+                              Rumus Matematika
                             </span>
                             <Button
                               type="button"
@@ -981,30 +988,23 @@ export function AccessibleReaderStudio({
                             </Button>
                           </div>
 
-                          <div
-                            tabIndex={0}
-                            role="region"
-                            aria-label={`Rumus matematika halaman ${block.page_number}`}
-                            className="overflow-x-auto py-2 text-lg text-foreground"
-                            dangerouslySetInnerHTML={{
-                              __html: sanitizeDocumentHtml(
-                                eqData?.mathml ?? block.content_html ?? ""
-                              ),
-                            }}
-                          />
-
-                          <details className="rounded-xl border border-border bg-card p-3 text-sm font-ui">
-                            <summary className="cursor-pointer font-semibold text-foreground">
-                              Narasi teks rumus
-                            </summary>
-                            <p className="mt-2 font-sans text-muted-foreground">
-                              {(language === "id"
+                          <MathEquationView
+                            latex={
+                              eqData?.latex ??
+                              (typeof (block.metadata as Record<string, unknown> | null)?.latex === "string"
+                                ? ((block.metadata as Record<string, unknown>).latex as string)
+                                : block.content_text)
+                            }
+                            contentText={block.content_text}
+                            mathMl={eqData?.mathml ?? block.content_html ?? undefined}
+                            spokenText={
+                              (language === "id"
                                 ? eqData?.narration_id
                                 : eqData?.narration_en) ??
-                                block.spoken_text ??
-                                block.content_text}
-                            </p>
-                          </details>
+                              block.spoken_text ??
+                              block.content_text
+                            }
+                          />
                         </div>
                       )}
 

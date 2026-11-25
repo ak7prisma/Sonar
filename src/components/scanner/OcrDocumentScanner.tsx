@@ -26,6 +26,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { validatePdfFile } from "@/lib/upload/pdf-validation";
 import { formatFileSize } from "@/lib/format";
+import {
+  FormattedMathText,
+  MathEquationView,
+} from "@/components/document/FormattedMathText";
 import type { CourseRow } from "@/lib/data/workspace";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
@@ -763,26 +767,22 @@ export function OcrDocumentScanner({
 
                   {block.blockType === "heading" ? (
                     <h3 className="font-heading text-lg font-bold text-foreground">
-                      {block.contentText}
+                      <FormattedMathText text={block.contentText} as="span" />
                     </h3>
                   ) : block.blockType === "equation" ? (
-                    <div className="space-y-2">
-                      <p className="overflow-x-auto rounded-xl bg-card p-3 font-mono text-sm text-foreground">
-                        {block.latex || block.contentText}
-                      </p>
-                      {block.spokenText ? (
-                        <p className="text-sm text-muted-foreground">
-                          Narasi: {block.spokenText}
-                        </p>
-                      ) : null}
-                    </div>
+                    <MathEquationView
+                      latex={block.latex}
+                      contentText={block.contentText}
+                      mathMl={block.mathMl}
+                      spokenText={block.spokenText}
+                    />
                   ) : block.blockType === "table" &&
                     block.tableHeaders &&
                     block.tableRows ? (
                     <div className="overflow-x-auto rounded-xl border border-border bg-card">
                       <table className="w-full border-collapse text-left text-sm">
                         <caption className="px-3 py-2 text-left font-medium">
-                          {block.contentText}
+                          <FormattedMathText text={block.contentText} as="span" />
                         </caption>
                         <thead>
                           <tr className="border-b border-border bg-surface-subtle">
@@ -792,7 +792,7 @@ export function OcrDocumentScanner({
                                 scope="col"
                                 className="px-3 py-2 font-semibold text-foreground"
                               >
-                                {header}
+                                <FormattedMathText text={header} as="span" />
                               </th>
                             ))}
                           </tr>
@@ -805,7 +805,7 @@ export function OcrDocumentScanner({
                             >
                               {row.map((cell, cIdx) => (
                                 <td key={cIdx} className="px-3 py-2 text-foreground">
-                                  {cell}
+                                  <FormattedMathText text={cell} as="span" />
                                 </td>
                               ))}
                             </tr>
@@ -814,7 +814,10 @@ export function OcrDocumentScanner({
                       </table>
                     </div>
                   ) : (
-                    <p className="text-foreground">{block.contentText}</p>
+                    <FormattedMathText
+                      text={block.contentText}
+                      className="text-foreground leading-relaxed"
+                    />
                   )}
                 </div>
               );

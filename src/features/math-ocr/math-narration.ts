@@ -104,7 +104,9 @@ function translateSimpleTokens(
     .replace(/\\right\s*\]/g, "]")
     .replace(/\\left\s*\|/g, "|")
     .replace(/\\right\s*\|/g, "|")
-    .replace(/\\cdot|\\times/g, lang === "id" ? " dikali " : " times ")
+    .replace(/\^\{\\circ\}|\^\\circ/g, lang === "id" ? " derajat" : " degrees")
+    .replace(/\\cdot/g, lang === "id" ? " dot " : " dot ")
+    .replace(/\\times/g, lang === "id" ? " dikali " : " times ")
     .replace(/\\div/g, lang === "id" ? " dibagi " : " divided by ")
     .replace(/\\pm/g, lang === "id" ? " plus minus " : " plus or minus ")
     .replace(/\\leq|\\le/g, lang === "id" ? " kurang dari atau sama dengan " : " less than or equal to ")
@@ -246,6 +248,39 @@ function translateExpression(
       }
       i = radicand.nextIdx;
       continue;
+    }
+
+    if (src.startsWith("\\vec", i)) {
+      flushBuffer();
+      const target = readBracedGroup(src, i + 4);
+      const inner = translateExpression(target.content, lang);
+      parts.push(lang === "id" ? `vektor ${inner}` : `vector ${inner}`);
+      i = target.nextIdx;
+      continue;
+    }
+
+    if (src.startsWith("\\hat", i)) {
+      flushBuffer();
+      const target = readBracedGroup(src, i + 4);
+      const inner = translateExpression(target.content, lang);
+      parts.push(lang === "id" ? `vektor satuan ${inner}` : `unit vector ${inner}`);
+      i = target.nextIdx;
+      continue;
+    }
+
+    if (src.startsWith("\\|", i) || src.startsWith("\\Vert", i)) {
+      flushBuffer();
+      const skipLen = src.startsWith("\\Vert", i) ? 5 : 2;
+      const endIdx = src.indexOf("\\|", i + skipLen);
+      const endVertIdx = src.indexOf("\\Vert", i + skipLen);
+      const closingIdx = endIdx !== -1 ? endIdx : endVertIdx;
+      if (closingIdx !== -1) {
+        const innerContent = src.slice(i + skipLen, closingIdx);
+        const inner = translateExpression(innerContent, lang);
+        parts.push(lang === "id" ? `panjang ${inner}` : `norm of ${inner}`);
+        i = closingIdx + (endIdx !== -1 ? 2 : 5);
+        continue;
+      }
     }
 
     if (src.startsWith("\\int", i)) {
@@ -402,6 +437,11 @@ export function narrateLatexEquation(latex: string): EquationNarrationResult {
     "\\to",
     "\\rightarrow",
     "\\in",
+    "\\vec",
+    "\\hat",
+    "\\circ",
+    "\\Vert",
+    "\\operatorname",
     ...Object.keys(GREEK_MAP),
     ...Object.keys(FUNCTION_MAP),
   ]);

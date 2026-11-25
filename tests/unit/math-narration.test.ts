@@ -42,4 +42,17 @@ describe("SONAR Deterministic Math Narration & MathML Engine", () => {
     const mml = latexToMathMl("\\frac{1}{");
     expect(mml.valid).toBe(false);
   });
+
+  it("narrates complex vector math, norms, and unit vectors accurately", () => {
+    const res = narrateLatexEquation("\\|\\vec{a}\\| = \\sqrt{a_1^2 + a_2^2}");
+    expect(res.supported).toBe(true);
+    expect(res.narrationId.toLowerCase()).toContain("vektor a");
+    expect(res.narrationId.toLowerCase()).toContain("akar kuadrat");
+    expect(res.narrationEn.toLowerCase()).toContain("vector a");
+
+    const vecDot = narrateLatexEquation("\\vec{a} = 2\\hat{i} + 2\\hat{j}");
+    expect(vecDot.supported).toBe(true);
+    expect(vecDot.narrationId.toLowerCase()).toContain("vektor a");
+    expect(vecDot.narrationId.toLowerCase()).toContain("vektor satuan i");
+  });
 });
