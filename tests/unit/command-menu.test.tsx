@@ -46,8 +46,12 @@ describe("CommandMenu refactoring: constants, logic, and UI", () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("renders full CommandMenu without errors", () => {
+  it("renders full CommandMenu and opens dialog when trigger is clicked without errors", async () => {
+    const user = userEvent.setup();
     render(<CommandMenu bar />);
-    expect(screen.getByRole("button", { name: /Cari halaman/i })).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: /Cari halaman/i });
+    expect(button).toBeInTheDocument();
+    await user.click(button);
+    expect(screen.getByPlaceholderText(/Cari halaman, materi kuliah, atau fitur/i)).toBeInTheDocument();
   });
 });
