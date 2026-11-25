@@ -14,6 +14,8 @@ const serverEnvSchema = publicEnvSchema.extend({
   AI_CHAT_MODEL: z.string().min(1).default("gemini-3-flash-preview"),
   AI_VISION_MODEL: z.string().min(1).default("gemini-3-flash-preview"),
   AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-2"),
+  AI_FALLBACK_CHAT_MODELS: z.string().optional(),
+  AI_FALLBACK_VISION_MODELS: z.string().optional(),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_SIGNING_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -57,6 +59,8 @@ export function getServerEnv() {
       AI_CHAT_MODEL: "gemini-3-flash-preview",
       AI_VISION_MODEL: "gemini-3-flash-preview",
       AI_EMBEDDING_MODEL: "gemini-embedding-2",
+      AI_FALLBACK_CHAT_MODELS: undefined,
+      AI_FALLBACK_VISION_MODELS: undefined,
     };
   }
 
