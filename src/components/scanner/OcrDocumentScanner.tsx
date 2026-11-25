@@ -7,6 +7,7 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
+  FileUp,
   Headphones,
   Loader2,
   ScanText,
@@ -74,6 +75,12 @@ export function OcrDocumentScanner({
   const [currentlyPlayingIndex, setCurrentlyPlayingIndex] = useState<number | null>(
     null
   );
+  const [isSharing, setIsSharing] = useState(false);
+  const [hasShared, setHasShared] = useState(false);
+  const [shareSuccessMessage, setShareSuccessMessage] = useState<string | null>(null);
+  const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
+  const [sharingNotes, setSharingNotes] = useState("");
+  const [showShareOptions, setShowShareOptions] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -87,6 +94,11 @@ export function OcrDocumentScanner({
     setSelectedPdfFile(null);
     setPdfDataUrl(null);
     setScanResult(null);
+    setHasShared(false);
+    setShareSuccessMessage(null);
+    setShareErrorMessage(null);
+    setSharingNotes("");
+    setShowShareOptions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -96,6 +108,9 @@ export function OcrDocumentScanner({
     setScanResult(null);
     setScanProgress(0);
     setScanStageMessage("");
+    setHasShared(false);
+    setShareSuccessMessage(null);
+    setShareErrorMessage(null);
 
     const validation = await validatePdfFile(file);
     if (!validation.ok) {
@@ -268,6 +283,52 @@ export function OcrDocumentScanner({
     }
     setIsPlayingAudio(false);
     setCurrentlyPlayingIndex(null);
+  };
+
+  const handleShareWithCourse = async () => {
+    if (!selectedPdfFile || !courseId) return;
+    setIsSharing(true);
+    setShareErrorMessage(null);
+    announce("Mengunggah dan membagikan materi ke mata kuliah…", "polite");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedPdfFile);
+      formData.append("courseId", courseId);
+      formData.append(
+        "title",
+        scanResult?.documentTitle || documentTitle || selectedPdfFile.name.replace(/\.pdf$/i, "")
+      );
+      formData.append("language", language);
+      formData.append("academicLevel", "s1");
+      formData.append("sharingOption", "shared");
+      formData.append("reviewerNotes", sharingNotes.trim());
+
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membagikan dokumen ke mata kuliah.");
+      }
+
+      const selectedCourseObj = courses.find((c) => c.id === courseId);
+      const successMsg = `Dokumen berhasil disimpan & dibagikan ke ${
+        selectedCourseObj ? selectedCourseObj.code + " — " + selectedCourseObj.title : "mata kuliah"
+      }.`;
+      setShareSuccessMessage(successMsg);
+      setHasShared(true);
+      announce(successMsg, "polite");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat membagikan dokumen.";
+      setShareErrorMessage(msg);
+      announce(msg, "assertive");
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -548,6 +609,86 @@ export function OcrDocumentScanner({
                 </Link>
               </Button>
             </div>
+          </div>
+
+          {/* Post-Scan Sharing Option to Course Materials */}
+          <div className="rounded-2xl border border-primary/25 bg-surface-subtle/70 p-4 space-y-3 font-ui text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <p className="font-heading font-bold text-sm text-foreground flex items-center gap-2">
+                  <FileUp className="size-4 text-primary shrink-0" aria-hidden="true" />
+                  <span>Unggah &amp; Bagikan ke Mata Kuliah</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Ingin membagikan materi ini? Hasil pindai akan disimpan ke katalog perkuliahan agar dapat diakses teman sekelas dan ditinjau reviewer.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowShareOptions((prev) => !prev)}
+                  className="min-h-10 rounded-full px-3 text-xs"
+                >
+                  {showShareOptions ? "Tutup Catatan" : "Tambah Catatan"}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleShareWithCourse}
+                  disabled={isSharing || hasShared}
+                  className="min-h-10 rounded-full px-4 text-xs font-semibold shadow-xs"
+                >
+                  {isSharing ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                      <span>Membagikan…</span>
+                    </>
+                  ) : hasShared ? (
+                    <>
+                      <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden="true" />
+                      <span>Telah Dibagikan</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="size-3.5" aria-hidden="true" />
+                      <span>Bagikan ke {courses.find((c) => c.id === courseId)?.code || "Mata Kuliah"}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {showShareOptions && !hasShared && (
+              <div className="pt-2 border-t border-border/50 space-y-2">
+                <Label htmlFor="sharing-notes" className="text-xs font-medium text-foreground">
+                  Catatan untuk reviewer atau mahasiswa lain (opsional)
+                </Label>
+                <Input
+                  id="sharing-notes"
+                  value={sharingNotes}
+                  onChange={(e) => setSharingNotes(e.target.value)}
+                  placeholder="Contoh: Dokumen mencakup materi bab 1 s.d. 3 untuk persiapan kuis."
+                  className="h-9 text-xs rounded-xl"
+                />
+              </div>
+            )}
+
+            {shareSuccessMessage && (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                <span>{shareSuccessMessage}</span>
+              </div>
+            )}
+
+            {shareErrorMessage && (
+              <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive">
+                <AlertCircle className="size-4 text-destructive shrink-0" aria-hidden="true" />
+                <span>{shareErrorMessage}</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-ui">
