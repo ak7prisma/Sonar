@@ -16,7 +16,7 @@ async function SettingsBody() {
   const { auth } = await getAuthenticatedContext();
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 font-sans">
+    <div className="w-full max-w-5xl space-y-6 font-sans">
       <PageHeader
         title="Pengaturan Membaca & Aksesibilitas"
         description="Perubahan berlaku langsung di seluruh halaman pembaca dan tersimpan di peramban maupun profil akun Anda."

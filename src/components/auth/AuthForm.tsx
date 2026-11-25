@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   loginAction,
   loginAsDemoRole,
   registerAction,
@@ -208,16 +215,38 @@ export function AuthForm({
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 font-ui">
               <Label htmlFor="field-role">Peran Akun</Label>
-              <select
-                id="field-role"
-                className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("role")}
+              <Select
+                value={watch("role") || "student"}
+                onValueChange={(val) =>
+                  setValue(
+                    "role",
+                    val as "student" | "volunteer" | "reviewer" | "admin"
+                  )
+                }
               >
-                <option value="student">Mahasiswa (Akses Pembaca Asistif & Materi Kuliah)</option>
-                <option value="volunteer">Volunteer / Reviewer (Verifikasi & Transkripsi Dokumen)</option>
-              </select>
+                <SelectTrigger
+                  id="field-role"
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs focus:ring-2 focus:ring-primary/40"
+                >
+                  <SelectValue placeholder="Pilih peran akun" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                  <SelectItem
+                    value="student"
+                    className="rounded-lg text-sm cursor-pointer py-2"
+                  >
+                    Mahasiswa (Akses Pembaca Asistif &amp; Materi Kuliah)
+                  </SelectItem>
+                  <SelectItem
+                    value="volunteer"
+                    className="rounded-lg text-sm cursor-pointer py-2"
+                  >
+                    Volunteer / Reviewer (Verifikasi &amp; Transkripsi Dokumen)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </>
         )}

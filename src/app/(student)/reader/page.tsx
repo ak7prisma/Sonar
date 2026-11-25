@@ -25,7 +25,7 @@ async function ReaderIndexBody() {
 
   if (!initialDoc) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="w-full max-w-4xl py-6">
         <h1 className="sr-only">Pembaca Dokumen</h1>
         <EmptyState
           icon={BookOpen}
@@ -44,7 +44,7 @@ async function ReaderIndexBody() {
   const detail = await loadDocumentDetail(initialDoc.id);
   if (!detail) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="w-full max-w-4xl py-6">
         <h1 className="sr-only">Pembaca Dokumen</h1>
         <EmptyState
           icon={BookOpen}

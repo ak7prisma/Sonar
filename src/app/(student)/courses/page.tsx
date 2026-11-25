@@ -19,7 +19,7 @@ async function CoursesBody() {
   const documents = snapshot.documents || [];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 font-sans">
+    <div className="w-full max-w-7xl space-y-8 font-sans">
       <PageHeader
         title="Mata Kuliah & Materi Terverifikasi"
         description="Akses materi perkuliahan yang telah diperiksa volunteer dan dapat digunakan kembali oleh mahasiswa terdaftar pada kelas yang sama."

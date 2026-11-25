@@ -3,11 +3,19 @@
 import { useState } from "react";
 import { CheckCircle2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Panel } from "@/components/app/Panel";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   useAccessibilityStore,
   type ReadingFont,
@@ -68,9 +76,35 @@ export function PreferencesForm({
         title="Pratinjau Teks Pembaca"
         description="Contoh tampilan paragraf pada halaman pembaca menggunakan pengaturan Anda saat ini."
       >
-        <div className="rounded-2xl border border-border bg-background p-5">
-          <div className="sonar-reader-prose mx-auto">
-            <p className="text-foreground">
+        <div
+          className={cn(
+            "rounded-2xl border border-border p-5 transition-colors",
+            store.readingSurface === "warm"
+              ? "bg-[#faf6ee] text-[#1c1d1b] dark:bg-[#1a1916] dark:text-[#f4ede0]"
+              : "bg-background text-foreground"
+          )}
+        >
+          <div
+            className={cn(
+              "w-full transition-all",
+              store.readingWidth === "narrow"
+                ? "max-w-md"
+                : store.readingWidth === "wide"
+                  ? "max-w-3xl"
+                  : "max-w-xl",
+              store.readingFont === "lexend"
+                ? "font-heading"
+                : store.readingFont === "inter"
+                  ? "font-sans"
+                  : "font-sans"
+            )}
+            style={{
+              fontSize: `${store.fontSizePx}px`,
+              lineHeight: store.lineHeight,
+              letterSpacing: `${store.letterSpacingEm}em`,
+            }}
+          >
+            <p>
               Setiap materi kuliah yang telah disetujui volunteer memiliki struktur judul berurutan, tabel berlabel jelas, dan narasi rumus matematika sehingga dapat ditelusuri mandiri menggunakan keyboard atau pembaca layar.
             </p>
           </div>
@@ -82,23 +116,31 @@ export function PreferencesForm({
         <div className="space-y-5 font-ui">
           <div className="space-y-1.5">
             <Label htmlFor="settings-font">Jenis huruf pembaca</Label>
-            <select
-              id="settings-font"
+            <Select
               value={store.readingFont}
-              onChange={(e) => store.setReadingFont(e.target.value as ReadingFont)}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+              onValueChange={(val) => store.setReadingFont(val as ReadingFont)}
             >
-              <option value="atkinson">
-                Atkinson Hyperlegible (Direkomendasikan untuk low vision)
-              </option>
-              <option value="lexend">
-                Lexend (Dirancang untuk kelancaran membaca)
-              </option>
-              <option value="inter">Inter (Sans-serif netral)</option>
-            </select>
+              <SelectTrigger
+                id="settings-font"
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+              >
+                <SelectValue placeholder="Pilih jenis huruf" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                <SelectItem value="atkinson" className="rounded-lg text-sm cursor-pointer">
+                  Atkinson Hyperlegible (Direkomendasikan untuk low vision)
+                </SelectItem>
+                <SelectItem value="lexend" className="rounded-lg text-sm cursor-pointer">
+                  Lexend (Dirancang untuk kelancaran membaca)
+                </SelectItem>
+                <SelectItem value="inter" className="rounded-lg text-sm cursor-pointer">
+                  Inter (Sans-serif netral)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <Label htmlFor="settings-size">Ukuran huruf</Label>
@@ -134,38 +176,78 @@ export function PreferencesForm({
                 onValueChange={([val]) => store.setLineHeight(val)}
               />
             </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <Label htmlFor="settings-letter-spacing">Jarak antar huruf</Label>
+                <span className="font-semibold tabular-nums">
+                  {store.letterSpacingEm} em
+                </span>
+              </div>
+              <Slider
+                id="settings-letter-spacing"
+                aria-label="Jarak spasi antar huruf dalam em"
+                min={0}
+                max={0.12}
+                step={0.01}
+                value={[store.letterSpacingEm]}
+                onValueChange={([val]) => store.setLetterSpacingEm(val)}
+              />
+            </div>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="settings-width">Lebar kolom bacaan</Label>
-              <select
-                id="settings-width"
+              <Select
                 value={store.readingWidth}
-                onChange={(e) =>
-                  store.setReadingWidth(e.target.value as ReadingWidth)
+                onValueChange={(val) =>
+                  store.setReadingWidth(val as ReadingWidth)
                 }
-                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
               >
-                <option value="narrow">Sempit (56 karakter)</option>
-                <option value="comfortable">Seimbang (68 karakter)</option>
-                <option value="wide">Lebar (82 karakter)</option>
-              </select>
+                <SelectTrigger
+                  id="settings-width"
+                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+                >
+                  <SelectValue placeholder="Pilih lebar kolom" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                  <SelectItem value="narrow" className="rounded-lg text-sm cursor-pointer">
+                    Sempit (56 karakter)
+                  </SelectItem>
+                  <SelectItem value="comfortable" className="rounded-lg text-sm cursor-pointer">
+                    Seimbang (68 karakter)
+                  </SelectItem>
+                  <SelectItem value="wide" className="rounded-lg text-sm cursor-pointer">
+                    Lebar (82 karakter)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="settings-language">Bahasa bawaan narasi suara</Label>
-              <select
-                id="settings-language"
+              <Select
                 value={store.language}
-                onChange={(e) =>
-                  store.setLanguage(e.target.value === "id" ? "id" : "en")
+                onValueChange={(val) =>
+                  store.setLanguage(val === "id" ? "id" : "en")
                 }
-                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
               >
-                <option value="id">Bahasa Indonesia (id-ID)</option>
-                <option value="en">English (en-US)</option>
-              </select>
+                <SelectTrigger
+                  id="settings-language"
+                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+                >
+                  <SelectValue placeholder="Pilih bahasa" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                  <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
+                    Bahasa Indonesia (id-ID)
+                  </SelectItem>
+                  <SelectItem value="en" className="rounded-lg text-sm cursor-pointer">
+                    English (en-US)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
