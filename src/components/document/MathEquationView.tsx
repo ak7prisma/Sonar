@@ -1,0 +1,108 @@
+"use client";
+
+import React, { useMemo, useState } from "react";
+import katex from "katex";
+import { cn } from "cn";
+
+export interface MathEquationViewProps {
+  latex?: string;
+  contentText: string;
+  mathMl?: string;
+  spokenText?: string;
+  className?: string;
+}
+
+/**
+ * MathEquationView
+ * Accessible equation display card with KaTeX rendering, audio narration label,
+ * and expandable raw LaTeX code viewer.
+ */
+export function MathEquationView({
+  latex,
+  contentText,
+  mathMl,
+  spokenText,
+  className,
+}: MathEquationViewProps) {
+  const [showCode, setShowCode] = useState(false);
+
+  const formula = useMemo(() => {
+    let raw = (latex || contentText || "").trim();
+    if (
+      (raw.startsWith("\\[") && raw.endsWith("\\]")) ||
+      (raw.startsWith("\\(") && raw.endsWith("\\)"))
+    ) {
+      raw = raw.slice(2, -2).trim();
+    } else if (raw.startsWith("$$") && raw.endsWith("$$")) {
+      raw = raw.slice(2, -2).trim();
+    } else if (raw.startsWith("$") && raw.endsWith("$") && raw.length > 2) {
+      raw = raw.slice(1, -1).trim();
+    }
+    return raw;
+  }, [latex, contentText]);
+
+  const katexHtml = useMemo(() => {
+    try {
+      return katex.renderToString(formula, {
+        displayMode: true,
+        throwOnError: false,
+        strict: false,
+        trust: true,
+      });
+    } catch {
+      return null;
+    }
+  }, [formula]);
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label={
+          spokenText ? `Rumus: ${spokenText}` : `Rumus matematika: ${formula}`
+        }
+        className="overflow-x-auto rounded-2xl border border-primary/25 bg-card p-5 shadow-xs transition-colors hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
+      >
+        {katexHtml ? (
+          <div
+            className="flex min-h-12 items-center justify-center text-center text-lg text-foreground font-sans"
+            dangerouslySetInnerHTML={{ __html: katexHtml }}
+          />
+        ) : mathMl ? (
+          <div
+            className="flex min-h-12 items-center justify-center text-center text-lg text-foreground font-sans"
+            dangerouslySetInnerHTML={{ __html: mathMl }}
+          />
+        ) : (
+          <p className="font-mono text-center text-sm text-foreground">
+            {formula}
+          </p>
+        )}
+      </div>
+
+      {spokenText && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground font-ui">
+          <span className="font-semibold text-foreground">Narasi suara:</span>
+          <span>{spokenText}</span>
+        </p>
+      )}
+
+      <div className="font-ui">
+        <button
+          type="button"
+          onClick={() => setShowCode((prev) => !prev)}
+          className="text-[11px] font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+        >
+          {showCode ? "Sembunyikan kode LaTeX" : "Lihat kode LaTeX asli"}
+        </button>
+
+        {showCode && (
+          <pre className="mt-2 w-full overflow-x-auto rounded-xl bg-muted/60 p-3 font-mono text-xs text-foreground">
+            <code>{formula}</code>
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
