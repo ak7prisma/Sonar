@@ -19,6 +19,7 @@ import {
   Copy,
   ExternalLink,
   ListTree,
+  Loader2,
   MessageSquare,
   Pause,
   Play,
@@ -52,6 +53,7 @@ import {
   FormattedMathText,
   MathEquationView,
 } from "@/components/document/FormattedMathText";
+import { narrateMixedText } from "@/features/math-ocr/math-narration";
 import { useDocumentBookmarks } from "@/components/document/useDocumentBookmarks";
 import {
   answerFromDocumentBlocks,
@@ -175,6 +177,84 @@ export function AccessibleReaderStudio({
   const { announce } = useLiveAnnouncer();
   const { bookmarks, toggleBookmark } = useDocumentBookmarks(document.id);
 
+  const [renderedBlocks, setRenderedBlocks] = useState<DocumentBlockRow[]>(blocks);
+  const [isTranslatingDoc, setIsTranslatingDoc] = useState(false);
+  const [blocksByLanguage, setBlocksByLanguage] = useState<
+    Record<string, DocumentBlockRow[]>
+  >({
+    [document.language || "id"]: blocks,
+  });
+
+  const handleLanguageChange = async (targetLang: "id" | "en") => {
+    setLanguage(targetLang);
+
+    if (blocksByLanguage[targetLang] && blocksByLanguage[targetLang].length > 0) {
+      setRenderedBlocks(blocksByLanguage[targetLang]);
+      announce(
+        `Bahasa dokumen dialihkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+      return;
+    }
+
+    setIsTranslatingDoc(true);
+    announce(
+      `Menerjemahkan teks dokumen ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}...`,
+      "polite"
+    );
+
+    try {
+      const res = await fetch("/api/documents/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blocks: renderedBlocks.map((b) => ({
+            id: b.id,
+            blockType: b.block_type,
+            headingLevel: b.heading_level ?? undefined,
+            contentText: b.content_text,
+            latex: (b.metadata as Record<string, unknown> | null)?.latex as string | undefined,
+            confidence: b.confidence_score,
+          })),
+          targetLanguage: targetLang,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Gagal menerjemahkan dokumen.");
+      }
+
+      const translated = json.blocks as Array<{
+        contentText: string;
+        spokenText?: string;
+      }>;
+
+      const updatedRows: DocumentBlockRow[] = renderedBlocks.map((b, idx) => {
+        const trans = translated[idx];
+        if (!trans) return b;
+        return {
+          ...b,
+          content_text: trans.contentText,
+          spoken_text:
+            trans.spokenText || narrateMixedText(trans.contentText, targetLang),
+        };
+      });
+
+      setBlocksByLanguage((prev) => ({ ...prev, [targetLang]: updatedRows }));
+      setRenderedBlocks(updatedRows);
+      announce(
+        `Teks dokumen berhasil diterjemahkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+    } catch (err) {
+      console.error("[AccessibleReaderStudio] Translation error:", err);
+      announce("Gagal menerjemahkan dokumen ke bahasa terpilih.", "assertive");
+    } finally {
+      setIsTranslatingDoc(false);
+    }
+  };
+
   const equationsByBlock = useMemo(() => {
     const map = new Map<string, DocumentEquationRow>();
     for (const eq of equations) map.set(eq.block_id, eq);
@@ -195,7 +275,7 @@ export function AccessibleReaderStudio({
 
   const audioBlocks = useMemo(
     () =>
-      blocks.map((block) => {
+      renderedBlocks.map((block) => {
         const eq = equationsByBlock.get(block.id);
         const eqSpoken = eq
           ? language === "id"
@@ -204,11 +284,14 @@ export function AccessibleReaderStudio({
           : null;
         return {
           id: block.id,
-          spokenText: eqSpoken ?? block.spoken_text ?? block.content_text,
+          spokenText: narrateMixedText(
+            eqSpoken ?? block.spoken_text ?? block.content_text,
+            language
+          ),
           label: `${blockKindLabel(block.block_type)} halaman ${block.page_number}`,
         };
       }),
-    [blocks, equationsByBlock, language]
+    [renderedBlocks, equationsByBlock, language]
   );
 
   const handleAudioBlockChange = useCallback((blockId: string) => {
@@ -229,26 +312,26 @@ export function AccessibleReaderStudio({
 
   const outlineItems = useMemo(
     () =>
-      blocks.filter(
+      renderedBlocks.filter(
         (b) =>
           b.block_type === "heading" ||
           b.block_type === "equation" ||
           b.block_type === "table" ||
           b.block_type === "figure"
       ),
-    [blocks]
+    [renderedBlocks]
   );
 
   const bookmarkedBlocks = useMemo(
-    () => blocks.filter((b) => bookmarks.includes(b.id)),
-    [blocks, bookmarks]
+    () => renderedBlocks.filter((b) => bookmarks.includes(b.id)),
+    [renderedBlocks, bookmarks]
   );
 
   const filteredBlocks = useMemo(() => {
-    if (!searchQuery.trim()) return blocks;
+    if (!searchQuery.trim()) return renderedBlocks;
     const q = searchQuery.toLowerCase();
-    return blocks.filter((b) => b.content_text.toLowerCase().includes(q));
-  }, [blocks, searchQuery]);
+    return renderedBlocks.filter((b) => b.content_text.toLowerCase().includes(q));
+  }, [renderedBlocks, searchQuery]);
 
   const jumpToBlock = (blockId: string) => {
     setActiveBlockId(blockId);
@@ -262,7 +345,7 @@ export function AccessibleReaderStudio({
         el.focus({ preventScroll: true });
       }
     });
-    const target = blocks.find((b) => b.id === blockId);
+    const target = renderedBlocks.find((b) => b.id === blockId);
     if (target) {
       announce(
         `Berpindah ke ${blockKindLabel(target.block_type)} halaman ${target.page_number}.`
@@ -317,7 +400,7 @@ export function AccessibleReaderStudio({
     (query: string, appendUserMessage: boolean) => {
       const answer = answerFromDocumentBlocks(query, {
         documentTitle: document.title,
-        blocks,
+        blocks: renderedBlocks,
         equations,
         tables,
         figures,
@@ -350,7 +433,7 @@ export function AccessibleReaderStudio({
     },
     [
       activeBlockId,
-      blocks,
+      renderedBlocks,
       document.title,
       equations,
       figures,
@@ -404,7 +487,7 @@ export function AccessibleReaderStudio({
   const speakSingleText = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
+    const utter = new SpeechSynthesisUtterance(narrateMixedText(text, language));
     utteranceSetLang(utter, language, narrationSpeed);
     window.speechSynthesis.speak(utter);
   };
@@ -1181,17 +1264,26 @@ export function AccessibleReaderStudio({
 
               <label className="flex items-center gap-1.5 text-muted-foreground">
                 <span>Bahasa</span>
-                <select
-                  aria-label="Bahasa narasi"
-                  value={language}
-                  onChange={(e) =>
-                    setLanguage(e.target.value === "id" ? "id" : "en")
-                  }
-                  className="h-9 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground"
-                >
-                  <option value="id">ID</option>
-                  <option value="en">EN</option>
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    aria-label="Bahasa narasi dan terjemahan"
+                    disabled={isTranslatingDoc}
+                    value={language}
+                    onChange={(e) =>
+                      handleLanguageChange(e.target.value === "id" ? "id" : "en")
+                    }
+                    className="h-9 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground disabled:opacity-50"
+                  >
+                    <option value="id">ID</option>
+                    <option value="en">EN</option>
+                  </select>
+                  {isTranslatingDoc && (
+                    <Loader2
+                      className="absolute right-7 size-3 animate-spin text-primary"
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
               </label>
             </div>
           </div>

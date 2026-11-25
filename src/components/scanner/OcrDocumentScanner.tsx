@@ -30,6 +30,7 @@ import {
   FormattedMathText,
   MathEquationView,
 } from "@/components/document/FormattedMathText";
+import { narrateMixedText } from "@/features/math-ocr/math-narration";
 import type { CourseRow } from "@/lib/data/workspace";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
@@ -85,6 +86,8 @@ export function OcrDocumentScanner({
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
   const [sharingNotes, setSharingNotes] = useState("");
   const [showShareOptions, setShowShareOptions] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationCache, setTranslationCache] = useState<Record<string, ExtractedBlockOutput[]>>({});
 
   useEffect(() => {
     return () => {
@@ -220,6 +223,7 @@ export function OcrDocumentScanner({
 
       setTimeout(() => {
         setScanResult(data);
+        setTranslationCache({ [language]: data.blocks });
         announce(
           `Pemindaian selesai. Terdeteksi ${data.stats.totalBlocks} blok materi.`,
           "polite"
@@ -240,6 +244,66 @@ export function OcrDocumentScanner({
     }
   };
 
+  const handleSwitchLanguage = async (targetLang: "id" | "en") => {
+    if (targetLang === language) return;
+    if (!scanResult) {
+      setLanguage(targetLang);
+      return;
+    }
+
+    stopAllAudio();
+    setLanguage(targetLang);
+
+    // If cached in target language, use immediately
+    if (translationCache[targetLang] && translationCache[targetLang].length > 0) {
+      setScanResult((prev) => (prev ? { ...prev, blocks: translationCache[targetLang] } : null));
+      announce(
+        `Bahasa dokumen dialihkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+      return;
+    }
+
+    // Call translation endpoint to translate blocks
+    setIsTranslating(true);
+    announce(
+      `Menerjemahkan dokumen ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}...`,
+      "polite"
+    );
+
+    try {
+      const res = await fetch("/api/documents/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blocks: scanResult.blocks,
+          targetLanguage: targetLang,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Gagal menerjemahkan dokumen.");
+      }
+
+      const translatedBlocks: ExtractedBlockOutput[] = json.blocks;
+      setTranslationCache((prev) => ({
+        ...prev,
+        [targetLang]: translatedBlocks,
+      }));
+      setScanResult((prev) => (prev ? { ...prev, blocks: translatedBlocks } : null));
+      announce(
+        `Dokumen berhasil diterjemahkan ke ${targetLang === "id" ? "Bahasa Indonesia" : "English"}.`,
+        "polite"
+      );
+    } catch (translateErr) {
+      console.error("[OcrDocumentScanner] Translation error:", translateErr);
+      announce("Gagal menerjemahkan teks, tetap menggunakan teks saat ini.", "assertive");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const speakText = (text: string, blockIdx?: number) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       announce("Peramban tidak mendukung sintesis suara.", "assertive");
@@ -253,7 +317,8 @@ export function OcrDocumentScanner({
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const naturalSpokenText = narrateMixedText(text, language);
+    const utterance = new SpeechSynthesisUtterance(naturalSpokenText);
     utterance.lang = language === "id" ? "id-ID" : "en-US";
     utterance.rate = 1.0;
 
@@ -276,7 +341,7 @@ export function OcrDocumentScanner({
   const speakAllDocument = () => {
     if (!scanResult || scanResult.blocks.length === 0) return;
     const fullText = scanResult.blocks
-      .map((b) => b.spokenText || b.contentText)
+      .map((b) => narrateMixedText(b.spokenText || b.contentText, language))
       .join(". ");
     speakText(fullText, -1);
   };
@@ -582,6 +647,45 @@ export function OcrDocumentScanner({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 font-ui">
+              <div
+                className="flex items-center rounded-full border border-border bg-background/80 p-0.5 text-xs"
+                role="group"
+                aria-label="Pilihan bahasa teks dokumen"
+              >
+                <button
+                  type="button"
+                  disabled={isTranslating}
+                  onClick={() => handleSwitchLanguage("id")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors disabled:opacity-50",
+                    language === "id"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {isTranslating && language !== "id" ? (
+                    <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  <span>Indonesia</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isTranslating}
+                  onClick={() => handleSwitchLanguage("en")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition-colors disabled:opacity-50",
+                    language === "en"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {isTranslating && language !== "en" ? (
+                    <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  <span>English</span>
+                </button>
+              </div>
+
               <Button
                 type="button"
                 variant="outline"
