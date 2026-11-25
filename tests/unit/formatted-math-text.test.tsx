@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import {
-  FormattedMathText,
-  renderInlineMathAndMarkdown,
-} from "@/components/document/FormattedMathText";
+import { FormattedMathText } from "@/components/document/FormattedMathText";
 
 describe("FormattedMathText & KaTeX rendering", () => {
   it("renders headings from markdown hashes", () => {

@@ -4,12 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
-  ArrowDown,
   Bot,
   Copy,
   Check,
-  ChevronDown,
-  ChevronUp,
   CornerDownLeft,
   Loader2,
   Sparkles,
@@ -41,7 +38,6 @@ export function ScannedMaterialAiChat({
   const [inputVal, setInputVal] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentlySpeakingId, setCurrentlySpeakingId] = useState<string | null>(null);
-  const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
   const [isCardFormVisible, setIsCardFormVisible] = useState(false);
 
   const chatSectionRef = useRef<HTMLElement>(null);

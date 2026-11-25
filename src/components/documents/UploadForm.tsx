@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   FileText,
   FileUp,
-  Loader2,
   Upload,
   X,
 } from "lucide-react";

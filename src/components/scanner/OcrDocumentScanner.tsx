@@ -636,13 +636,6 @@ export function OcrDocumentScanner({
                       <span>3. Narasi Suara</span>
                     </div>
                   </div>
-                    >
-                      {scanProgress >= 100 ? (
-                        <CheckCircle2 className="size-3 text-primary shrink-0" aria-hidden="true" />
-                      ) : null}
-                      <span>3. Narasi Suara</span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
