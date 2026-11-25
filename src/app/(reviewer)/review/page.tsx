@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { ReviewQueueSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { ReviewQueueTable } from "@/components/reviewer/ReviewQueueTable";
 import {
@@ -35,13 +36,7 @@ async function ReviewQueueBody() {
 export default function ReviewQueuePage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat antrean review…
-          </p>
-        }
-      >
+      <Suspense fallback={<ReviewQueueSkeleton />}>
         <ReviewQueueBody />
       </Suspense>
     </WorkspaceShell>

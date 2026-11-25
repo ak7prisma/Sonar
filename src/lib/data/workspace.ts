@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { connection } from "next/server";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -227,7 +228,27 @@ export const FALLBACK_JOBS: ProcessingJobRow[] = [
   },
 ];
 
-export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
+export const loadCoursesCatalog = cache(async function loadCoursesCatalog(): Promise<CourseRow[]> {
+  await connection();
+  if (isSupabaseConfigured()) {
+    const { supabase } = await getAuthenticatedContext();
+    const client = supabase ?? (await createServerSupabaseClient());
+    if (client) {
+      const { data: dbCourses } = await client
+        .from("courses")
+        .select("*")
+        .order("code", { ascending: true });
+      if (dbCourses && dbCourses.length > 0) {
+        return dbCourses;
+      }
+    }
+  }
+  return FALLBACK_COURSES;
+});
+
+export const loadWorkspaceSnapshot = cache(async function loadWorkspaceSnapshot(
+  includeJobs = false
+): Promise<WorkspaceSnapshot> {
   await connection();
   const demoUser = await getCurrentAppUser();
 
@@ -263,11 +284,13 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
     }
 
     if (client) {
-      const [{ data: dbCourses }, { data: dbDocs }, { data: dbJobs }] =
+      const [{ data: dbCourses }, { data: dbDocs }, jobsRes] =
         await Promise.all([
           client.from("courses").select("*").order("code", { ascending: true }),
           client.from("documents").select("*").order("created_at", { ascending: false }).limit(30),
-          client.from("processing_jobs").select("*").order("created_at", { ascending: false }).limit(20),
+          includeJobs
+            ? client.from("processing_jobs").select("*").order("created_at", { ascending: false }).limit(20)
+            : Promise.resolve({ data: null }),
         ]);
 
       if (dbCourses && dbCourses.length > 0) {
@@ -276,8 +299,8 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
       if (dbDocs && dbDocs.length > 0) {
         documents = dbDocs;
       }
-      if (dbJobs && dbJobs.length > 0) {
-        jobs = dbJobs;
+      if (jobsRes.data && jobsRes.data.length > 0) {
+        jobs = jobsRes.data;
       }
     }
   }
@@ -288,11 +311,13 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
     user: authUser,
     courses: courses.length > 0 ? courses : FALLBACK_COURSES,
     documents: documents.length > 0 ? documents : FALLBACK_DOCUMENTS,
-    jobs: jobs.length > 0 ? jobs : FALLBACK_JOBS,
+    jobs: includeJobs ? (jobs.length > 0 ? jobs : FALLBACK_JOBS) : [],
   };
-}
+});
 
-export async function loadCourseDetailWithMaterials(courseId: string) {
+export const loadCourseDetailWithMaterials = cache(async function loadCourseDetailWithMaterials(
+  courseId: string
+) {
   await connection();
   const snapshot = await loadWorkspaceSnapshot();
   const lowerId = courseId.toLowerCase().trim();
@@ -378,9 +403,47 @@ export async function loadCourseDetailWithMaterials(courseId: string) {
     userRoleInCourse,
     currentUser: snapshot.user,
   };
-}
+});
 
-export async function loadDocumentDetail(documentId: string) {
+export const loadRelatedDocuments = cache(async function loadRelatedDocuments(
+  courseId: string,
+  excludeDocumentId: string
+) {
+  await connection();
+  if (isSupabaseConfigured()) {
+    const { supabase } = await getAuthenticatedContext();
+    const client = supabase ?? (await createServerSupabaseClient());
+    if (client) {
+      const { data } = await client
+        .from("documents")
+        .select("id, title, review_status")
+        .eq("course_id", courseId)
+        .neq("id", excludeDocumentId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+
+      if (data && data.length > 0) {
+        return data.map((d) => ({
+          id: d.id,
+          title: d.title,
+          reviewStatus: d.review_status,
+        }));
+      }
+    }
+  }
+
+  return FALLBACK_DOCUMENTS.filter(
+    (d) => d.course_id === courseId && d.id !== excludeDocumentId
+  )
+    .slice(0, 6)
+    .map((d) => ({
+      id: d.id,
+      title: d.title,
+      reviewStatus: d.review_status,
+    }));
+});
+
+export const loadDocumentDetail = cache(async function loadDocumentDetail(documentId: string) {
   await connection();
   const demoUser = await getCurrentAppUser();
   const fallbackDoc = FALLBACK_DOCUMENTS.find((d) => d.id === documentId) ?? FALLBACK_DOCUMENTS[0];
@@ -650,4 +713,4 @@ export async function loadDocumentDetail(documentId: string) {
     signedPdfUrl: null,
     viewerRoles: demoUser ? [demoUser.role] : (["student"] as AppRole[]),
   };
-}
+});

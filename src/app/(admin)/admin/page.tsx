@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { AdminSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Panel } from "@/components/app/Panel";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 async function AdminBody() {
-  const snapshot = await loadWorkspaceSnapshot();
+  const snapshot = await loadWorkspaceSnapshot(true);
   const courses = snapshot.courses;
   const documents = snapshot.documents;
   const jobs = snapshot.jobs;
@@ -260,13 +261,7 @@ async function AdminBody() {
 export default function AdminPage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat konsol administrasi…
-          </p>
-        }
-      >
+      <Suspense fallback={<AdminSkeleton />}>
         <AdminBody />
       </Suspense>
     </WorkspaceShell>

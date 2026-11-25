@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { SettingsSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { PreferencesForm } from "@/components/settings/PreferencesForm";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
@@ -29,13 +30,7 @@ async function SettingsBody() {
 export default function SettingsPage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat pengaturan aksesibilitas…
-          </p>
-        }
-      >
+      <Suspense fallback={<SettingsSkeleton />}>
         <SettingsBody />
       </Suspense>
     </WorkspaceShell>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ClipboardList, ShieldAlert } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { ReviewDetailSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { EmptyState } from "@/components/app/EmptyState";
 import { ReviewWorkbench } from "@/components/reviewer/ReviewWorkbench";
@@ -91,13 +92,7 @@ export default function ReviewDetailPage({
 }) {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat editor review…
-          </p>
-        }
-      >
+      <Suspense fallback={<ReviewDetailSkeleton />}>
         <ReviewDetailBody params={params} />
       </Suspense>
     </WorkspaceShell>

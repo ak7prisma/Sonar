@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BookOpen } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { ReaderSkeleton } from "@/components/skeletons/PageSkeletons";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
@@ -91,13 +92,7 @@ async function ReaderIndexBody() {
 export default function ReaderIndexPage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="p-6 text-sm text-muted-foreground font-ui">
-            Memuat pembaca dokumen…
-          </p>
-        }
-      >
+      <Suspense fallback={<ReaderSkeleton />}>
         <ReaderIndexBody />
       </Suspense>
     </WorkspaceShell>
