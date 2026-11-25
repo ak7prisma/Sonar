@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   loginAction,
+  loginAsDemoRole,
   registerAction,
 } from "@/features/authentication/actions";
 import { loginSchema, registerSchema } from "@/lib/validation/schemas";
@@ -330,6 +331,43 @@ export function AuthForm({
           </>
         )}
       </p>
+
+      {/* Quick Demo Access Bar */}
+      <div className="rounded-2xl border border-dashed border-border bg-surface-subtle/70 p-3.5 space-y-2.5 font-ui">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">Akses Cepat Testing Demo:</span>
+          <span className="text-[11px] text-muted-foreground">Tanpa antre email rate-limit</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => loginAsDemoRole("student", redirectTo)}
+            className="h-8 rounded-lg text-[11px] font-semibold border-border hover:bg-card hover:text-primary"
+          >
+            Mahasiswa
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => loginAsDemoRole("volunteer", redirectTo)}
+            className="h-8 rounded-lg text-[11px] font-semibold border-border hover:bg-card hover:text-primary"
+          >
+            Volunteer
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => loginAsDemoRole("admin", redirectTo)}
+            className="h-8 rounded-lg text-[11px] font-semibold border-border hover:bg-card hover:text-primary"
+          >
+            Admin
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

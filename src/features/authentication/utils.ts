@@ -15,8 +15,8 @@ export function mapAuthErrorMessage(msg: string): string {
   if (lower.includes("not enabled") || lower.includes("unsupported provider")) {
     return "Provider login Google belum diaktifkan di dashboard Supabase (Authentication -> Providers).";
   }
-  if (lower.includes("rate limit") || lower.includes("too many requests")) {
-    return "Terlalu banyak percobaan. Harap tunggu beberapa saat sebelum mencoba lagi.";
+  if (lower.includes("rate limit") || lower.includes("too many requests") || lower.includes("over_email_send_rate_limit")) {
+    return "Terlalu banyak percobaan pendaftaran/pengiriman email dalam waktu singkat (batasan Supabase Auth Rate Limit). Harap tunggu 5-10 menit sebelum mencoba lagi, atau gunakan tombol Akses Cepat Testing Demo di bawah.";
   }
   if (lower.includes("network") || lower.includes("fetch failed")) {
     return "Gagal terhubung ke server autentikasi. Periksa koneksi internet Anda.";
