@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -75,9 +76,35 @@ export function PreferencesForm({
         title="Pratinjau Teks Pembaca"
         description="Contoh tampilan paragraf pada halaman pembaca menggunakan pengaturan Anda saat ini."
       >
-        <div className="rounded-2xl border border-border bg-background p-5">
-          <div className="sonar-reader-prose mx-auto">
-            <p className="text-foreground">
+        <div
+          className={cn(
+            "rounded-2xl border border-border p-5 transition-colors",
+            store.readingSurface === "warm"
+              ? "bg-[#faf6ee] text-[#1c1d1b] dark:bg-[#1a1916] dark:text-[#f4ede0]"
+              : "bg-background text-foreground"
+          )}
+        >
+          <div
+            className={cn(
+              "w-full transition-all",
+              store.readingWidth === "narrow"
+                ? "max-w-md"
+                : store.readingWidth === "wide"
+                  ? "max-w-3xl"
+                  : "max-w-xl",
+              store.readingFont === "lexend"
+                ? "font-heading"
+                : store.readingFont === "inter"
+                  ? "font-sans"
+                  : "font-sans"
+            )}
+            style={{
+              fontSize: `${store.fontSizePx}px`,
+              lineHeight: store.lineHeight,
+              letterSpacing: `${store.letterSpacingEm}em`,
+            }}
+          >
+            <p>
               Setiap materi kuliah yang telah disetujui volunteer memiliki struktur judul berurutan, tabel berlabel jelas, dan narasi rumus matematika sehingga dapat ditelusuri mandiri menggunakan keyboard atau pembaca layar.
             </p>
           </div>
@@ -113,7 +140,7 @@ export function PreferencesForm({
             </Select>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <Label htmlFor="settings-size">Ukuran huruf</Label>
@@ -147,6 +174,24 @@ export function PreferencesForm({
                 step={0.05}
                 value={[store.lineHeight]}
                 onValueChange={([val]) => store.setLineHeight(val)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <Label htmlFor="settings-letter-spacing">Jarak antar huruf</Label>
+                <span className="font-semibold tabular-nums">
+                  {store.letterSpacingEm} em
+                </span>
+              </div>
+              <Slider
+                id="settings-letter-spacing"
+                aria-label="Jarak spasi antar huruf dalam em"
+                min={0}
+                max={0.12}
+                step={0.01}
+                value={[store.letterSpacingEm]}
+                onValueChange={([val]) => store.setLetterSpacingEm(val)}
               />
             </div>
           </div>
