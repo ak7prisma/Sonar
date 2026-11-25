@@ -43,39 +43,10 @@ export function ScannedMaterialAiChat({
   const [inputVal, setInputVal] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentlySpeakingId, setCurrentlySpeakingId] = useState<string | null>(null);
-  const [isNaturalFormVisible, setIsNaturalFormVisible] = useState(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
 
   const chatSectionRef = useRef<HTMLElement>(null);
-  const naturalFormRef = useRef<HTMLFormElement>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = naturalFormRef.current;
-    if (!el || typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
-      return;
-    }
-
-    const checkVisibility = () => {
-      const rect = el.getBoundingClientRect();
-      const inView = rect.top < window.innerHeight && rect.bottom > 0;
-      setIsNaturalFormVisible(inView);
-    };
-    checkVisibility();
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsNaturalFormVisible(entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const chatTransport = useMemo(
     () =>
@@ -355,49 +326,11 @@ export function ScannedMaterialAiChat({
         </div>
       )}
 
-      {/* Input Box */}
-      <form
-        ref={naturalFormRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSendQuery();
-        }}
-        className="flex items-center gap-2"
-      >
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={inputVal}
-            disabled={isStreaming}
-            onChange={(e) => setInputVal(e.target.value)}
-            placeholder={
-              language === "id"
-                ? "Tanyakan konsep, rumus, atau soal dari materi ini..."
-                : "Ask any question about this material..."
-            }
-            className="w-full h-11 rounded-full border border-input bg-background px-4 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
-          />
-        </div>
+        {/* Bottom padding buffer so content is never covered by the floating chat bar */}
+        <div className="h-4" aria-hidden="true" />
+      </section>
 
-        <Button
-          type="submit"
-          disabled={!inputVal.trim() || isStreaming}
-          className="h-11 rounded-full px-5 font-semibold text-xs min-w-24"
-        >
-          {isStreaming ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <>
-              <span>Kirim</span>
-              <CornerDownLeft className="size-3.5 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </form>
-    </section>
-
-    {/* Floating Bottom Chat Bar when user hasn't scrolled all the way to the bottom */}
-    {!isNaturalFormVisible && (
+      {/* Persistent Floating Bottom Chat Bar */}
       <aside
         role="region"
         aria-label={
@@ -515,7 +448,6 @@ export function ScannedMaterialAiChat({
           </div>
         )}
       </aside>
-    )}
-  </>
+    </>
   );
 }

@@ -953,6 +953,7 @@ export function OcrDocumentScanner({
           blocks={scanResult.blocks}
           language={language}
         />
+        <div className="h-16" aria-hidden="true" />
       </>
     ) : null}
     </div>
