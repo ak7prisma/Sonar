@@ -26,7 +26,7 @@ export function UploadHub({
       <div
         role="tablist"
         aria-label="Pilihan mode pemrosesan materi kuliah"
-        className="flex rounded-2xl border border-border bg-card p-1.5 shadow-xs font-ui"
+        className="inline-flex flex-wrap rounded-2xl border border-border bg-card p-1.5 shadow-xs font-ui"
       >
         <button
           type="button"
@@ -35,7 +35,7 @@ export function UploadHub({
           aria-controls="panel-ocr"
           onClick={() => setActiveTab("ocr")}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-xs sm:text-sm font-semibold transition-all",
+            "flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-xs sm:text-sm font-semibold transition-all",
             activeTab === "ocr"
               ? "bg-primary text-primary-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -52,7 +52,7 @@ export function UploadHub({
           aria-controls="panel-pdf"
           onClick={() => setActiveTab("pdf")}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-xs sm:text-sm font-semibold transition-all",
+            "flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-xs sm:text-sm font-semibold transition-all",
             activeTab === "pdf"
               ? "bg-primary text-primary-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

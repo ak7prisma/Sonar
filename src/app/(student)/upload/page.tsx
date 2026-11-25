@@ -22,12 +22,12 @@ async function UploadBody({
   const courses = courseCatalog.length > 0 ? courseCatalog : FALLBACK_COURSES;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 py-2 font-sans sm:py-6">
-      <header className="space-y-2 text-center">
-        <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-          Pindai Dokumen Kuliah
+    <div className="w-full max-w-5xl space-y-6 py-2 font-sans sm:py-4">
+      <header className="space-y-1.5 text-left">
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+          Unggah &amp; Pindai Materi Kuliah
         </h1>
-        <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Pindai berkas PDF materi kuliah menjadi dokumen terstruktur dengan MathML dan narasi suara. Setelah dipindai, Anda dapat langsung membacanya atau membagikannya ke mata kuliah.
         </p>
       </header>

@@ -28,7 +28,7 @@ async function ReaderDetailBody({
 
   if (!detail) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12 space-y-4">
+      <div className="w-full max-w-4xl py-6 space-y-4">
         <h1 className="sr-only">Dokumen tidak tersedia</h1>
         <EmptyState
           icon={BookOpen}

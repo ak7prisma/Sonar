@@ -25,40 +25,11 @@ export function ScannedMaterialAiChat({
 }: ScannedMaterialAiChatProps) {
   const { announce } = useLiveAnnouncer();
   const [inputVal, setInputVal] = useState("");
-  const [isCardFormVisible, setIsCardFormVisible] = useState(false);
 
   const cardFormRef = useRef<HTMLFormElement>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
 
   const { currentlySpeakingId, speak } = useSpeechSynthesis({ language });
-
-  // IntersectionObserver to toggle floating input bar smoothly
-  useEffect(() => {
-    const el = cardFormRef.current;
-    if (!el || typeof window === "undefined" || typeof IntersectionObserver === "undefined") {
-      return;
-    }
-
-    const checkVisibility = () => {
-      const rect = el.getBoundingClientRect();
-      const inView = rect.top < window.innerHeight && rect.bottom > 0;
-      setIsCardFormVisible(inView);
-    };
-    checkVisibility();
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsCardFormVisible(entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const chatTransport = useMemo(
     () =>
@@ -219,30 +190,6 @@ export function ScannedMaterialAiChat({
           variant="card"
         />
       </section>
-
-      {/* Floating Bottom Chat Bar only when card input is scrolled out of view */}
-      {!isCardFormVisible && (
-        <aside
-          role="region"
-          aria-label={
-            language === "id"
-              ? "Bar chat AI materi mengambang"
-              : "Floating material AI chat bar"
-          }
-          className="fixed bottom-4 inset-x-0 mx-auto lg:left-64 w-[calc(100%-2rem)] max-w-3xl z-40 transition-all duration-200 animate-in fade-in slide-in-from-bottom-3"
-        >
-          <div className="rounded-2xl border border-primary/30 bg-card/95 p-2.5 shadow-2xl backdrop-blur-md ring-1 ring-black/5 dark:ring-white/10">
-            <ChatInputBar
-              value={inputVal}
-              onChange={setInputVal}
-              onSubmit={handleSendQuery}
-              isStreaming={isStreaming}
-              placeholder={inputPlaceholder}
-              variant="floating"
-            />
-          </div>
-        </aside>
-      )}
     </>
   );
 }

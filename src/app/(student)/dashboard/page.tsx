@@ -120,8 +120,8 @@ async function DashboardBody() {
   const readyCourseFilters = Array.from(filterMap.values());
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 font-sans">
-      {/* GREETING HEADER — open on warm paper canvas, zero box clutter */}
+    <div className="w-full max-w-7xl space-y-8 font-sans">
+      {/* GREETING HEADER — Rata kiri, clean & clear */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
@@ -145,6 +145,82 @@ async function DashboardBody() {
           </Link>
         </Button>
       </div>
+
+      {/* MATA KULIAH UTAMA — Kiri atas di urutan layout */}
+      <section aria-labelledby="my-courses-heading" className="space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2
+              id="my-courses-heading"
+              className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl"
+            >
+              Mata Kuliah Utama
+            </h2>
+            <p className="text-xs text-muted-foreground sm:text-sm">
+              Daftar kelas aktif dan materi terstruktur semester ini.
+            </p>
+          </div>
+          <Link
+            href="/courses"
+            className="inline-flex min-h-9 items-center rounded-md font-ui text-xs font-semibold text-secondary-foreground hover:underline"
+          >
+            Lihat semua mata kuliah &rarr;
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {snapshot.courses.slice(0, 3).map((course) => {
+            const courseSlug = normalizeCourseSlug(course.code);
+            const courseDocs = snapshot.documents.filter(
+              (doc) =>
+                doc.course_id === course.id ||
+                normalizeCourseSlug(doc.course_id) === courseSlug
+            );
+            const readyCount = courseDocs.filter(
+              (doc) => doc.review_status === "verified"
+            ).length;
+            const tone = getCourseToneStyles(course);
+
+            return (
+              <Link
+                key={course.id}
+                href={`/courses/${course.id}`}
+                className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-card transition-all hover:border-primary/50 hover:shadow-md"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 font-ui text-xs">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-md px-2.5 py-1 font-bold text-brand-ink",
+                        tone.surface
+                      )}
+                    >
+                      {course.code}
+                    </span>
+                    <span className="rounded-full bg-surface-subtle px-2.5 py-0.5 font-medium text-muted-foreground tabular-nums">
+                      {readyCount} materi siap
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-heading text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                      {course.title}
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {course.discipline}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-border/70 pt-3 font-ui text-xs font-semibold text-primary">
+                  <span>Buka materi kelas</span>
+                  <ChevronRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {/* SINGLE FOCAL POINT — Continue-Reading Editorial Spotlight */}
       {resumeDoc ? (
@@ -206,82 +282,16 @@ async function DashboardBody() {
         </section>
       ) : null}
 
-      {/* TWO-ZONE WORKSPACE: Left = Ready to Read, Right = Classes & Review Pipeline */}
+      {/* TWO-ZONE WORKSPACE: Left = Ready to Read, Right = Review Pipeline */}
       <div className="grid items-start gap-8 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-8">
           <DashboardReadyList items={readyItems} courses={readyCourseFilters} />
         </div>
 
         <aside
-          aria-label="Daftar kelas dan status peninjauan"
+          aria-label="Status peninjauan dokumen"
           className="min-w-0 space-y-8 lg:col-span-4"
         >
-          {/* COMPACT COURSE LIST */}
-          <section aria-labelledby="my-courses-heading" className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <h2
-                id="my-courses-heading"
-                className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl"
-              >
-                Kelas Saya
-              </h2>
-              <Link
-                href="/courses"
-                className="inline-flex min-h-9 items-center rounded-md px-2 font-ui text-xs font-semibold text-secondary-foreground hover:underline"
-              >
-                Semua kelas
-              </Link>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-              <ul className="divide-y divide-border/70">
-                {snapshot.courses.slice(0, 4).map((course) => {
-                  const courseSlug = normalizeCourseSlug(course.code);
-                  const courseDocs = snapshot.documents.filter(
-                    (doc) =>
-                      doc.course_id === course.id ||
-                      normalizeCourseSlug(doc.course_id) === courseSlug
-                  );
-                  const readyCount = courseDocs.filter(
-                    (doc) => doc.review_status === "verified"
-                  ).length;
-                  const tone = getCourseToneStyles(course);
-
-                  return (
-                    <li key={course.id}>
-                      <Link
-                        href={`/courses/${course.id}`}
-                        className="group flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-surface-subtle/70 sm:px-5"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={cn("w-1.5 shrink-0 self-stretch rounded-full", tone.bar)}
-                        />
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <div className="flex items-center justify-between gap-2 font-ui text-xs">
-                            <span className="font-bold text-muted-foreground">
-                              {course.code}
-                            </span>
-                            <span className="tabular-nums text-muted-foreground">
-                              {readyCount} siap
-                            </span>
-                          </div>
-                          <p className="line-clamp-2 font-heading text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
-                            {course.title}
-                          </p>
-                        </div>
-                        <ChevronRight
-                          className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </section>
-
           {/* IN-REVIEW PIPELINE — separated from main reading list to eliminate noise */}
           <section aria-labelledby="pending-review-heading" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
