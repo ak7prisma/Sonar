@@ -11,14 +11,17 @@ import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
  */
 export function RouteFocusManager() {
   const pathname = usePathname();
-  const isInitialLoad = useRef(true);
+  const prevPathnameRef = useRef(pathname);
   const { announce } = useLiveAnnouncer();
 
   useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
+    // Compare against the previous pathname rather than a boolean flag so
+    // React StrictMode's mount re-invocation does not fire on initial page load
+    // while Suspense boundaries are still streaming and hydrating.
+    if (prevPathnameRef.current === pathname) {
       return;
     }
+    prevPathnameRef.current = pathname;
 
     const timer = window.setTimeout(() => {
       const heading = document.querySelector<HTMLElement>("main h1");

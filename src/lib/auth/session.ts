@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import type { AppRole } from "@/types/database";
 
@@ -45,7 +46,7 @@ export const DEMO_PROFILES: Record<"student" | "volunteer" | "admin", AppUserSes
   },
 };
 
-export async function getCurrentAppUser(): Promise<AppUserSession | null> {
+export const getCurrentAppUser = cache(async function getCurrentAppUser(): Promise<AppUserSession | null> {
   const cookieStore = await cookies();
   const roleCookie = cookieStore.get("sonar_role")?.value as "student" | "volunteer" | "admin" | undefined;
 
@@ -54,4 +55,4 @@ export async function getCurrentAppUser(): Promise<AppUserSession | null> {
   }
 
   return null;
-}
+});

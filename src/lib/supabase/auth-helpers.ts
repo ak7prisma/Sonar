@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import type { AppRole } from "@/types/database";
@@ -11,7 +12,7 @@ export interface AuthenticatedContext {
   roles: AppRole[];
 }
 
-export async function getAuthenticatedContext(): Promise<{
+export const getAuthenticatedContext = cache(async function getAuthenticatedContext(): Promise<{
   supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>> | null;
   auth: AuthenticatedContext | null;
 }> {
@@ -62,7 +63,7 @@ export async function getAuthenticatedContext(): Promise<{
       roles,
     },
   };
-}
+});
 
 export function hasAnyRole(roles: AppRole[], required: AppRole[]): boolean {
   return required.some((r) => roles.includes(r));

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,7 +19,7 @@ interface MobileBottomNavProps {
   userRoles?: AppRole[];
 }
 
-export function MobileBottomNav({
+function MobileBottomNavInner({
   userRoles = ["student"],
 }: MobileBottomNavProps) {
   const pathname = usePathname();
@@ -121,5 +122,13 @@ export function MobileBottomNav({
         </div>
       </div>
     </nav>
+  );
+}
+
+export function MobileBottomNav({ userRoles = ["student"] }: MobileBottomNavProps) {
+  return (
+    <Suspense fallback={null}>
+      <MobileBottomNavInner userRoles={userRoles} />
+    </Suspense>
   );
 }

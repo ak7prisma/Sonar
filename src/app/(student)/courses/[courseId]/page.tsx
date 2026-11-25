@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { CourseDetailSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
 import { EmptyState } from "@/components/app/EmptyState";
@@ -239,13 +240,7 @@ export default function CourseDetailPage({
 }) {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat materi mata kuliah…
-          </p>
-        }
-      >
+      <Suspense fallback={<CourseDetailSkeleton />}>
         <CourseDetailBody params={params} />
       </Suspense>
     </WorkspaceShell>

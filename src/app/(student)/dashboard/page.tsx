@@ -9,6 +9,7 @@ import {
   Headphones,
 } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { DashboardSkeleton } from "@/components/skeletons/PageSkeletons";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
 import {
   DashboardReadyList,
@@ -360,13 +361,7 @@ async function DashboardBody() {
 export default function DashboardPage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="font-ui text-sm text-muted-foreground">
-            Memuat dashboard…
-          </p>
-        }
-      >
+      <Suspense fallback={<DashboardSkeleton />}>
         <DashboardBody />
       </Suspense>
     </WorkspaceShell>

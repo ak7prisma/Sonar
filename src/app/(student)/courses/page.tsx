@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { ArrowRight, CheckCircle2, Clock, FileUp } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { CoursesSkeleton } from "@/components/skeletons/PageSkeletons";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
 import { loadWorkspaceSnapshot, FALLBACK_COURSES } from "@/lib/data/workspace";
@@ -47,7 +48,7 @@ async function CoursesBody() {
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => {
+        {courses.map((course, idx) => {
           const courseImage = getCourseImage(course);
           const tone = getCourseToneStyles(course);
           const courseSlug = course.code.toLowerCase().replace(/\s+/g, "-");
@@ -70,6 +71,7 @@ async function CoursesBody() {
                     src={courseImage.src}
                     alt={courseImage.alt}
                     fill
+                    priority={idx === 0}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
@@ -152,13 +154,7 @@ async function CoursesBody() {
 export default function CoursesPage() {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground font-ui">
-            Memuat daftar mata kuliah…
-          </p>
-        }
-      >
+      <Suspense fallback={<CoursesSkeleton />}>
         <CoursesBody />
       </Suspense>
     </WorkspaceShell>

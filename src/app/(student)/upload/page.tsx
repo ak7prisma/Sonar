@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { UploadSkeleton } from "@/components/skeletons/PageSkeletons";
 import { UploadHub } from "@/components/upload/UploadHub";
-import { loadWorkspaceSnapshot, FALLBACK_COURSES } from "@/lib/data/workspace";
+import { loadCoursesCatalog, FALLBACK_COURSES } from "@/lib/data/workspace";
 
 export const metadata: Metadata = {
   title: "Pindai Dokumen Kuliah",
@@ -13,12 +14,13 @@ async function UploadBody({
 }: {
   searchParams: Promise<{ courseId?: string; mode?: string }>;
 }) {
-  const [snapshot, params] = await Promise.all([
-    loadWorkspaceSnapshot(),
+  const [courseCatalog, params] = await Promise.all([
+    loadCoursesCatalog(),
     searchParams,
   ]);
 
-  const courses = snapshot.courses.length > 0 ? snapshot.courses : FALLBACK_COURSES;
+  const courses = courseCatalog.length > 0 ? courseCatalog : FALLBACK_COURSES;
+  const initialMode = params.mode === "ocr" ? "ocr" : "pdf";
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 py-2 font-sans sm:py-6">
@@ -46,13 +48,7 @@ export default function UploadPage({
 }) {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="mx-auto max-w-3xl py-6 text-center text-sm text-muted-foreground font-ui">
-            Memuat ruang unggah dokumen…
-          </p>
-        }
-      >
+      <Suspense fallback={<UploadSkeleton />}>
         <UploadBody searchParams={searchParams} />
       </Suspense>
     </WorkspaceShell>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -39,11 +40,14 @@ interface NavItem {
   access?: "reviewer" | "admin";
 }
 
-const MENU_ITEMS: NavItem[] = [
+const CORE_MENU_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mata Kuliah", href: "/courses", icon: BookOpen },
   { label: "Unggah Materi", href: "/upload", icon: FileUp },
   { label: "Pembaca", href: "/reader", icon: Headphones },
+];
+
+const ROLE_MENU_ITEMS: NavItem[] = [
   { label: "Antrean Review", href: "/review", icon: ClipboardCheck, access: "reviewer" },
   { label: "Administrasi", href: "/admin", icon: ShieldCheck, access: "admin" },
 ];
@@ -56,7 +60,7 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavList({
+function NavListItems({
   items,
   pathname,
 }: {
@@ -64,7 +68,7 @@ function NavList({
   pathname: string;
 }) {
   return (
-    <ul className="space-y-1 font-ui">
+    <>
       {items.map((item) => {
         const Icon = item.icon;
         const active = isActivePath(pathname, item.href);
@@ -86,7 +90,32 @@ function NavList({
           </li>
         );
       })}
-    </ul>
+    </>
+  );
+}
+
+/** Inner component: safe to call usePathname() inside a <Suspense> boundary. */
+function RoleNavMenuItemsInner({ userRoles }: { userRoles: AppRole[] }) {
+  const pathname = usePathname();
+  const isAdmin = userRoles.includes("admin");
+  const isReviewer =
+    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
+
+  const visibleRoleItems = ROLE_MENU_ITEMS.filter((item) => {
+    if (item.access === "admin") return isAdmin;
+    if (item.access === "reviewer") return isReviewer;
+    return true;
+  });
+
+  if (visibleRoleItems.length === 0) return null;
+  return <NavListItems items={visibleRoleItems} pathname={pathname} />;
+}
+
+export function RoleNavMenuItems({ userRoles = ["student"] }: { userRoles?: AppRole[] }) {
+  return (
+    <Suspense fallback={null}>
+      <RoleNavMenuItemsInner userRoles={userRoles} />
+    </Suspense>
   );
 }
 
@@ -104,15 +133,55 @@ function Avatar({ name, className }: { name: string; className?: string }) {
   );
 }
 
-function UserMenu({
-  name,
-  email,
+export function SidebarAccountSection({
+  userName,
+  userEmail,
   roleLabel,
 }: {
-  name: string;
-  email?: string | null;
+  userName?: string | null;
+  userEmail?: string | null;
   roleLabel: string;
 }) {
+  const displayName =
+    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3 rounded-xl bg-surface-subtle p-3">
+        <Avatar name={displayName} className="size-10 text-sm" />
+        <div className="min-w-0">
+          <p className="truncate font-ui text-sm font-semibold text-foreground">
+            {displayName}
+          </p>
+          <p className="text-xs text-muted-foreground">{roleLabel}</p>
+        </div>
+      </div>
+      <form action={signOutAction}>
+        <Button
+          type="submit"
+          variant="ghost"
+          className="h-11 w-full justify-start gap-3 rounded-xl px-3 font-ui text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="size-5" aria-hidden="true" />
+          <span>Keluar</span>
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+export function HeaderUserMenu({
+  userName,
+  userEmail,
+  roleLabel,
+}: {
+  userName?: string | null;
+  userEmail?: string | null;
+  roleLabel: string;
+}) {
+  const displayName =
+    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -120,11 +189,11 @@ function UserMenu({
           variant="ghost"
           className="h-11 gap-2 rounded-full px-1.5 sm:pr-3"
         >
-          <Avatar name={name} className="size-8 text-xs" />
-          <span className="sr-only md:hidden">Menu akun {name}</span>
+          <Avatar name={displayName} className="size-8 text-xs" />
+          <span className="sr-only md:hidden">Menu akun {displayName}</span>
           <span className="hidden min-w-0 text-left leading-tight md:block">
             <span className="block max-w-36 truncate text-sm font-semibold text-foreground">
-              {name}
+              {displayName}
             </span>
             <span className="block text-xs font-normal text-muted-foreground">{roleLabel}</span>
           </span>
@@ -133,9 +202,9 @@ function UserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="space-y-0.5 font-normal">
-          <span className="block truncate text-sm font-semibold text-foreground">{name}</span>
-          {email ? (
-            <span className="block truncate text-xs text-muted-foreground">{email}</span>
+          <span className="block truncate text-sm font-semibold text-foreground">{displayName}</span>
+          {userEmail ? (
+            <span className="block truncate text-xs text-muted-foreground">{userEmail}</span>
           ) : null}
           <span className="block text-xs text-muted-foreground">{roleLabel}</span>
         </DropdownMenuLabel>
@@ -159,31 +228,41 @@ function UserMenu({
   );
 }
 
+/** Renders core nav links with active state — must stay inside a Suspense boundary. */
+function CoreNavItemsInner() {
+  const pathname = usePathname();
+  return <NavListItems items={CORE_MENU_ITEMS} pathname={pathname} />;
+}
+
+/** Renders account nav links with active state — must stay inside a Suspense boundary. */
+function AccountNavItemsInner() {
+  const pathname = usePathname();
+  return <NavListItems items={ACCOUNT_ITEMS} pathname={pathname} />;
+}
+
 export function AppShell({
   children,
   userName,
   userEmail,
   userRoles = ["student"],
+  roleNavSlot,
+  sidebarFooterSlot,
+  headerUserSlot,
+  mobileNavSlot,
 }: {
   children: React.ReactNode;
   userName?: string | null;
   userEmail?: string | null;
   userRoles?: AppRole[];
+  roleNavSlot?: React.ReactNode;
+  sidebarFooterSlot?: React.ReactNode;
+  headerUserSlot?: React.ReactNode;
+  mobileNavSlot?: React.ReactNode;
 }) {
-  const pathname = usePathname();
-
   const isAdmin = userRoles.includes("admin");
   const isReviewer =
     isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
   const roleLabel = isAdmin ? "Administrator" : isReviewer ? "Volunteer" : "Mahasiswa";
-  const displayName =
-    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
-
-  const visibleMenu = MENU_ITEMS.filter((item) => {
-    if (item.access === "admin") return isAdmin;
-    if (item.access === "reviewer") return isReviewer;
-    return true;
-  });
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background lg:flex">
@@ -207,38 +286,35 @@ export function AppShell({
             <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
               Menu
             </p>
-            <NavList items={visibleMenu} pathname={pathname} />
+            <ul className="space-y-1 font-ui">
+              <Suspense fallback={null}>
+                <CoreNavItemsInner />
+              </Suspense>
+              {roleNavSlot !== undefined ? roleNavSlot : <RoleNavMenuItems userRoles={userRoles} />}
+            </ul>
           </div>
           <div className="space-y-2">
             <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
               Akun
             </p>
-            <NavList items={ACCOUNT_ITEMS} pathname={pathname} />
+            <ul className="space-y-1 font-ui">
+              <Suspense fallback={null}>
+                <AccountNavItemsInner />
+              </Suspense>
+            </ul>
           </div>
         </nav>
 
         <div className="border-t border-border p-3">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 rounded-xl bg-surface-subtle p-3">
-              <Avatar name={displayName} className="size-10 text-sm" />
-              <div className="min-w-0">
-                <p className="truncate font-ui text-sm font-semibold text-foreground">
-                  {displayName}
-                </p>
-                <p className="text-xs text-muted-foreground">{roleLabel}</p>
-              </div>
-            </div>
-            <form action={signOutAction}>
-              <Button
-                type="submit"
-                variant="ghost"
-                className="h-11 w-full justify-start gap-3 rounded-xl px-3 font-ui text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="size-5" aria-hidden="true" />
-                <span>Keluar</span>
-              </Button>
-            </form>
-          </div>
+          {sidebarFooterSlot !== undefined ? (
+            sidebarFooterSlot
+          ) : (
+            <SidebarAccountSection
+              userName={userName}
+              userEmail={userEmail}
+              roleLabel={roleLabel}
+            />
+          )}
         </div>
       </aside>
 
@@ -259,7 +335,15 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-1">
             <AccessibilityToolbar compact />
             <ThemeToggle />
-            <UserMenu name={displayName} email={userEmail} roleLabel={roleLabel} />
+            {headerUserSlot !== undefined ? (
+              headerUserSlot
+            ) : (
+              <HeaderUserMenu
+                userName={userName}
+                userEmail={userEmail}
+                roleLabel={roleLabel}
+              />
+            )}
           </div>
         </header>
 
@@ -271,7 +355,13 @@ export function AppShell({
           {children}
         </main>
 
-        <MobileBottomNav userRoles={userRoles} />
+        {mobileNavSlot !== undefined ? (
+          mobileNavSlot
+        ) : (
+          <Suspense fallback={null}>
+            <MobileBottomNav userRoles={userRoles} />
+          </Suspense>
+        )}
       </div>
     </div>
   );

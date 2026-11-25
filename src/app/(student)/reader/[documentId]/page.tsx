@@ -3,12 +3,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BookOpen } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { ReaderSkeleton } from "@/components/skeletons/PageSkeletons";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
 import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
 import {
-  loadCourseDetailWithMaterials,
   loadDocumentDetail,
+  loadRelatedDocuments,
 } from "@/lib/data/workspace";
 import { getSharedMaterialById } from "@/lib/data/course-materials";
 import { isAiConfigured } from "@/lib/env";
@@ -43,18 +44,9 @@ async function ReaderDetailBody({
     );
   }
 
-  const courseDetail = detail.course
-    ? await loadCourseDetailWithMaterials(detail.course.id)
-    : null;
-
-  const relatedDocuments = (courseDetail?.documents ?? [])
-    .filter((d) => d.id !== detail.document.id)
-    .slice(0, 6)
-    .map((d) => ({
-      id: d.id,
-      title: d.title,
-      reviewStatus: d.review_status,
-    }));
+  const relatedDocuments = detail.course
+    ? await loadRelatedDocuments(detail.course.id, detail.document.id)
+    : [];
 
   const sharedMeta = getSharedMaterialById(detail.document.id);
 
@@ -83,13 +75,7 @@ export default function ReaderDetailPage({
 }) {
   return (
     <WorkspaceShell>
-      <Suspense
-        fallback={
-          <p className="p-6 text-sm text-muted-foreground font-ui">
-            Memuat dokumen…
-          </p>
-        }
-      >
+      <Suspense fallback={<ReaderSkeleton />}>
         <ReaderDetailBody params={params} />
       </Suspense>
     </WorkspaceShell>
