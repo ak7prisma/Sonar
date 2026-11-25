@@ -67,6 +67,8 @@ export function OcrDocumentScanner({
 }: OcrDocumentScannerProps) {
   const { announce } = useLiveAnnouncer();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const initialCourse =
     defaultCourseId && courses.some((c) => c.id === defaultCourseId)
@@ -114,6 +116,21 @@ export function OcrDocumentScanner({
     setSharingNotes("");
     setShowShareOptions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const cancelScan = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+    setScanning(false);
+    setScanProgress(0);
+    setScanStageMessage("");
+    announce("Pemindaian dibatalkan.", "polite");
   };
 
   const handleFileSelect = async (file: File | undefined) => {
@@ -171,8 +188,6 @@ export function OcrDocumentScanner({
       return;
     }
 
-    let progressTimer: ReturnType<typeof setInterval> | null = null;
-
     try {
       setScanning(true);
       setScanProgress(12);
@@ -180,7 +195,10 @@ export function OcrDocumentScanner({
       setErrorMessage(null);
       announce("Memulai ekstraksi OCR dan konversi MathML…", "polite");
 
-      progressTimer = setInterval(() => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      progressTimerRef.current = setInterval(() => {
         setScanProgress((prev) => {
           if (prev < 35) {
             setScanStageMessage("Menganalisis hierarki heading, paragraf, dan tata letak halaman...");
@@ -212,11 +230,15 @@ export function OcrDocumentScanner({
           title:
             documentTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, ""),
         }),
+        signal: controller.signal,
       });
 
       const data = (await response.json()) as ScanResultData & { error?: string };
 
-      if (progressTimer) clearInterval(progressTimer);
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
 
       if (!response.ok || data.error) {
         throw new Error(data.error ?? "Gagal memindai dokumen PDF.");
@@ -237,7 +259,14 @@ export function OcrDocumentScanner({
         );
       }, 350);
     } catch (err) {
-      if (progressTimer) clearInterval(progressTimer);
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+      // User-initiated cancellation — don't show an error
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
       setScanProgress(0);
       setScanStageMessage("");
       const msg =
@@ -245,6 +274,7 @@ export function OcrDocumentScanner({
       setErrorMessage(msg);
       announce(msg, "assertive");
     } finally {
+      abortControllerRef.current = null;
       setTimeout(() => {
         setScanning(false);
       }, 400);
@@ -642,7 +672,20 @@ export function OcrDocumentScanner({
           )}
         </div>
 
-        <div className="flex justify-end font-ui">
+        <div className="flex items-center justify-end gap-2 font-ui">
+          {scanning && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={cancelScan}
+              className="min-h-10 rounded-full px-4 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              aria-label="Batalkan pemindaian OCR"
+            >
+              <X className="size-4 mr-1.5" aria-hidden="true" />
+              Batalkan
+            </Button>
+          )}
           <Button
             type="button"
             size="lg"
