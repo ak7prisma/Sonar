@@ -19,6 +19,9 @@ export const registerSchema = loginSchema.extend({
     .trim()
     .max(120, "Program studi maksimal 120 karakter.")
     .optional(),
+  role: z
+    .enum(["student", "volunteer", "reviewer", "admin"])
+    .default("student"),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -62,7 +65,7 @@ export const courseCreateSchema = z.object({
 });
 
 export const documentUploadMetaSchema = z.object({
-  courseId: z.string().uuid("Select a valid course."),
+  courseId: z.string().trim().min(1, "Select a valid course."),
   title: z
     .string()
     .trim()
