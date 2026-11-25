@@ -39,37 +39,145 @@ export interface OcrProvider {
   extractPageBlocks(input: OcrPageInput): Promise<ExtractedBlockOutput[]>;
 }
 
+const blockTypeSchema = z
+  .string()
+  .transform((val): "heading" | "paragraph" | "list" | "table" | "equation" | "figure" => {
+    const lower = val.toLowerCase().trim();
+    if (lower.includes("head") || lower.includes("title") || lower.includes("header") || lower.includes("section")) return "heading";
+    if (lower.includes("eq") || lower.includes("formula") || lower.includes("math") || lower.includes("latex")) return "equation";
+    if (lower.includes("tab") || lower.includes("matrix") || lower.includes("grid")) return "table";
+    if (lower.includes("fig") || lower.includes("image") || lower.includes("chart") || lower.includes("diag") || lower.includes("graph")) return "figure";
+    if (lower.includes("list") || lower.includes("item") || lower.includes("bullet")) return "list";
+    return "paragraph";
+  });
+
+const confidenceSchema = z
+  .union([z.number(), z.string()])
+  .optional()
+  .transform((val) => {
+    if (val === undefined || val === null) return 0.95;
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    if (isNaN(num)) return 0.95;
+    if (num > 1) return Math.min(1, num / 100);
+    return Math.max(0, Math.min(1, num));
+  });
+
+const headingLevelSchema = z
+  .union([z.number(), z.string()])
+  .optional()
+  .transform((val) => {
+    if (val === undefined || val === null) return undefined;
+    const num = typeof val === "string" ? parseInt(val, 10) : Math.round(val);
+    if (isNaN(num)) return 2;
+    return Math.max(1, Math.min(6, num));
+  });
+
 const extractedPageSchema = z.object({
   blocks: z.array(
     z.object({
-      blockType: z.enum([
-        "heading",
-        "paragraph",
-        "list",
-        "table",
-        "equation",
-        "figure",
-      ]),
-      headingLevel: z.number().int().min(1).max(6).optional(),
-      contentText: z.string(),
+      blockType: blockTypeSchema,
+      headingLevel: headingLevelSchema,
+      contentText: z.string().default(""),
       latex: z.string().optional(),
       tableHeaders: z.array(z.string()).optional(),
       tableRows: z.array(z.array(z.string())).optional(),
       figureSummary: z
         .object({
-          figureLabel: z.string(),
-          figureType: z.string(),
-          summary: z.string(),
+          figureLabel: z.string().default("Gambar"),
+          figureType: z.string().default("diagram"),
+          summary: z.string().default(""),
           axesAndUnits: z.string().optional(),
           trends: z.string().optional(),
           keyPoints: z.array(z.string()).optional(),
           uncertaintyNotes: z.string().optional(),
         })
         .optional(),
-      confidence: z.number().min(0).max(1),
+      confidence: confidenceSchema,
     })
   ),
 });
+
+export function convertRawTextLayerToBlocks(rawText: string): ExtractedBlockOutput[] {
+  const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    return [
+      {
+        blockType: "paragraph",
+        contentText: "Dokumen berhasil diproses. Tidak ada teks layer yang terdeteksi.",
+        confidence: 0.9,
+      },
+    ];
+  }
+
+  const blocks: ExtractedBlockOutput[] = [];
+  let currentParagraph: string[] = [];
+
+  for (const line of lines) {
+    // Check if line looks like a heading
+    const isHeading =
+      line.length <= 80 &&
+      (line.match(/^(bab|modul|chapter|bagian|section|\d+[\.\)])/i) ||
+        (line.toUpperCase() === line && line.length > 5 && !line.includes("=")));
+
+    if (isHeading) {
+      if (currentParagraph.length > 0) {
+        blocks.push({
+          blockType: "paragraph",
+          contentText: currentParagraph.join(" "),
+          confidence: 0.95,
+        });
+        currentParagraph = [];
+      }
+      blocks.push({
+        blockType: "heading",
+        headingLevel: line.match(/^(bab|chapter)/i) ? 1 : 2,
+        contentText: line,
+        confidence: 0.98,
+      });
+      continue;
+    }
+
+    // Check if line looks like an equation
+    const isEquation = line.includes("=") && (line.includes("\\") || line.includes("+") || line.includes("/") || line.match(/[a-z]\s*=\s*/i));
+    if (isEquation && line.length < 100) {
+      if (currentParagraph.length > 0) {
+        blocks.push({
+          blockType: "paragraph",
+          contentText: currentParagraph.join(" "),
+          confidence: 0.95,
+        });
+        currentParagraph = [];
+      }
+      blocks.push({
+        blockType: "equation",
+        contentText: line,
+        latex: line,
+        confidence: 0.95,
+      });
+      continue;
+    }
+
+    currentParagraph.push(line);
+    if (currentParagraph.length >= 4) {
+      blocks.push({
+        blockType: "paragraph",
+        contentText: currentParagraph.join(" "),
+        confidence: 0.95,
+      });
+      currentParagraph = [];
+    }
+  }
+
+  if (currentParagraph.length > 0) {
+    blocks.push({
+      blockType: "paragraph",
+      contentText: currentParagraph.join(" "),
+      confidence: 0.95,
+    });
+  }
+
+  return blocks;
+}
 
 function generateFallbackOcrBlocks(input: OcrPageInput): ExtractedBlockOutput[] {
   const isMath = input.courseContext?.toLowerCase().includes("math") || input.courseContext?.toLowerCase().includes("kalkulus");
@@ -189,20 +297,33 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       ];
 
       if (input.pageImageBase64) {
-        if (input.pageImageBase64.startsWith("data:application/pdf")) {
-          const cleanBase64 = input.pageImageBase64.replace(/^data:application\/pdf;base64,/, "");
+        let cleanBase64 = input.pageImageBase64.trim();
+        let mime = "application/pdf";
+
+        const dataUrlMatch = input.pageImageBase64.match(/^data:([^;]+);base64,([\s\S]+)$/);
+        if (dataUrlMatch) {
+          mime = dataUrlMatch[1].toLowerCase();
+          cleanBase64 = dataUrlMatch[2].trim();
+        }
+
+        // Check if payload is PDF via MIME or magic bytes (JVBERi is %PDF-)
+        const isPdf =
+          mime.includes("pdf") ||
+          cleanBase64.startsWith("JVBERi0") ||
+          cleanBase64.startsWith("JVBERi");
+
+        if (isPdf) {
           userParts.push({
             type: "file",
             data: cleanBase64,
             mediaType: "application/pdf",
           });
         } else {
-          // Fallback for sample SVG or raster image
-          const cleanBase64 = input.pageImageBase64.replace(/^data:[^;]+;base64,/, "");
+          const imageMime = mime.includes("image") ? mime : "image/png";
           userParts.push({
             type: "image",
             image: cleanBase64,
-            mediaType: "image/png",
+            mediaType: imageMime,
           });
         }
       }
@@ -224,8 +345,22 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       });
 
       return result.output.blocks;
-    } catch {
-      // Graceful fallback if Gemini API call encounters quota/network issues
+    } catch (err) {
+      console.error("[GeminiVisionOcrProvider] Error during OCR extraction:", err);
+
+      // If a real PDF text layer is available, convert it into real blocks rather than returning dummy data!
+      if (input.rawTextLayer && input.rawTextLayer.trim().length > 0) {
+        console.warn("[GeminiVisionOcrProvider] Using extracted PDF text layer fallback blocks.");
+        return convertRawTextLayerToBlocks(input.rawTextLayer);
+      }
+
+      // If AI is configured but failed and there's no raw text layer, throw informative error
+      if (isAiConfigured()) {
+        throw new Error(
+          `Ekstraksi OCR Gemini gagal: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+
       return generateFallbackOcrBlocks(input);
     }
   }
