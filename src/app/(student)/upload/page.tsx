@@ -20,7 +20,6 @@ async function UploadBody({
   ]);
 
   const courses = courseCatalog.length > 0 ? courseCatalog : FALLBACK_COURSES;
-  const initialMode = params.mode === "ocr" ? "ocr" : "pdf";
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 py-2 font-sans sm:py-6">

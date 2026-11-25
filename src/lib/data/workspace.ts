@@ -341,7 +341,7 @@ export const loadWorkspaceSnapshot = cache(async function loadWorkspaceSnapshot(
     missingServices: [],
     user: authUser,
     courses: courses.length > 0 ? courses : FALLBACK_COURSES,
-    documents: documents.length > 0 ? documents : FALLBACK_DOCUMENTS,
+    documents: mergedDocs,
     jobs: includeJobs ? (jobs.length > 0 ? jobs : FALLBACK_JOBS) : [],
   };
 });
@@ -476,6 +476,21 @@ export const loadRelatedDocuments = cache(async function loadRelatedDocuments(
 
 export const loadDocumentDetail = cache(async function loadDocumentDetail(documentId: string) {
   await connection();
+  // Check dynamically scanned documents first (ensures real scanned results load immediately)
+  const scanned = getScannedDocument(documentId);
+  if (scanned) {
+    return {
+      document: scanned.document,
+      course: scanned.course,
+      blocks: scanned.blocks,
+      tables: scanned.tables,
+      equations: scanned.equations,
+      figures: scanned.figures,
+      reviews: [],
+      signedPdfUrl: scanned.signedPdfUrl ?? null,
+      viewerRoles: ["student", "reviewer"] as AppRole[],
+    };
+  }
   const demoUser = await getCurrentAppUser();
   const fallbackDoc = FALLBACK_DOCUMENTS.find((d) => d.id === documentId) ?? FALLBACK_DOCUMENTS[0];
   const fallbackCourse = FALLBACK_COURSES.find((c) => c.id === fallbackDoc.course_id) ?? FALLBACK_COURSES[0];
