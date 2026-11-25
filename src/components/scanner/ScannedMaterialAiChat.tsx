@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
@@ -11,9 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   CornerDownLeft,
-  HelpCircle,
   Loader2,
-  MessageSquare,
   Sparkles,
   User,
   Volume2,
