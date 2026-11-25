@@ -368,7 +368,7 @@ export function AccessibleReaderStudio({
     });
   };
 
-  const canUseRemoteAi = aiEnabled && UUID_REGEX.test(document.id);
+  const canUseRemoteAi = aiEnabled;
 
   const chatTransport = useMemo(
     () =>
@@ -376,10 +376,20 @@ export function AccessibleReaderStudio({
         api: "/api/ai/chat",
         body: () => ({
           documentId: document.id,
+          documentTitle: document.title,
           language,
+          blocks: renderedBlocks.map((b) => ({
+            id: b.id,
+            pageNumber: b.page_number,
+            readingOrder: b.reading_order,
+            blockType: b.block_type,
+            sectionHeading: b.section_id,
+            contentText: b.content_text,
+            spokenText: b.spoken_text,
+          })),
         }),
       }),
-    [document.id, language]
+    [document.id, document.title, language, renderedBlocks]
   );
 
   const onErrorFallbackRef = useRef<(query: string) => void>(() => undefined);

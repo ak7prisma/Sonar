@@ -31,6 +31,7 @@ import {
   MathEquationView,
 } from "@/components/document/FormattedMathText";
 import { narrateMixedText } from "@/features/math-ocr/math-narration";
+import { ScannedMaterialAiChat } from "@/components/scanner/ScannedMaterialAiChat";
 import type { CourseRow } from "@/lib/data/workspace";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
@@ -634,10 +635,11 @@ export function OcrDocumentScanner({
       </div>
 
       {scanResult ? (
-        <section
-          aria-label="Hasil pemindaian dokumen"
-          className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card sm:p-7"
-        >
+        <>
+          <section
+            aria-label="Hasil pemindaian dokumen"
+            className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card sm:p-7"
+          >
           <div className="flex flex-col justify-between gap-4 border-b border-border pb-4 sm:flex-row sm:items-center">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -933,7 +935,16 @@ export function OcrDocumentScanner({
             })}
           </div>
         </section>
-      ) : null}
+
+        {/* Real-time Grounded RAG Chat with Scanned Material */}
+        <ScannedMaterialAiChat
+          documentId={scanResult.documentId}
+          documentTitle={scanResult.documentTitle}
+          blocks={scanResult.blocks}
+          language={language}
+        />
+      </>
+    ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildSemanticChunks } from "@/lib/rag/chunker";
 import { buildGroundedContext } from "@/lib/rag/context-builder";
 import { sanitizeRagSourceText } from "@/lib/accessibility/sanitize";
+import { rankChunksByQuery } from "@/lib/rag/query-ranker";
 
 describe("SONAR RAG Semantic Chunker & Context Grounding", () => {
   it("preserves page numbers, heading context, and block IDs across chunks", () => {
@@ -55,5 +56,31 @@ describe("SONAR RAG Semantic Chunker & Context Grounding", () => {
     expect(ctx.citations).toHaveLength(1);
     expect(ctx.citations[0].citationLabel).toContain("Page 4");
     expect(ctx.contextXml).toContain("<untrusted_document_sources>");
+  });
+
+  it("ranks chunks accurately by query terms and section headings for RAG context", () => {
+    const chunks = [
+      {
+        chunkIndex: 0,
+        pageNumber: 1,
+        sectionHeading: "Vektor dan Matriks",
+        blockIds: ["b1"],
+        content: "Hasil kali titik dua vektor adalah perkalian skalar.",
+        tokenCount: 10,
+      },
+      {
+        chunkIndex: 1,
+        pageNumber: 2,
+        sectionHeading: "Kalkulus Peubah Banyak",
+        blockIds: ["b2"],
+        content: "Turunan parsial mengukur perubahan fungsi terhadap satu peubah.",
+        tokenCount: 10,
+      },
+    ];
+
+    const ranked = rankChunksByQuery(chunks, "Bagaimana hasil kali titik vektor?", "doc-test", 2);
+    expect(ranked).toHaveLength(2);
+    expect(ranked[0].sectionHeading).toBe("Vektor dan Matriks");
+    expect(ranked[0].hybridScore).toBeGreaterThan(ranked[1].hybridScore);
   });
 });

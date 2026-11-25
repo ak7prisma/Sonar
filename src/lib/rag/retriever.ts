@@ -3,18 +3,9 @@ import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { generateQueryEmbedding } from "@/lib/rag/embeddings";
 import { isAiConfigured, isSupabaseConfigured } from "@/lib/env";
+import { rankChunksByQuery, type RetrievedChunk } from "@/lib/rag/query-ranker";
 
-export interface RetrievedChunk {
-  chunkId: string;
-  documentId: string;
-  versionId: string;
-  pageNumber: number;
-  sectionHeading: string | null;
-  blockIds: string[];
-  content: string;
-  similarity: number;
-  hybridScore: number;
-}
+export { rankChunksByQuery, type RetrievedChunk };
 
 export async function retrieveDocumentChunks(options: {
   documentId: string;
