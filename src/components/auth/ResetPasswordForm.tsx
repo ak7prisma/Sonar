@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -22,8 +22,6 @@ export function ResetPasswordForm() {
   const [hasValidSession, setHasValidSession] = useState(true);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [summaryFocusNonce, setSummaryFocusNonce] = useState(0);
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
   const { announce } = useLiveAnnouncer();
 
   const {
@@ -103,16 +101,6 @@ export function ResetPasswordForm() {
     verifySession();
   }, []);
 
-  const errorEntries = Object.entries(errors).filter(
-    ([, val]) => val && typeof val.message === "string"
-  );
-
-  useEffect(() => {
-    if (summaryFocusNonce > 0) {
-      errorSummaryRef.current?.focus();
-    }
-  }, [summaryFocusNonce]);
-
   const onValidSubmit = async (values: {
     password: string;
     confirmPassword: string;
@@ -126,7 +114,6 @@ export function ResetPasswordForm() {
     if (res?.error) {
       setServerError(res.error);
       announce(res.error, "assertive");
-      setSummaryFocusNonce((n) => n + 1);
     } else {
       setSuccessMessage(
         "Kata sandi baru Anda berhasil disimpan. Mengalihkan ke halaman login..."
@@ -143,7 +130,6 @@ export function ResetPasswordForm() {
       "Terdapat kesalahan input pada formulir. Silakan periksa kembali.",
       "assertive"
     );
-    setSummaryFocusNonce((n) => n + 1);
   };
 
   if (checkingSession) {
@@ -176,37 +162,6 @@ export function ResetPasswordForm() {
 
   return (
     <div className="w-full max-w-md space-y-6">
-      {/* Accessible Error Summary */}
-      {errorEntries.length > 0 && (
-        <div
-          ref={errorSummaryRef}
-          tabIndex={-1}
-          role="alert"
-          aria-labelledby="reset-error-summary-title"
-          className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive outline-none focus-visible:ring-2 focus-visible:ring-destructive"
-        >
-          <h2
-            id="reset-error-summary-title"
-            className="flex items-center gap-2 text-sm font-semibold"
-          >
-            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-            <span>Terdapat {errorEntries.length} kesalahan pada formulir</span>
-          </h2>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
-            {errorEntries.map(([field, err]) => (
-              <li key={field}>
-                <a
-                  href={`#field-${field}`}
-                  className="underline hover:text-foreground focus-visible:outline-2"
-                >
-                  {err?.message}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {serverError && (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
