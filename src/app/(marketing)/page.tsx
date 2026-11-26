@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  GraduationCap,
   Headphones,
   Plus,
   Sparkles,
@@ -20,15 +19,6 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { InteractiveSandbox } from "@/components/marketing/InteractiveSandbox";
 import { APP_IMAGES } from "@/lib/images";
-
-const PARTNERS = [
-  "Universitas Indonesia",
-  "Institut Teknologi Bandung",
-  "Universitas Gadjah Mada",
-  "Kampus Merdeka Inklusif",
-  "W3C WCAG 2.2 AA",
-  "NVDA & VoiceOver Ready",
-];
 
 const FEATURE_CARDS = [
   {
@@ -392,29 +382,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* PARTNER STRIP */}
-        <section
-          aria-label="Mitra Perguruan Tinggi dan Standar Aksesibilitas"
-          className="border-y border-border bg-brand-mint/70 py-6 dark:bg-surface-subtle"
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground font-ui">
-              Dirancang untuk Ekosistem Pendidikan Tinggi Inklusif &bull; Standar WCAG 2.2 AA
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-              {PARTNERS.map((partner) => (
-                <div
-                  key={partner}
-                  className="inline-flex items-center gap-2 text-xs font-bold text-foreground/85 font-ui"
-                >
-                  <GraduationCap className="size-4 text-primary" aria-hidden="true" />
-                  <span>{partner}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* FEATURE CARDS */}
         <section
           id="features"
@@ -579,11 +546,10 @@ export default function LandingPage() {
                 return (
                   <article
                     key={t.name}
-                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${
-                      isActive
+                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${isActive
                         ? "border-primary bg-card shadow-float ring-2 ring-primary/20"
                         : "border-border bg-card/80 shadow-xs hover:border-primary/40"
-                    }`}
+                      }`}
                   >
                     <div>
                       <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-tint-gold px-2.5 py-1 text-brand-ink">
