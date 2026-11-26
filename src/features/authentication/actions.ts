@@ -46,10 +46,35 @@ export async function loginAction(input: {
         return { error: mapAuthErrorMessage(error.message) };
       }
 
+      // Check role to determine intelligent default destination
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      let defaultTarget = "/dashboard";
+      if (user) {
+        const metaRole = (
+          user.user_metadata?.role ||
+          user.app_metadata?.role ||
+          ""
+        )
+          .toString()
+          .toLowerCase()
+          .trim();
+        const email = user.email || "";
+
+        if (
+          metaRole === "admin" ||
+          email === "admin@sonar.ac.id" ||
+          email === "hendra.gunawan@faculty.ac.id"
+        ) {
+          defaultTarget = "/admin";
+        }
+      }
+
       const safeRedirect =
         input.redirectTo && input.redirectTo.startsWith("/")
           ? input.redirectTo
-          : "/dashboard";
+          : defaultTarget;
       redirect(safeRedirect);
     }
   }

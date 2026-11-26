@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   ChevronRight,
@@ -83,6 +84,11 @@ async function DashboardBody() {
   const userRoles = snapshot.user?.roles ?? ["student"];
   const isAdmin = userRoles.includes("admin");
   const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+
+  // If user is an admin, redirect directly to the platform admin workspace
+  if (isAdmin) {
+    redirect("/admin");
+  }
 
   // If user is a volunteer, show the dedicated volunteer curation dashboard
   if (isVolunteer) {
