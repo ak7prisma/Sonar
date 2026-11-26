@@ -78,7 +78,7 @@ export function PreferencesForm({
       >
         <div
           className={cn(
-            "rounded-2xl border border-border p-5 transition-colors",
+            "rounded-2xl border border-border px-3.5 py-3 transition-colors sm:px-4 sm:py-3.5",
             store.readingSurface === "warm"
               ? "bg-[#faf6ee] text-[#1c1d1b] dark:bg-[#1a1916] dark:text-[#f4ede0]"
               : "bg-background text-foreground"
@@ -142,9 +142,9 @@ export function PreferencesForm({
 
           <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <Label htmlFor="settings-size">Ukuran huruf</Label>
-                <span className="font-semibold tabular-nums">
+              <div className="flex items-center gap-2 text-sm">
+                <Label htmlFor="settings-size">Ukuran huruf:</Label>
+                <span className="font-semibold tabular-nums text-primary">
                   {store.fontSizePx} px
                 </span>
               </div>
@@ -160,9 +160,9 @@ export function PreferencesForm({
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <Label htmlFor="settings-line-height">Jarak antar baris</Label>
-                <span className="font-semibold tabular-nums">
+              <div className="flex items-center gap-2 text-sm">
+                <Label htmlFor="settings-line-height">Jarak antar baris:</Label>
+                <span className="font-semibold tabular-nums text-primary">
                   {store.lineHeight}×
                 </span>
               </div>
@@ -178,9 +178,9 @@ export function PreferencesForm({
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <Label htmlFor="settings-letter-spacing">Jarak antar huruf</Label>
-                <span className="font-semibold tabular-nums">
+              <div className="flex items-center gap-2 text-sm">
+                <Label htmlFor="settings-letter-spacing">Jarak antar huruf:</Label>
+                <span className="font-semibold tabular-nums text-primary">
                   {store.letterSpacingEm} em
                 </span>
               </div>
@@ -257,9 +257,9 @@ export function PreferencesForm({
       <Panel id="pref-audio" title="Kontras Visual, Suara & Gerakan">
         <div className="space-y-5 font-ui">
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <Label htmlFor="settings-speed">Kecepatan pemutaran suara</Label>
-              <span className="font-semibold tabular-nums">
+            <div className="flex items-center gap-2 text-sm">
+              <Label htmlFor="settings-speed">Kecepatan pemutaran suara:</Label>
+              <span className="font-semibold tabular-nums text-primary">
                 {store.narrationSpeed}×
               </span>
             </div>
@@ -275,71 +275,68 @@ export function PreferencesForm({
           </div>
 
           <div className="space-y-4 border-t border-border pt-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <Label htmlFor="settings-high-contrast">Mode kontras tinggi</Label>
-                <p className="font-sans text-xs text-muted-foreground">
-                  Mempertegas kontras teks, batas panel, dan fokus keyboard.
-                </p>
-              </div>
+            <div className="flex items-start gap-3.5">
               <Switch
                 id="settings-high-contrast"
                 checked={store.contrastMode === "high"}
                 onCheckedChange={(checked) =>
                   store.setContrastMode(checked ? "high" : "standard")
                 }
+                className="mt-0.5"
               />
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <Label htmlFor="settings-warm-surface">Latar kertas hangat</Label>
+              <div className="space-y-0.5">
+                <Label htmlFor="settings-high-contrast" className="cursor-pointer font-semibold">
+                  Mode kontras tinggi
+                </Label>
                 <p className="font-sans text-xs text-muted-foreground">
-                  Mengurangi silau di mode terang untuk membantu kenyamanan disleksia.
+                  Mempertegas kontras teks, batas panel, dan fokus keyboard.
                 </p>
               </div>
+            </div>
+
+            <div className="flex items-start gap-3.5">
               <Switch
                 id="settings-warm-surface"
                 checked={store.readingSurface === "warm"}
                 onCheckedChange={(checked) =>
                   store.setReadingSurface(checked ? "warm" : "default")
                 }
+                className="mt-0.5"
               />
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <Label htmlFor="settings-reduced-motion">Kurangi animasi</Label>
+              <div className="space-y-0.5">
+                <Label htmlFor="settings-warm-surface" className="cursor-pointer font-semibold">
+                  Latar kertas hangat
+                </Label>
                 <p className="font-sans text-xs text-muted-foreground">
-                  Menonaktifkan transisi antarmuka tanpa bergantung pada pengaturan sistem.
+                  Mengurangi silau di mode terang untuk membantu kenyamanan disleksia.
                 </p>
               </div>
+            </div>
+
+            <div className="flex items-start gap-3.5">
               <Switch
                 id="settings-reduced-motion"
                 checked={store.motionPreference === "reduce"}
                 onCheckedChange={(checked) =>
                   store.setMotionPreference(checked ? "reduce" : "system")
                 }
+                className="mt-0.5"
               />
+              <div className="space-y-0.5">
+                <Label htmlFor="settings-reduced-motion" className="cursor-pointer font-semibold">
+                  Kurangi animasi
+                </Label>
+                <p className="font-sans text-xs text-muted-foreground">
+                  Menonaktifkan transisi antarmuka tanpa bergantung pada pengaturan sistem.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </Panel>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 font-ui">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            store.resetDefaults();
-            announce("Pengaturan aksesibilitas dikembalikan ke bawaan.", "polite");
-          }}
-          className="min-h-11 rounded-full px-5"
-        >
-          <RotateCcw className="size-4" aria-hidden="true" />
-          <span>Kembalikan Bawaan</span>
-        </Button>
-
+      {/* Action buttons — grouped on the left */}
+      <div className="flex flex-wrap items-center justify-start gap-3 font-ui">
         <Button
           type="submit"
           disabled={saving}
@@ -351,6 +348,19 @@ export function PreferencesForm({
             <Save className="size-4" aria-hidden="true" />
           )}
           <span>{saving ? "Menyimpan…" : "Simpan Pengaturan"}</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            store.resetDefaults();
+            announce("Pengaturan aksesibilitas dikembalikan ke bawaan.", "polite");
+          }}
+          className="min-h-11 rounded-full px-5"
+        >
+          <RotateCcw className="size-4" aria-hidden="true" />
+          <span>Kembalikan Bawaan</span>
         </Button>
       </div>
     </form>

@@ -854,10 +854,15 @@ export function AccessibleReaderStudio({
   );
 
   return (
-    <div className="w-full max-w-7xl space-y-6 font-sans">
+    <div
+      className={cn(
+        "w-full space-y-6 font-sans",
+        activePanel && isXlDesktop ? "max-w-7xl" : "max-w-5xl"
+      )}
+    >
       {/* Clean Document Header */}
       <header className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+        <div className="flex flex-wrap items-center gap-3 font-ui">
           <Link
             href={`/courses/${document.course_id}`}
             className="inline-flex min-h-9 items-center gap-1.5 rounded-md text-sm font-semibold text-secondary-foreground hover:underline"
@@ -877,12 +882,12 @@ export function AccessibleReaderStudio({
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="space-y-4">
           <h1 className="min-w-0 font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {document.title}
           </h1>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2 font-ui">
+          <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
             <div
               role="group"
               aria-label="Ukuran huruf bacaan"
@@ -981,7 +986,7 @@ export function AccessibleReaderStudio({
         <div
           className={cn(
             "min-w-0 space-y-6",
-            activePanel && isXlDesktop ? "xl:col-span-8" : "w-full max-w-4xl"
+            activePanel && isXlDesktop ? "xl:col-span-8" : "w-full"
           )}
         >
           {filteredBlocks.length === 0 ? (
@@ -993,9 +998,9 @@ export function AccessibleReaderStudio({
           ) : (
             <article
               aria-label={document.title}
-              className="rounded-3xl border border-border bg-card px-5 py-7 shadow-card sm:px-10 sm:py-10"
+              className="w-full rounded-2xl border border-border bg-card px-3 py-5 shadow-card sm:px-4 sm:py-6"
             >
-              <div className="sonar-reader-prose w-full max-w-[var(--reader-max-width)] space-y-6">
+              <div className="sonar-reader-prose w-full space-y-6">
                 {filteredBlocks.map((block, index) => {
                   const isCurrent = activeBlockId === block.id;
                   const isBookmarked = bookmarks.includes(block.id);
@@ -1011,7 +1016,7 @@ export function AccessibleReaderStudio({
                       aria-current={isCurrent ? "true" : undefined}
                       aria-label={`Halaman ${block.page_number}, ${blockKindLabel(block.block_type)}`}
                       className={cn(
-                        "group relative scroll-mt-24 rounded-2xl p-4 transition-colors outline-none",
+                        "group relative scroll-mt-24 rounded-xl p-2 transition-colors outline-none sm:p-2.5",
                         isCurrent
                           ? "bg-brand-mint/45 ring-2 ring-primary/45 dark:bg-secondary/40"
                           : "hover:bg-surface-subtle/60"
@@ -1062,7 +1067,7 @@ export function AccessibleReaderStudio({
 
                       {block.block_type === "equation" && (
                         <div className="space-y-3 rounded-2xl border border-brand-teal/30 bg-brand-mint/35 p-5 dark:bg-secondary/35">
-                          <div className="flex flex-wrap items-center justify-between gap-2 font-ui">
+                          <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
                             <span className="rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink">
                               Rumus Matematika
                             </span>
@@ -1123,7 +1128,7 @@ export function AccessibleReaderStudio({
                       {/* Quiet block actions: visible when active, hovered, or keyboard-focused */}
                       <div
                         className={cn(
-                          "mt-2 flex items-center justify-end gap-1 font-ui transition-opacity",
+                          "mt-2 flex items-center justify-start gap-1 font-ui transition-opacity",
                           isCurrent
                             ? "opacity-100"
                             : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
@@ -1179,7 +1184,7 @@ export function AccessibleReaderStudio({
           <div
             role="region"
             aria-label="Pemutar audio pembaca dokumen"
-            className="sticky bottom-20 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 font-ui shadow-nav backdrop-blur-md lg:bottom-4"
+            className="sticky bottom-20 z-20 flex flex-wrap items-center justify-start gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 font-ui shadow-nav backdrop-blur-md lg:bottom-4"
           >
             <div className="flex flex-wrap items-center gap-2">
               <Button
