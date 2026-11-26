@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import type { AppRole } from "@/types/database";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface MobileBottomNavProps {
   userRoles?: AppRole[];
@@ -22,14 +23,15 @@ function MobileBottomNavInner({
   userRoles = ["student"],
 }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const { isEn } = useTranslation();
   const isAdmin = userRoles.includes("admin");
   const isVolunteer = !isAdmin && userRoles.includes("volunteer");
 
   if (isVolunteer) {
     const volunteerItems = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Antrean Review", href: "/review", icon: ClipboardCheck },
-      { label: "Pengaturan", href: "/settings", icon: Settings },
+      { label: isEn ? "Review" : "Antrean Review", href: "/review", icon: ClipboardCheck },
+      { label: isEn ? "Settings" : "Pengaturan", href: "/settings", icon: Settings },
     ];
 
     return (
@@ -66,15 +68,15 @@ function MobileBottomNavInner({
 
   const leftItems = [
     { label: "Dashboard", href: isAdmin ? "/admin" : "/dashboard", icon: LayoutDashboard },
-    { label: "Kuliah", href: "/courses", icon: BookOpen },
+    { label: isEn ? "Courses" : "Kuliah", href: "/courses", icon: BookOpen },
   ];
 
   const trailingItem = isAdmin
-    ? { label: "Review", href: "/review", icon: ClipboardCheck }
-    : { label: "Setelan", href: "/settings", icon: Settings };
+    ? { label: isEn ? "Review" : "Review", href: "/review", icon: ClipboardCheck }
+    : { label: isEn ? "Settings" : "Setelan", href: "/settings", icon: Settings };
 
   const rightItems = [
-    { label: "Pembaca", href: "/reader", icon: Headphones },
+    { label: isEn ? "Reader" : "Pembaca", href: "/reader", icon: Headphones },
     trailingItem,
   ];
 

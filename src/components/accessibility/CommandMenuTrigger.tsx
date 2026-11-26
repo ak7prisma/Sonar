@@ -3,6 +3,7 @@
 import React, { memo } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface CommandMenuTriggerProps {
   onOpen: () => void;
@@ -15,6 +16,8 @@ export const CommandMenuTrigger = memo(function CommandMenuTrigger({
   bar = false,
   compact = false,
 }: CommandMenuTriggerProps) {
+  const { isEn } = useTranslation();
+
   if (bar) {
     return (
       <button
@@ -25,9 +28,11 @@ export const CommandMenuTrigger = memo(function CommandMenuTrigger({
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
         <span className="hidden flex-1 truncate text-left sm:inline">
-          Cari halaman, materi, mata kuliah…
+          {isEn ? "Search pages, materials, courses…" : "Cari halaman, materi, mata kuliah…"}
         </span>
-        <span className="sr-only sm:hidden">Cari halaman</span>
+        <span className="sr-only sm:hidden">
+          {isEn ? "Search pages" : "Cari halaman"}
+        </span>
         <kbd
           aria-hidden="true"
           className="hidden rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground lg:inline"

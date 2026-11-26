@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Type } from "lucide-react";
+import { Globe, RotateCcw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -16,10 +16,12 @@ import {
   type ReadingWidth,
 } from "@/stores/accessibility-store";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function AccessibilityToolbar({ compact = false }: { compact?: boolean }) {
   const store = useAccessibilityStore();
   const { announce } = useLiveAnnouncer();
+  const { t, isEn } = useTranslation();
 
   return (
     <Popover>
@@ -27,39 +29,77 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
         <Button
           variant={compact ? "ghost" : "outline"}
           size={compact ? "icon" : "sm"}
-          aria-label="Reading display and accessibility preferences"
+          aria-label={t("readingDisplay")}
           className={compact ? "text-muted-foreground hover:text-foreground" : undefined}
         >
           <Type className="size-4" aria-hidden="true" />
-          {compact ? null : <span className="hidden sm:inline">Reading display</span>}
+          {compact ? null : <span className="hidden sm:inline">{t("readingDisplay")}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-80 space-y-4 p-4"
-        aria-label="Reading preferences controls"
+        className="w-80 space-y-4 p-4 font-sans"
+        aria-label={t("readingPreferences")}
       >
         <div className="flex items-center justify-between">
           <p className="font-heading text-sm font-semibold">
-            Reading preferences
+            {t("readingPreferences")}
           </p>
           <Button
             variant="ghost"
             size="xs"
             onClick={() => {
               store.resetDefaults();
-              announce("Reading preferences reset to defaults.");
+              announce(
+                isEn
+                  ? "Reading preferences reset to defaults."
+                  : "Preferensi membaca dikembalikan ke pengaturan awal."
+              );
             }}
           >
             <RotateCcw className="mr-1 size-3.5" aria-hidden="true" />
-            Reset
+            {t("resetDefaults")}
           </Button>
         </div>
+
+        {/* Web & Reading Language Selection */}
+        <fieldset className="space-y-2 rounded-xl border border-border/80 bg-surface-subtle/50 p-2.5">
+          <legend className="flex items-center gap-1.5 px-1 text-xs font-semibold text-foreground">
+            <Globe className="size-3.5 text-primary" aria-hidden="true" />
+            <span>{t("webLanguage")}</span>
+          </legend>
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <Button
+              size="xs"
+              variant={store.language === "id" ? "default" : "outline"}
+              aria-pressed={store.language === "id"}
+              className="h-8 text-xs font-semibold"
+              onClick={() => {
+                store.setLanguage("id");
+                announce("Bahasa antarmuka diubah ke Bahasa Indonesia.");
+              }}
+            >
+              🇮🇩 Indonesia
+            </Button>
+            <Button
+              size="xs"
+              variant={store.language === "en" ? "default" : "outline"}
+              aria-pressed={store.language === "en"}
+              className="h-8 text-xs font-semibold"
+              onClick={() => {
+                store.setLanguage("en");
+                announce("Interface language changed to English.");
+              }}
+            >
+              🇬🇧 English
+            </Button>
+          </div>
+        </fieldset>
 
         {/* Font Choice */}
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium text-muted-foreground">
-            Reading typeface
+            {t("readingTypeface")}
           </legend>
           <div className="grid grid-cols-3 gap-1.5">
             {(
@@ -76,7 +116,11 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
                 aria-pressed={store.readingFont === font.id}
                 onClick={() => {
                   store.setReadingFont(font.id);
-                  announce(`Reading font set to ${font.label}.`);
+                  announce(
+                    isEn
+                      ? `Reading font set to ${font.label}.`
+                      : `Font pembaca diatur ke ${font.label}.`
+                  );
                 }}
               >
                 {font.label}
@@ -88,12 +132,12 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
         {/* Font Size */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <Label htmlFor="pref-font-size">Text size</Label>
+            <Label htmlFor="pref-font-size">{t("textSize")}</Label>
             <span className="font-medium tabular-nums">{store.fontSizePx}px</span>
           </div>
           <Slider
             id="pref-font-size"
-            aria-label="Reading text size in pixels"
+            aria-label={t("textSize")}
             min={14}
             max={26}
             step={1}
@@ -105,12 +149,12 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
         {/* Line Height */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <Label htmlFor="pref-line-height">Line spacing</Label>
+            <Label htmlFor="pref-line-height">{t("lineSpacing")}</Label>
             <span className="font-medium tabular-nums">{store.lineHeight}×</span>
           </div>
           <Slider
             id="pref-line-height"
-            aria-label="Reading line spacing multiplier"
+            aria-label={t("lineSpacing")}
             min={1.4}
             max={2.2}
             step={0.05}
@@ -122,14 +166,14 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
         {/* Reading Width */}
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium text-muted-foreground">
-            Column width
+            {t("columnWidth")}
           </legend>
           <div className="grid grid-cols-3 gap-1.5">
             {(
               [
-                { id: "narrow", label: "Narrow" },
-                { id: "comfortable", label: "Balanced" },
-                { id: "wide", label: "Wide" },
+                { id: "narrow", label: isEn ? "Narrow" : "Ramping" },
+                { id: "comfortable", label: isEn ? "Balanced" : "Seimbang" },
+                { id: "wide", label: isEn ? "Wide" : "Lebar" },
               ] as Array<{ id: ReadingWidth; label: string }>
             ).map((width) => (
               <Button
@@ -149,7 +193,7 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
         <div className="space-y-3 border-t pt-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="pref-high-contrast" className="text-xs">
-              High contrast mode
+              {t("highContrast")}
             </Label>
             <Switch
               id="pref-high-contrast"
@@ -158,8 +202,12 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
                 store.setContrastMode(checked ? "high" : "standard");
                 announce(
                   checked
-                    ? "High contrast mode enabled."
-                    : "Standard contrast mode restored."
+                    ? isEn
+                      ? "High contrast mode enabled."
+                      : "Mode kontras tinggi diaktifkan."
+                    : isEn
+                      ? "Standard contrast mode restored."
+                      : "Mode kontras standar dikembalikan."
                 );
               }}
             />
@@ -167,7 +215,7 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="pref-warm-surface" className="text-xs">
-              Warm dyslexia surface
+              {t("warmSurface")}
             </Label>
             <Switch
               id="pref-warm-surface"
@@ -180,7 +228,7 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="pref-reduced-motion" className="text-xs">
-              Reduce motion
+              {t("reduceMotion")}
             </Label>
             <Switch
               id="pref-reduced-motion"

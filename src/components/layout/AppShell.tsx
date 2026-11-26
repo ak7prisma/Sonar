@@ -32,6 +32,7 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { signOutAction } from "@/features/authentication/actions";
 import { initialsOf } from "@/lib/format";
 import type { AppRole } from "@/types/database";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface NavItem {
   label: string;
@@ -67,6 +68,18 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getLocalizedNavLabel(href: string, defaultLabel: string, isEn: boolean) {
+  if (!isEn) return defaultLabel;
+  if (href === "/dashboard") return defaultLabel.includes("Volunteer") ? "Volunteer Dashboard" : "Dashboard";
+  if (href === "/admin") return "Admin Dashboard";
+  if (href === "/courses") return "Courses";
+  if (href === "/upload") return "Upload Material";
+  if (href === "/reader") return "Reader";
+  if (href === "/review") return "Review Queue";
+  if (href === "/settings") return "Settings";
+  return defaultLabel;
+}
+
 function NavListItems({
   items,
   pathname,
@@ -74,11 +87,14 @@ function NavListItems({
   items: NavItem[];
   pathname: string;
 }) {
+  const { isEn } = useTranslation();
+
   return (
     <>
       {items.map((item) => {
         const Icon = item.icon;
         const active = isActivePath(pathname, item.href);
+        const label = getLocalizedNavLabel(item.href, item.label, isEn);
         return (
           <li key={item.href}>
             <Link
@@ -92,7 +108,7 @@ function NavListItems({
               )}
             >
               <Icon className="size-5 shrink-0" aria-hidden="true" />
-              <span>{item.label}</span>
+              <span>{label}</span>
             </Link>
           </li>
         );
@@ -147,8 +163,9 @@ export function SidebarAccountSection({
   userEmail?: string | null;
   roleLabel: string;
 }) {
+  const { t, isEn } = useTranslation();
   const displayName =
-    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
+    userName?.trim() || userEmail?.split("@")[0] || (isEn ? "SONAR User" : "Pengguna SONAR");
 
   return (
     <div className="space-y-2">
@@ -168,7 +185,7 @@ export function SidebarAccountSection({
           className="h-11 w-full justify-start gap-3 rounded-xl px-3 font-ui text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <LogOut className="size-5" aria-hidden="true" />
-          <span>Keluar</span>
+          <span>{t("signOut")}</span>
         </Button>
       </form>
     </div>
@@ -184,8 +201,9 @@ export function HeaderUserMenu({
   userEmail?: string | null;
   roleLabel: string;
 }) {
+  const { t, isEn } = useTranslation();
   const displayName =
-    userName?.trim() || userEmail?.split("@")[0] || "Pengguna SONAR";
+    userName?.trim() || userEmail?.split("@")[0] || (isEn ? "SONAR User" : "Pengguna SONAR");
 
   return (
     <DropdownMenu>
@@ -217,14 +235,14 @@ export function HeaderUserMenu({
         <DropdownMenuItem asChild>
           <Link href="/settings" className="min-h-10 cursor-pointer">
             <Settings className="size-4" aria-hidden="true" />
-            <span>Pengaturan membaca</span>
+            <span>{isEn ? "Reading preferences" : "Pengaturan membaca"}</span>
           </Link>
         </DropdownMenuItem>
         <form action={signOutAction}>
           <DropdownMenuItem asChild>
             <button type="submit" className="min-h-10 w-full cursor-pointer">
               <LogOut className="size-4" aria-hidden="true" />
-              <span>Keluar</span>
+              <span>{t("signOut")}</span>
             </button>
           </DropdownMenuItem>
         </form>

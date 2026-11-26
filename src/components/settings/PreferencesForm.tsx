@@ -274,6 +274,34 @@ export function PreferencesForm({
             />
           </div>
 
+          <div className="space-y-1.5 border-t border-border pt-4">
+            <Label htmlFor="settings-language">Bahasa Tampilan &amp; Narasi Audio</Label>
+            <Select
+              value={store.language}
+              onValueChange={(val) =>
+                store.setLanguage(val as "id" | "en")
+              }
+            >
+              <SelectTrigger
+                id="settings-language"
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
+              >
+                <SelectValue placeholder="Pilih bahasa" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
+                  🇮🇩 Bahasa Indonesia (Default)
+                </SelectItem>
+                <SelectItem value="en" className="rounded-lg text-sm cursor-pointer">
+                  🇬🇧 English
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="font-sans text-xs text-muted-foreground">
+              Bahasa utama antarmuka situs, label navigasi, serta bahasa bawaan pembacaan audio.
+            </p>
+          </div>
+
           <div className="space-y-4 border-t border-border pt-4">
             <div className="flex items-start gap-3.5">
               <Switch
