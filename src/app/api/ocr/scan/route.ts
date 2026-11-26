@@ -15,6 +15,9 @@ import {
   type DocumentRow,
 } from "@/lib/data/workspace";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const rate = checkRateLimit({

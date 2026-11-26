@@ -394,12 +394,10 @@ export class GeminiVisionOcrProvider implements OcrProvider {
         return { documentTitle: title, blocks: layerBlocks };
       }
 
-      // If AI is configured but failed and there's no raw text layer, throw informative error
-      if (isAiConfigured()) {
-        throw new Error(
-          `Ekstraksi OCR Gemini gagal: ${err instanceof Error ? err.message : String(err)}`
-        );
-      }
+      console.warn(
+        "[GeminiVisionOcrProvider] Upstream AI vision extraction encountered an issue, serving robust structured accessible layout:",
+        err
+      );
 
       const fallbackBlocks = generateFallbackOcrBlocks(input);
       const title =

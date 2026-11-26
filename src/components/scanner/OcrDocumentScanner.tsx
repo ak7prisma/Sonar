@@ -235,15 +235,24 @@ export function OcrDocumentScanner({
         signal: controller.signal,
       });
 
-      const data = (await response.json()) as ScanResultData & { error?: string };
+      let data: (ScanResultData & { error?: string }) | null = null;
+      try {
+        const rawText = await response.text();
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch (parseErr) {
+        console.error("[OcrDocumentScanner] Non-JSON response received:", parseErr);
+      }
 
       if (progressTimerRef.current) {
         clearInterval(progressTimerRef.current);
         progressTimerRef.current = null;
       }
 
-      if (!response.ok || data.error) {
-        throw new Error(data.error ?? "Gagal memindai dokumen PDF.");
+      if (!response.ok || !data || data.error) {
+        throw new Error(
+          data?.error ??
+            `Gagal memproses pemindaian OCR (HTTP ${response.status}). Periksa koneksi atau konfigurasi API Key.`
+        );
       }
 
       setScanProgress(100);

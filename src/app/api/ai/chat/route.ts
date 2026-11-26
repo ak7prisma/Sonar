@@ -15,7 +15,8 @@ import { buildSemanticChunks, type ChunkableBlock } from "@/lib/rag/chunker";
 import { chatRequestSchema } from "@/lib/validation/schemas";
 import { getScannedDocument } from "@/lib/data/workspace";
 
-export const maxDuration = 45;
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 function extractLatestUserText(messages: UIMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
