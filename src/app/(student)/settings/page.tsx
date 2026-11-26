@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { SettingsSkeleton } from "@/components/skeletons/PageSkeletons";
-import { PageHeader } from "@/components/app/PageHeader";
+import { SettingsPageHeader } from "@/components/settings/SettingsPageHeader";
 import { PreferencesForm } from "@/components/settings/PreferencesForm";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
 
@@ -17,10 +17,7 @@ async function SettingsBody() {
 
   return (
     <div className="w-full max-w-5xl space-y-6 font-sans">
-      <PageHeader
-        title="Pengaturan Membaca & Aksesibilitas"
-        description="Perubahan berlaku langsung di seluruh halaman pembaca dan tersimpan di peramban maupun profil akun Anda."
-      />
+      <SettingsPageHeader />
 
       <PreferencesForm isAuthenticated={Boolean(auth)} />
     </div>

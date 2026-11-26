@@ -166,6 +166,15 @@ export function SidebarAccountSection({
   const { t, isEn } = useTranslation();
   const displayName =
     userName?.trim() || userEmail?.split("@")[0] || (isEn ? "SONAR User" : "Pengguna SONAR");
+  const displayRole = isEn
+    ? roleLabel.toLowerCase().includes("mahasiswa")
+      ? "Student"
+      : roleLabel.toLowerCase().includes("admin")
+        ? "Administrator"
+        : roleLabel.toLowerCase().includes("volunteer")
+          ? "Volunteer"
+          : roleLabel
+    : roleLabel;
 
   return (
     <div className="space-y-2">
@@ -175,7 +184,7 @@ export function SidebarAccountSection({
           <p className="truncate font-ui text-sm font-semibold text-foreground">
             {displayName}
           </p>
-          <p className="text-xs text-muted-foreground">{roleLabel}</p>
+          <p className="text-xs text-muted-foreground">{displayRole}</p>
         </div>
       </div>
       <form action={signOutAction}>
@@ -204,6 +213,15 @@ export function HeaderUserMenu({
   const { t, isEn } = useTranslation();
   const displayName =
     userName?.trim() || userEmail?.split("@")[0] || (isEn ? "SONAR User" : "Pengguna SONAR");
+  const displayRole = isEn
+    ? roleLabel.toLowerCase().includes("mahasiswa")
+      ? "Student"
+      : roleLabel.toLowerCase().includes("admin")
+        ? "Administrator"
+        : roleLabel.toLowerCase().includes("volunteer")
+          ? "Volunteer"
+          : roleLabel
+    : roleLabel;
 
   return (
     <DropdownMenu>
@@ -213,12 +231,14 @@ export function HeaderUserMenu({
           className="h-11 gap-2 rounded-full px-1.5 sm:pr-3"
         >
           <Avatar name={displayName} className="size-8 text-xs" />
-          <span className="sr-only md:hidden">Menu akun {displayName}</span>
+          <span className="sr-only md:hidden">
+            {isEn ? `Account menu ${displayName}` : `Menu akun ${displayName}`}
+          </span>
           <span className="hidden min-w-0 text-left leading-tight md:block">
             <span className="block max-w-36 truncate text-sm font-semibold text-foreground">
               {displayName}
             </span>
-            <span className="block text-xs font-normal text-muted-foreground">{roleLabel}</span>
+            <span className="block text-xs font-normal text-muted-foreground">{displayRole}</span>
           </span>
           <ChevronDown className="hidden size-4 text-muted-foreground sm:block" aria-hidden="true" />
         </Button>
@@ -229,7 +249,7 @@ export function HeaderUserMenu({
           {userEmail ? (
             <span className="block truncate text-xs text-muted-foreground">{userEmail}</span>
           ) : null}
-          <span className="block text-xs text-muted-foreground">{roleLabel}</span>
+          <span className="block text-xs text-muted-foreground">{displayRole}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -276,9 +296,18 @@ export function AppShell({
   headerUserSlot?: React.ReactNode;
   mobileNavSlot?: React.ReactNode;
 }) {
+  const { t, isEn } = useTranslation();
   const isAdmin = userRoles.includes("admin");
   const isVolunteer = isAdmin || userRoles.includes("volunteer");
-  const roleLabel = isAdmin ? "Administrator" : isVolunteer ? "Volunteer" : "Mahasiswa";
+  const roleLabel = isAdmin
+    ? isEn
+      ? "Admin"
+      : "Administrator"
+    : isVolunteer
+    ? "Volunteer"
+    : isEn
+    ? "Student"
+    : "Mahasiswa";
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background lg:flex">
@@ -295,12 +324,12 @@ export function AppShell({
         </div>
 
         <nav
-          aria-label="Navigasi utama"
+          aria-label={isEn ? "Main navigation" : "Navigasi utama"}
           className="flex-1 space-y-6 overflow-y-auto px-3 py-4"
         >
           <div className="space-y-2">
             <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
-              Menu
+              {t("navMenu")}
             </p>
             <ul className="space-y-1 font-ui">
               {roleNavSlot !== undefined ? roleNavSlot : <RoleNavMenuItems userRoles={userRoles} />}
@@ -308,7 +337,7 @@ export function AppShell({
           </div>
           <div className="space-y-2">
             <p className="px-3 font-ui text-xs font-semibold text-muted-foreground">
-              Akun
+              {t("navAccount")}
             </p>
             <ul className="space-y-1 font-ui">
               <Suspense fallback={null}>

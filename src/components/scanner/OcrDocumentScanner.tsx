@@ -38,6 +38,7 @@ import {
 } from "@/components/document/FormattedMathText";
 import { narrateMixedText } from "@/features/math-ocr/math-narration";
 import { ScannedMaterialAiChat } from "@/components/scanner/ScannedMaterialAiChat";
+import { useTranslation } from "@/lib/i18n/use-translation";
 import type { CourseRow } from "@/lib/data/workspace";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
@@ -65,6 +66,7 @@ export function OcrDocumentScanner({
   courses,
   defaultCourseId,
 }: OcrDocumentScannerProps) {
+  const { t, isEn } = useTranslation();
   const { announce } = useLiveAnnouncer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -459,7 +461,7 @@ export function OcrDocumentScanner({
                 id="ocr-course"
                 className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
               >
-                <SelectValue placeholder="Pilih mata kuliah" />
+                <SelectValue placeholder={t("chooseCourse")} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                 {courses.map((course) => (
@@ -472,7 +474,7 @@ export function OcrDocumentScanner({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ocr-lang">Bahasa narasi</Label>
+            <Label htmlFor="ocr-lang">{t("narrationLanguage")}</Label>
             <Select
               value={language}
               onValueChange={(val) => setLanguage(val as "id" | "en")}
@@ -481,7 +483,7 @@ export function OcrDocumentScanner({
                 id="ocr-lang"
                 className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
               >
-                <SelectValue placeholder="Pilih bahasa" />
+                <SelectValue placeholder={isEn ? "Select language" : "Pilih bahasa"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                 <SelectItem value="id" className="rounded-lg text-sm">
@@ -495,12 +497,12 @@ export function OcrDocumentScanner({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ocr-title">Judul bacaan</Label>
+            <Label htmlFor="ocr-title">{t("readingTitle")}</Label>
             <Input
               id="ocr-title"
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
-              placeholder="Misalnya: Bab 04 — Vektor"
+              placeholder={t("readingTitlePlaceholder")}
               className="h-10 rounded-xl"
             />
           </div>
@@ -523,7 +525,7 @@ export function OcrDocumentScanner({
             id="ocr-pdf-input"
             type="file"
             accept=".pdf,application/pdf"
-            aria-label="Pilih berkas PDF untuk dipindai cepat"
+            aria-label={isEn ? "Choose PDF file to scan" : "Pilih berkas PDF untuk dipindai cepat"}
             className="sr-only"
             onChange={(e) => void handleFileSelect(e.target.files?.[0])}
           />
@@ -535,14 +537,14 @@ export function OcrDocumentScanner({
               </span>
               <div className="space-y-1">
                 <p className="font-heading text-base font-bold text-foreground">
-                  Pilih berkas PDF hasil pindai
+                  {t("chooseScannedPdf")}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Ekstraksi teks, rumus MathML, dan tabel langsung untuk dibaca atau didengarkan.
+                  {t("choosePdfSub")}
                 </p>
               </div>
               <span className="mt-1 inline-flex min-h-10 items-center justify-center rounded-full border border-border bg-card px-5 font-ui text-sm font-semibold shadow-xs hover:bg-brand-mint hover:text-brand-ink transition-colors">
-                Pilih Berkas PDF
+                {t("selectPdfBtn")}
               </span>
             </div>
           ) : (

@@ -115,7 +115,7 @@ function MobileBottomNavInner({
         <div className="relative -top-3.5 flex flex-col items-center justify-center px-2">
           <Link
             href="/upload"
-            aria-label="Unggah materi PDF"
+            aria-label={isEn ? "Upload PDF material" : "Unggah materi PDF"}
             aria-current={isUploadActive ? "page" : undefined}
             className={cn(
               "flex size-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-4 ring-background transition-transform active:scale-95",
@@ -130,7 +130,7 @@ function MobileBottomNavInner({
               isUploadActive ? "text-primary" : "text-foreground"
             )}
           >
-            Unggah
+            {isEn ? "Upload" : "Unggah"}
           </span>
         </div>
 

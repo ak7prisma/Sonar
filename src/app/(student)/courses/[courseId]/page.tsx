@@ -6,12 +6,11 @@ import {
   BookOpen,
   ClipboardCheck,
   FileText,
-  FileUp,
   ShieldCheck,
 } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { CourseDetailSkeleton } from "@/components/skeletons/PageSkeletons";
-import { PageHeader } from "@/components/app/PageHeader";
+import { CourseDetailHeader } from "@/components/courses/CourseDetailHeader";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -56,22 +55,10 @@ async function CourseDetailBody({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 font-sans">
-      <PageHeader
-        backHref="/courses"
-        backLabel="Semua Mata Kuliah"
-        title={course.title}
-        description={course.description ?? undefined}
-        actions={
-          <Button
-            asChild
-            className="min-h-10 rounded-full px-5 font-ui font-semibold"
-          >
-            <Link href={`/upload?courseId=${course.id}`}>
-              <FileUp className="size-4" aria-hidden="true" />
-              <span>Unggah Materi PDF</span>
-            </Link>
-          </Button>
-        }
+      <CourseDetailHeader
+        courseId={course.id}
+        courseTitle={course.title}
+        courseDescription={course.description ?? undefined}
       />
 
       {/* Compact Course Metadata & Enrollment Strip */}

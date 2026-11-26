@@ -22,12 +22,14 @@ import {
   type ReadingWidth,
 } from "@/stores/accessibility-store";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function PreferencesForm({
   isAuthenticated,
 }: {
   isAuthenticated: boolean;
 }) {
+  const { t, isEn } = useTranslation();
   const store = useAccessibilityStore();
   const { announce } = useLiveAnnouncer();
   const [saving, setSaving] = useState(false);
@@ -55,14 +57,28 @@ export function PreferencesForm({
           }),
         });
         if (!res.ok) {
-          toast.error("Gagal menyimpan pengaturan ke profil akun.");
-          announce("Gagal menyimpan pengaturan ke server.", "assertive");
+          toast.error(
+            isEn
+              ? "Failed to save preferences to account profile."
+              : "Gagal menyimpan pengaturan ke profil akun."
+          );
+          announce(
+            isEn
+              ? "Failed to save preferences to server."
+              : "Gagal menyimpan pengaturan ke server.",
+            "assertive"
+          );
           return;
         }
       }
 
-      toast.success("Pengaturan aksesibilitas tersimpan.");
-      announce("Pengaturan aksesibilitas berhasil disimpan.", "polite");
+      toast.success(t("prefSavedSuccess"));
+      announce(
+        isEn
+          ? "Accessibility preferences successfully saved."
+          : "Pengaturan aksesibilitas berhasil disimpan.",
+        "polite"
+      );
     } finally {
       setSaving(false);
     }
@@ -73,8 +89,8 @@ export function PreferencesForm({
       {/* Live Preview Panel */}
       <Panel
         id="pref-preview"
-        title="Pratinjau Teks Pembaca"
-        description="Contoh tampilan paragraf pada halaman pembaca menggunakan pengaturan Anda saat ini."
+        title={t("prefPreviewTitle")}
+        description={t("prefPreviewDesc")}
       >
         <div
           className={cn(
@@ -104,18 +120,16 @@ export function PreferencesForm({
               letterSpacing: `${store.letterSpacingEm}em`,
             }}
           >
-            <p>
-              Setiap materi kuliah yang telah disetujui volunteer memiliki struktur judul berurutan, tabel berlabel jelas, dan narasi rumus matematika sehingga dapat ditelusuri mandiri menggunakan keyboard atau pembaca layar.
-            </p>
+            <p>{t("prefPreviewSample")}</p>
           </div>
         </div>
       </Panel>
 
       {/* Typography & Spacing */}
-      <Panel id="pref-typography" title="Tipografi & Tata Letak Bacaan">
+      <Panel id="pref-typography" title={t("prefTypographyTitle")}>
         <div className="space-y-5 font-ui">
           <div className="space-y-1.5">
-            <Label htmlFor="settings-font">Jenis huruf pembaca</Label>
+            <Label htmlFor="settings-font">{t("prefFontLabel")}</Label>
             <Select
               value={store.readingFont}
               onValueChange={(val) => store.setReadingFont(val as ReadingFont)}
@@ -124,17 +138,21 @@ export function PreferencesForm({
                 id="settings-font"
                 className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
               >
-                <SelectValue placeholder="Pilih jenis huruf" />
+                <SelectValue placeholder={isEn ? "Select typeface" : "Pilih jenis huruf"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                 <SelectItem value="atkinson" className="rounded-lg text-sm cursor-pointer">
-                  Atkinson Hyperlegible (Direkomendasikan untuk low vision)
+                  {isEn
+                    ? "Atkinson Hyperlegible (Recommended for low vision)"
+                    : "Atkinson Hyperlegible (Direkomendasikan untuk low vision)"}
                 </SelectItem>
                 <SelectItem value="lexend" className="rounded-lg text-sm cursor-pointer">
-                  Lexend (Dirancang untuk kelancaran membaca)
+                  {isEn
+                    ? "Lexend (Designed for reading fluency)"
+                    : "Lexend (Dirancang untuk kelancaran membaca)"}
                 </SelectItem>
                 <SelectItem value="inter" className="rounded-lg text-sm cursor-pointer">
-                  Inter (Sans-serif netral)
+                  {isEn ? "Inter (Neutral sans-serif)" : "Inter (Sans-serif netral)"}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -143,14 +161,16 @@ export function PreferencesForm({
           <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <Label htmlFor="settings-size">Ukuran huruf:</Label>
+                <Label htmlFor="settings-size">
+                  {isEn ? "Font size:" : "Ukuran huruf:"}
+                </Label>
                 <span className="font-semibold tabular-nums text-primary">
                   {store.fontSizePx} px
                 </span>
               </div>
               <Slider
                 id="settings-size"
-                aria-label="Ukuran huruf pembaca dalam piksel"
+                aria-label={isEn ? "Reading font size in pixels" : "Ukuran huruf pembaca dalam piksel"}
                 min={14}
                 max={28}
                 step={1}
@@ -161,15 +181,17 @@ export function PreferencesForm({
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <Label htmlFor="settings-line-height">Jarak antar baris:</Label>
+                <Label htmlFor="settings-line-height">
+                  {isEn ? "Line spacing:" : "Jarak baris:"}
+                </Label>
                 <span className="font-semibold tabular-nums text-primary">
-                  {store.lineHeight}×
+                  {store.lineHeight}
                 </span>
               </div>
               <Slider
                 id="settings-line-height"
-                aria-label="Pengali jarak baris bacaan"
-                min={1.4}
+                aria-label={isEn ? "Line height multiplier" : "Faktor perkalian tinggi baris"}
+                min={1.3}
                 max={2.4}
                 step={0.05}
                 value={[store.lineHeight]}
@@ -179,14 +201,16 @@ export function PreferencesForm({
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <Label htmlFor="settings-letter-spacing">Jarak antar huruf:</Label>
+                <Label htmlFor="settings-spacing">
+                  {isEn ? "Letter spacing:" : "Jarak huruf:"}
+                </Label>
                 <span className="font-semibold tabular-nums text-primary">
                   {store.letterSpacingEm} em
                 </span>
               </div>
               <Slider
-                id="settings-letter-spacing"
-                aria-label="Jarak spasi antar huruf dalam em"
+                id="settings-spacing"
+                aria-label={isEn ? "Letter spacing in em units" : "Jarak antar huruf dalam satuan em"}
                 min={0}
                 max={0.12}
                 step={0.01}
@@ -198,7 +222,9 @@ export function PreferencesForm({
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="settings-width">Lebar kolom bacaan</Label>
+              <Label htmlFor="settings-width">
+                {isEn ? "Column width" : "Lebar kolom bacaan"}
+              </Label>
               <Select
                 value={store.readingWidth}
                 onValueChange={(val) =>
@@ -209,24 +235,26 @@ export function PreferencesForm({
                   id="settings-width"
                   className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
                 >
-                  <SelectValue placeholder="Pilih lebar kolom" />
+                  <SelectValue placeholder={isEn ? "Select column width" : "Pilih lebar kolom"} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                   <SelectItem value="narrow" className="rounded-lg text-sm cursor-pointer">
-                    Sempit (56 karakter)
+                    {isEn ? "Narrow (56 characters)" : "Sempit (56 karakter)"}
                   </SelectItem>
                   <SelectItem value="comfortable" className="rounded-lg text-sm cursor-pointer">
-                    Seimbang (68 karakter)
+                    {isEn ? "Balanced (68 characters)" : "Seimbang (68 karakter)"}
                   </SelectItem>
                   <SelectItem value="wide" className="rounded-lg text-sm cursor-pointer">
-                    Lebar (82 karakter)
+                    {isEn ? "Wide (82 characters)" : "Lebar (82 karakter)"}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="settings-language">Bahasa bawaan narasi suara</Label>
+              <Label htmlFor="settings-language">
+                {isEn ? "Default voice narration language" : "Bahasa bawaan narasi suara"}
+              </Label>
               <Select
                 value={store.language}
                 onValueChange={(val) =>
@@ -237,7 +265,7 @@ export function PreferencesForm({
                   id="settings-language"
                   className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
                 >
-                  <SelectValue placeholder="Pilih bahasa" />
+                  <SelectValue placeholder={isEn ? "Select language" : "Pilih bahasa"} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                   <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
@@ -254,18 +282,20 @@ export function PreferencesForm({
       </Panel>
 
       {/* Contrast, Audio & Motion */}
-      <Panel id="pref-audio" title="Kontras Visual, Suara & Gerakan">
+      <Panel id="pref-audio" title={t("prefColorMotionTitle")}>
         <div className="space-y-5 font-ui">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <Label htmlFor="settings-speed">Kecepatan pemutaran suara:</Label>
+              <Label htmlFor="settings-speed">
+                {isEn ? "Speech playback speed:" : "Kecepatan pemutaran suara:"}
+              </Label>
               <span className="font-semibold tabular-nums text-primary">
                 {store.narrationSpeed}×
               </span>
             </div>
             <Slider
               id="settings-speed"
-              aria-label="Kecepatan pemutaran text-to-speech"
+              aria-label={isEn ? "Text-to-speech playback speed" : "Kecepatan pemutaran text-to-speech"}
               min={0.5}
               max={2.5}
               step={0.1}
@@ -275,7 +305,7 @@ export function PreferencesForm({
           </div>
 
           <div className="space-y-1.5 border-t border-border pt-4">
-            <Label htmlFor="settings-language">Bahasa Tampilan &amp; Narasi Audio</Label>
+            <Label htmlFor="settings-language">{t("webLanguage")}</Label>
             <Select
               value={store.language}
               onValueChange={(val) =>
@@ -286,7 +316,7 @@ export function PreferencesForm({
                 id="settings-language"
                 className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
               >
-                <SelectValue placeholder="Pilih bahasa" />
+                <SelectValue placeholder={isEn ? "Select language" : "Pilih bahasa"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
                 <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
@@ -298,7 +328,9 @@ export function PreferencesForm({
               </SelectContent>
             </Select>
             <p className="font-sans text-xs text-muted-foreground">
-              Bahasa utama antarmuka situs, label navigasi, serta bahasa bawaan pembacaan audio.
+              {isEn
+                ? "Primary site interface language, navigation labels, and default audio narration."
+                : "Bahasa utama antarmuka situs, label navigasi, serta bahasa bawaan pembacaan audio."}
             </p>
           </div>
 
@@ -314,10 +346,12 @@ export function PreferencesForm({
               />
               <div className="space-y-0.5">
                 <Label htmlFor="settings-high-contrast" className="cursor-pointer font-semibold">
-                  Mode kontras tinggi
+                  {t("highContrast")}
                 </Label>
                 <p className="font-sans text-xs text-muted-foreground">
-                  Mempertegas kontras teks, batas panel, dan fokus keyboard.
+                  {isEn
+                    ? "Enhances text contrast, panel borders, and keyboard focus indicators."
+                    : "Mempertegas kontras teks, batas panel, dan fokus keyboard."}
                 </p>
               </div>
             </div>
@@ -333,10 +367,12 @@ export function PreferencesForm({
               />
               <div className="space-y-0.5">
                 <Label htmlFor="settings-warm-surface" className="cursor-pointer font-semibold">
-                  Latar kertas hangat
+                  {t("warmSurface")}
                 </Label>
                 <p className="font-sans text-xs text-muted-foreground">
-                  Mengurangi silau di mode terang untuk membantu kenyamanan disleksia.
+                  {isEn
+                    ? "Reduces glare in light mode to assist reading comfort for dyslexia."
+                    : "Mengurangi silau di mode terang untuk membantu kenyamanan disleksia."}
                 </p>
               </div>
             </div>
@@ -352,10 +388,12 @@ export function PreferencesForm({
               />
               <div className="space-y-0.5">
                 <Label htmlFor="settings-reduced-motion" className="cursor-pointer font-semibold">
-                  Kurangi animasi
+                  {t("reduceMotion")}
                 </Label>
                 <p className="font-sans text-xs text-muted-foreground">
-                  Menonaktifkan transisi antarmuka tanpa bergantung pada pengaturan sistem.
+                  {isEn
+                    ? "Disables UI animations regardless of OS-level preferences."
+                    : "Menonaktifkan transisi antarmuka tanpa bergantung pada pengaturan sistem."}
                 </p>
               </div>
             </div>
@@ -375,7 +413,7 @@ export function PreferencesForm({
           ) : (
             <Save className="size-4" aria-hidden="true" />
           )}
-          <span>{saving ? "Menyimpan…" : "Simpan Pengaturan"}</span>
+          <span>{saving ? t("loading") : t("prefSaveBtn")}</span>
         </Button>
 
         <Button
@@ -383,12 +421,17 @@ export function PreferencesForm({
           variant="outline"
           onClick={() => {
             store.resetDefaults();
-            announce("Pengaturan aksesibilitas dikembalikan ke bawaan.", "polite");
+            announce(
+              isEn
+                ? "Accessibility preferences reset to defaults."
+                : "Pengaturan aksesibilitas dikembalikan ke bawaan.",
+              "polite"
+            );
           }}
           className="min-h-11 rounded-full px-5"
         >
           <RotateCcw className="size-4" aria-hidden="true" />
-          <span>Kembalikan Bawaan</span>
+          <span>{t("resetDefaults")}</span>
         </Button>
       </div>
     </form>

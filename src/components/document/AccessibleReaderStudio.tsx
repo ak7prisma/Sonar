@@ -48,13 +48,14 @@ import { useAccessibilityStore } from "@/stores/accessibility-store";
 import { useAudioReader } from "@/features/audio/use-audio-reader";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { sanitizeDocumentHtml } from "@/lib/accessibility/sanitize";
-import { formatPageCount, formatVersion } from "@/lib/format";
+import { formatVersion } from "@/lib/format";
 import {
   FormattedMathText,
   MathEquationView,
 } from "@/components/document/FormattedMathText";
 import { narrateMixedText } from "@/features/math-ocr/math-narration";
 import { useDocumentBookmarks } from "@/components/document/useDocumentBookmarks";
+import { useTranslation } from "@/lib/i18n/use-translation";
 import {
   answerFromDocumentBlocks,
   type LocalQaCitation,
@@ -167,6 +168,7 @@ export function AccessibleReaderStudio({
   const language = useAccessibilityStore((s) => s.language);
   const setLanguage = useAccessibilityStore((s) => s.setLanguage);
   const narrationSpeed = useAccessibilityStore((s) => s.narrationSpeed);
+  const { t, isEn } = useTranslation();
   const setNarrationSpeed = useAccessibilityStore((s) => s.setNarrationSpeed);
   const fontSizePx = useAccessibilityStore((s) => s.fontSizePx);
   const setFontSizePx = useAccessibilityStore((s) => s.setFontSizePx);
@@ -868,16 +870,16 @@ export function AccessibleReaderStudio({
             className="inline-flex min-h-9 items-center gap-1.5 rounded-md text-sm font-semibold text-secondary-foreground hover:underline"
           >
             <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
-            <span>Kembali ke {courseShort}</span>
+            <span>{t("backTo")} {courseShort}</span>
           </Link>
 
           <div className="flex flex-wrap items-center gap-2">
             <ReviewStatusChip status={document.review_status} />
             <span className="rounded-full bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-foreground">
-              Versi {formatVersion(document.current_version_id)}
+              {isEn ? "Version" : "Versi"} {formatVersion(document.current_version_id)}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatPageCount(document.page_count)}
+              {isEn ? `${document.page_count} pages` : `${document.page_count} halaman`}
             </span>
           </div>
         </div>
@@ -890,7 +892,7 @@ export function AccessibleReaderStudio({
           <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
             <div
               role="group"
-              aria-label="Ukuran huruf bacaan"
+              aria-label={isEn ? "Reading font size" : "Ukuran huruf bacaan"}
               className="inline-flex items-center rounded-full border border-border bg-background p-0.5"
             >
               <Button
@@ -900,12 +902,12 @@ export function AccessibleReaderStudio({
                 onClick={() => {
                   const next = Math.max(14, fontSizePx - 1);
                   setFontSizePx(next);
-                  announce(`Ukuran huruf ${next} piksel.`);
+                  announce(isEn ? `Font size ${next} pixels.` : `Ukuran huruf ${next} piksel.`);
                 }}
                 className="h-9 rounded-full px-3 text-xs font-semibold"
               >
                 <span aria-hidden="true">A−</span>
-                <span className="sr-only">Perkecil ukuran teks</span>
+                <span className="sr-only">{isEn ? "Decrease font size" : "Perkecil ukuran teks"}</span>
               </Button>
               <span className="px-1 text-xs tabular-nums text-muted-foreground">
                 {fontSizePx}
@@ -917,12 +919,12 @@ export function AccessibleReaderStudio({
                 onClick={() => {
                   const next = Math.min(28, fontSizePx + 1);
                   setFontSizePx(next);
-                  announce(`Ukuran huruf ${next} piksel.`);
+                  announce(isEn ? `Font size ${next} pixels.` : `Ukuran huruf ${next} piksel.`);
                 }}
                 className="h-9 rounded-full px-3 text-xs font-semibold"
               >
                 <span aria-hidden="true">A+</span>
-                <span className="sr-only">Perbesar ukuran teks</span>
+                <span className="sr-only">{isEn ? "Increase font size" : "Perbesar ukuran teks"}</span>
               </Button>
             </div>
 
@@ -935,7 +937,7 @@ export function AccessibleReaderStudio({
               className="min-h-10 rounded-full px-4 text-xs font-semibold"
             >
               <ListTree className="size-4" aria-hidden="true" />
-              <span>Daftar Isi</span>
+              <span>{t("outline")}</span>
             </Button>
 
             <Button
@@ -947,7 +949,7 @@ export function AccessibleReaderStudio({
               className="min-h-10 rounded-full px-4 text-xs font-semibold"
             >
               <MessageSquare className="size-4" aria-hidden="true" />
-              <span>Tanya AI</span>
+              <span>{t("askAi")}</span>
             </Button>
 
             {signedPdfUrl ? (
@@ -958,7 +960,7 @@ export function AccessibleReaderStudio({
                 className="min-h-10 rounded-full px-4 text-xs font-semibold"
               >
                 <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer">
-                  <span>PDF asli</span>
+                  <span>{t("readerOriginalPdf")}</span>
                   <ExternalLink className="size-3.5" aria-hidden="true" />
                 </a>
               </Button>
@@ -992,8 +994,8 @@ export function AccessibleReaderStudio({
           {filteredBlocks.length === 0 ? (
             <EmptyState
               icon={BookOpen}
-              title="Tidak ada bagian yang cocok"
-              description="Bersihkan kata kunci pencarian di Daftar Isi untuk melihat seluruh materi."
+              title={t("noMatchingSections")}
+              description={t("clearSearchHint")}
             />
           ) : (
             <article
@@ -1207,7 +1209,7 @@ export function AccessibleReaderStudio({
                   className="h-9 rounded-full px-4 text-xs font-semibold"
                 >
                   <Pause className="size-4" aria-hidden="true" />
-                  <span>Jeda</span>
+                  <span>{t("pause")}</span>
                 </Button>
               ) : (
                 <Button
@@ -1220,7 +1222,7 @@ export function AccessibleReaderStudio({
                   className="h-9 rounded-full px-4 text-xs font-semibold"
                 >
                   <Play className="size-4" aria-hidden="true" />
-                  <span>{audio.isPaused ? "Lanjut" : "Dengarkan"}</span>
+                  <span>{audio.isPaused ? t("readerResume") : t("listen")}</span>
                 </Button>
               )}
 
@@ -1232,7 +1234,7 @@ export function AccessibleReaderStudio({
                 disabled={
                   !audio.isSupported || audio.activeIndex >= audioBlocks.length - 1
                 }
-                aria-label="Blok berikutnya"
+                aria-label={t("readerNextBlock")}
                 className="size-9 rounded-full"
               >
                 <SkipForward className="size-4" aria-hidden="true" />
@@ -1244,7 +1246,7 @@ export function AccessibleReaderStudio({
                   variant="ghost"
                   size="icon"
                   onClick={audio.stop}
-                  aria-label="Hentikan audio"
+                  aria-label={t("readerStopAudio")}
                   className="size-9 rounded-full"
                 >
                   <Square className="size-3.5" aria-hidden="true" />
@@ -1252,16 +1254,16 @@ export function AccessibleReaderStudio({
               ) : null}
 
               <span className="ml-1 text-xs font-medium tabular-nums text-muted-foreground">
-                Blok {audioBlocks.length === 0 ? 0 : audio.activeIndex + 1} dari{" "}
+                {t("blockOf")} {audioBlocks.length === 0 ? 0 : audio.activeIndex + 1} {t("from")}{" "}
                 {audioBlocks.length}
               </span>
             </div>
 
             <div className="flex items-center gap-3 text-xs">
               <label className="flex items-center gap-1.5 text-muted-foreground">
-                <span>Kecepatan</span>
+                <span>{t("speed")}</span>
                 <select
-                  aria-label="Kecepatan suara"
+                  aria-label={isEn ? "Speech speed" : "Kecepatan suara"}
                   value={narrationSpeed}
                   onChange={(e) => setNarrationSpeed(Number(e.target.value))}
                   className="h-9 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground"
@@ -1275,7 +1277,7 @@ export function AccessibleReaderStudio({
               </label>
 
               <label className="flex items-center gap-1.5 text-muted-foreground">
-                <span>Bahasa</span>
+                <span>{t("language")}</span>
                 <div className="relative inline-flex items-center">
                   <select
                     aria-label="Bahasa narasi dan terjemahan"

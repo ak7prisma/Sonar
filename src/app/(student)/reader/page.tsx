@@ -1,12 +1,9 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import Link from "next/link";
 import type { Metadata } from "next";
-import { BookOpen } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { ReaderSkeleton } from "@/components/skeletons/PageSkeletons";
-import { EmptyState } from "@/components/app/EmptyState";
-import { Button } from "@/components/ui/button";
+import { ReaderEmptyState } from "@/components/document/ReaderEmptyState";
 import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
 import { loadDocumentDetail, loadWorkspaceSnapshot } from "@/lib/data/workspace";
 import { getSharedMaterialById } from "@/lib/data/course-materials";
@@ -24,40 +21,12 @@ async function ReaderIndexBody() {
     snapshot.documents[0];
 
   if (!initialDoc) {
-    return (
-      <div className="w-full max-w-4xl py-6">
-        <h1 className="sr-only">Pembaca Dokumen</h1>
-        <EmptyState
-          icon={BookOpen}
-          title="Belum ada dokumen untuk dibaca"
-          description="Unggah berkas PDF perkuliahan atau buka salah satu mata kuliah untuk mulai membaca."
-          action={
-            <Button asChild className="rounded-full">
-              <Link href="/upload">Unggah PDF Kuliah</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
+    return <ReaderEmptyState type="no_documents" />;
   }
 
   const detail = await loadDocumentDetail(initialDoc.id);
   if (!detail) {
-    return (
-      <div className="w-full max-w-4xl py-6">
-        <h1 className="sr-only">Pembaca Dokumen</h1>
-        <EmptyState
-          icon={BookOpen}
-          title="Dokumen tidak dapat dimuat"
-          description="Pilih materi dari katalog mata kuliah untuk membukanya."
-          action={
-            <Button asChild className="rounded-full">
-              <Link href="/courses">Lihat Mata Kuliah</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
+    return <ReaderEmptyState type="not_found" />;
   }
 
   const relatedDocuments = snapshot.documents

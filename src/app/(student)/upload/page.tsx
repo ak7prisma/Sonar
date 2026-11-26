@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { UploadSkeleton } from "@/components/skeletons/PageSkeletons";
+import { UploadPageHeader } from "@/components/upload/UploadPageHeader";
 import { UploadHub } from "@/components/upload/UploadHub";
 import { loadCoursesCatalog, FALLBACK_COURSES } from "@/lib/data/workspace";
 
@@ -23,14 +24,7 @@ async function UploadBody({
 
   return (
     <div className="w-full max-w-5xl space-y-6 py-2 font-sans sm:py-4">
-      <header className="space-y-1.5 text-left">
-        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-          Scan PDF Mata Kuliah
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Pindai berkas PDF materi kuliah menjadi dokumen terstruktur dengan MathML dan narasi suara. Setelah dipindai, Anda dapat langsung membacanya atau membagikannya ke mata kuliah.
-        </p>
-      </header>
+      <UploadPageHeader />
 
       <UploadHub
         courses={courses}

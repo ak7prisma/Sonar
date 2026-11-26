@@ -1,11 +1,8 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
-import { BookOpen } from "lucide-react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { ReaderSkeleton } from "@/components/skeletons/PageSkeletons";
-import { EmptyState } from "@/components/app/EmptyState";
-import { Button } from "@/components/ui/button";
+import { ReaderEmptyState } from "@/components/document/ReaderEmptyState";
 import { AccessibleReaderStudio } from "@/components/document/AccessibleReaderStudio";
 import {
   loadDocumentDetail,
@@ -27,21 +24,7 @@ async function ReaderDetailBody({
   const detail = await loadDocumentDetail(documentId);
 
   if (!detail) {
-    return (
-      <div className="w-full max-w-4xl py-6 space-y-4">
-        <h1 className="sr-only">Dokumen tidak tersedia</h1>
-        <EmptyState
-          icon={BookOpen}
-          title="Dokumen tidak tersedia atau akses ditolak"
-          description="Anda hanya dapat membuka dokumen dari mata kuliah yang Anda ikuti atau yang dibagikan ke akun Anda."
-          action={
-            <Button asChild className="rounded-full">
-              <Link href="/reader">Kembali ke pembaca</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
+    return <ReaderEmptyState type="not_found" />;
   }
 
   const relatedDocuments = detail.course
