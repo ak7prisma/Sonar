@@ -58,42 +58,108 @@ export async function POST(req: Request) {
     }
 
     let imageBase64 = "";
+    let storagePath: string | null = null;
+    let pdfBuffer: Buffer | null = null;
     let courseId = "cs-201";
     let language: "id" | "en" = "id";
     let documentTitle = "Hasil Pindai Dokumen OCR";
 
     const contentType = req.headers.get("content-type") ?? "";
 
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
-      const file = formData.get("image");
-      courseId = String(formData.get("courseId") ?? "cs-201");
-      language = (String(formData.get("language") ?? "id") as "id" | "en");
-      documentTitle = String(formData.get("title") ?? "Hasil Pindai Dokumen OCR");
+    try {
+      if (contentType.includes("multipart/form-data")) {
+        const formData = await req.formData();
+        const file = formData.get("image");
+        const rawStoragePath = formData.get("storagePath");
+        if (typeof rawStoragePath === "string" && rawStoragePath.trim()) {
+          storagePath = rawStoragePath.trim();
+        }
+        courseId = String(formData.get("courseId") ?? "cs-201");
+        language = String(formData.get("language") ?? "id") as "id" | "en";
+        documentTitle = String(formData.get("title") ?? "Hasil Pindai Dokumen OCR");
 
-      if (file instanceof File) {
-        const lowerName = file.name.toLowerCase();
-        if (!lowerName.endsWith(".pdf") && file.type !== "application/pdf" && file.type !== "application/x-pdf") {
+        if (file instanceof File) {
+          const lowerName = file.name.toLowerCase();
+          if (
+            !lowerName.endsWith(".pdf") &&
+            file.type !== "application/pdf" &&
+            file.type !== "application/x-pdf"
+          ) {
+            return NextResponse.json(
+              {
+                error:
+                  "Hanya berkas dokumen berformat PDF (.pdf) yang diperbolehkan untuk pemindaian OCR.",
+              },
+              { status: 400 }
+            );
+          }
+          const arrayBuffer = await file.arrayBuffer();
+          pdfBuffer = Buffer.from(arrayBuffer);
+          imageBase64 = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+        } else {
+          const rawBase64 = formData.get("imageBase64");
+          if (typeof rawBase64 === "string") {
+            imageBase64 = rawBase64;
+          }
+        }
+      } else {
+        const rawBody = await req.text();
+        if (!rawBody.trim()) {
           return NextResponse.json(
-            { error: "Hanya berkas dokumen berformat PDF (.pdf) yang diperbolehkan untuk pemindaian OCR." },
+            {
+              error:
+                "Permintaan pemindaian kosong atau terpotong sebelum tiba di server.",
+            },
             { status: 400 }
           );
         }
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        imageBase64 = `data:application/pdf;base64,${buffer.toString("base64")}`;
-      } else {
-        const rawBase64 = formData.get("imageBase64");
-        if (typeof rawBase64 === "string") {
-          imageBase64 = rawBase64;
-        }
+        const json = JSON.parse(rawBody) as {
+          imageBase64?: string;
+          storagePath?: string;
+          courseId?: string;
+          language?: "id" | "en";
+          title?: string;
+        };
+        imageBase64 = json.imageBase64 ?? "";
+        storagePath = json.storagePath?.trim() || null;
+        courseId = json.courseId ?? "cs-201";
+        language = json.language ?? "id";
+        documentTitle = json.title ?? "Hasil Pindai Dokumen OCR";
       }
-    } else {
-      const json = await req.json();
-      imageBase64 = json.imageBase64 ?? "";
-      courseId = json.courseId ?? "cs-201";
-      language = json.language ?? "id";
-      documentTitle = json.title ?? "Hasil Pindai Dokumen OCR";
+    } catch (bodyErr) {
+      console.error("[OCR Scan Route] Failed to read request body:", bodyErr);
+      return NextResponse.json(
+        {
+          error:
+            "Berkas PDF tidak terkirim utuh ke server (kemungkinan ukurannya melebihi batas ±4 MB). Masuk ke akun atau kompres PDF, lalu coba lagi.",
+        },
+        { status: 413 }
+      );
+    }
+
+    // Jika berkas besar diunggah ke Supabase Storage terlebih dahulu, unduh dari bucket
+    if (!imageBase64 && storagePath && isSupabaseConfigured()) {
+      const { supabase } = await getAuthenticatedContext();
+      const storageClient = isSupabaseAdminConfigured()
+        ? (createAdminSupabaseClient() ?? supabase)
+        : supabase;
+      if (storageClient) {
+        const { data: downloadedBlob, error: downloadErr } = await storageClient.storage
+          .from("course-documents")
+          .download(storagePath);
+        if (downloadErr || !downloadedBlob) {
+          return NextResponse.json(
+            {
+              error:
+                "Gagal mengambil berkas PDF dari penyimpanan cloud untuk dipindai.",
+            },
+            { status: 400 }
+          );
+        }
+        const ab = await downloadedBlob.arrayBuffer();
+        pdfBuffer = Buffer.from(ab);
+        imageBase64 = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+      }
     }
 
     if (!imageBase64) {
@@ -120,6 +186,7 @@ export async function POST(req: Request) {
 
     // Try extracting real text layer from PDF if available
     let rawTextLayer: string | undefined = undefined;
+    let extractedPageCount = 1;
     let cleanBase64 = imageBase64;
     const match = imageBase64.match(/^data:([^;]+);base64,([\s\S]+)$/);
     if (match) {
@@ -127,27 +194,36 @@ export async function POST(req: Request) {
     }
 
     try {
-      if (cleanBase64.startsWith("JVBERi") || imageBase64.includes("pdf")) {
+      if (!pdfBuffer && (cleanBase64.startsWith("JVBERi") || imageBase64.includes("pdf"))) {
+        pdfBuffer = Buffer.from(cleanBase64, "base64");
+      }
+      if (pdfBuffer) {
         const { extractPdfTextPages } = await import("@/features/pdf-processing/text-extractor");
-        const buffer = Buffer.from(cleanBase64, "base64");
-        const pages = await extractPdfTextPages(new Uint8Array(buffer));
+        const pages = await extractPdfTextPages(new Uint8Array(pdfBuffer));
+        extractedPageCount = Math.max(1, pages.length);
         const combined = pages
           .map((p) => (p.rawText ? `[Halaman ${p.pageNumber}]\n${p.rawText}` : ""))
           .filter(Boolean)
           .join("\n\n");
         if (combined.trim().length > 0) {
-          rawTextLayer = combined;
+          rawTextLayer =
+            combined.length > 18_000 ? `${combined.slice(0, 18_000)}\n\n[...halaman selanjutnya diringkas]` : combined;
         }
       }
     } catch (pdfErr) {
       console.warn("[OCR Scan Route] PDF text layer extraction skipped:", pdfErr);
     }
 
+    const pdfByteSize = pdfBuffer ? pdfBuffer.byteLength : Math.round(cleanBase64.length * 0.75);
+    const hasRichTextLayer = Boolean(rawTextLayer && rawTextLayer.length >= 250);
+    const shouldAttachBinaryToVision =
+      !hasRichTextLayer || (pdfByteSize <= 2.5 * 1024 * 1024 && extractedPageCount <= 8);
+
     // Call OCR Provider
     const ocrProvider = getDefaultOcrProvider();
     const ocrResult = await ocrProvider.extractPage({
       pageNumber: 1,
-      pageImageBase64: imageBase64,
+      pageImageBase64: shouldAttachBinaryToVision ? imageBase64 : undefined,
       rawTextLayer,
       courseContext: `Course: ${courseId}, Document: ${documentTitle}`,
       language,
@@ -254,10 +330,10 @@ export async function POST(req: Request) {
       uploaded_by: "usr-student-001",
       title: resolvedDocumentTitle,
       original_filename: `${(documentTitle || resolvedDocumentTitle).replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
-      storage_path: `scans/${courseId}/${docId}.pdf`,
+      storage_path: storagePath ?? `scans/${courseId}/${docId}.pdf`,
       file_hash: nanoid(32),
-      file_size_bytes: Math.round(cleanBase64.length * 0.75),
-      page_count: 1,
+      file_size_bytes: pdfByteSize,
+      page_count: extractedPageCount,
       current_version_id: `ver-${docId}`,
       processing_status: "completed",
       review_status: "verified",
@@ -342,9 +418,10 @@ export async function POST(req: Request) {
                 uploaded_by: uploaderId,
                 title: resolvedDocumentTitle,
                 original_filename: `${(documentTitle || resolvedDocumentTitle).replace(/[^\w\s-]/g, "") || "Document"}.pdf`,
-                storage_path: `scans/${targetCourseId}/${docId}.pdf`,
+                storage_path: storagePath ?? `scans/${targetCourseId}/${docId}.pdf`,
                 file_hash: nanoid(32),
-                file_size_bytes: Math.round(cleanBase64.length * 0.75),
+                file_size_bytes: pdfByteSize,
+                page_count: extractedPageCount,
                 language,
                 processing_status: "completed",
                 review_status: "verified",

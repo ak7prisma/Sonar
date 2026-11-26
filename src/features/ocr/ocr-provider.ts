@@ -414,6 +414,9 @@ export class GeminiVisionOcrProvider implements OcrProvider {
 
       const result = await generateText({
         model,
+        maxRetries: 0,
+        maxOutputTokens: 8192,
+        abortSignal: AbortSignal.timeout(48_000),
         instructions: `${STRUCTURED_PAGE_EXTRACTION_PROMPT}\n\n${langDirective}`,
         messages: [
           {

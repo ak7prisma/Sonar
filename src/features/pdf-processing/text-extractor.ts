@@ -15,6 +15,17 @@ export async function extractPdfTextPages(
   pdfBytes: Uint8Array
 ): Promise<ExtractedPdfPage[]> {
   try {
+    // Pre-register pdf.worker.mjs on globalThis so Next.js/Vercel NFT bundles it
+    // and pdfjs-dist runs in-thread without dynamic worker path resolution errors.
+    const g = globalThis as Record<string, unknown>;
+    if (!g.pdfjsWorker) {
+      try {
+        g.pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+      } catch {
+        // worker pre-registration optional
+      }
+    }
+
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const loadingTask = pdfjs.getDocument({
       data: pdfBytes,

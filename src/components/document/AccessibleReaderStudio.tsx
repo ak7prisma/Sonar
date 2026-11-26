@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/sheet";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
 import { EmptyState } from "@/components/app/EmptyState";
+import { describeHttpFailure, readJsonSafely } from "@/lib/http/safe-json";
 import { StructuredTable } from "@/components/app/StructuredTable";
 import { useAccessibilityStore } from "@/stores/accessibility-store";
 import { useAudioReader } from "@/features/audio/use-audio-reader";
@@ -222,15 +223,15 @@ export function AccessibleReaderStudio({
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error || "Gagal menerjemahkan dokumen.");
+      const json = await readJsonSafely<{
+        blocks?: Array<{ contentText: string; spokenText?: string }>;
+        error?: string;
+      }>(res);
+      if (!res.ok || !json || json.error || !json.blocks) {
+        throw new Error(json?.error || describeHttpFailure(res.status, "penerjemahan dokumen"));
       }
 
-      const translated = json.blocks as Array<{
-        contentText: string;
-        spokenText?: string;
-      }>;
+      const translated = json.blocks;
 
       const updatedRows: DocumentBlockRow[] = renderedBlocks.map((b, idx) => {
         const trans = translated[idx];
