@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { getAuthenticatedContext } from "@/lib/supabase/auth-helpers";
-import { isAiConfigured, isSupabaseAdminConfigured, isSupabaseConfigured } from "@/lib/env";
+import {
+  getServerEnv,
+  isAiConfigured,
+  isSupabaseAdminConfigured,
+  isSupabaseConfigured,
+} from "@/lib/env";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getDefaultOcrProvider, type ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
@@ -17,6 +22,26 @@ import {
 } from "@/lib/data/workspace";
 
 export const maxDuration = 60;
+
+export async function GET() {
+  const env = getServerEnv();
+  const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY ?? "";
+  const keyPreview = apiKey ? `${apiKey.slice(0, 10)}...${apiKey.slice(-4)}` : "NOT_CONFIGURED";
+
+  return NextResponse.json({
+    status: "ok",
+    route: "/api/ocr/scan",
+    timestamp: new Date().toISOString(),
+    isAiConfigured: isAiConfigured(),
+    aiProvider: env.AI_PROVIDER,
+    visionModel: env.AI_VISION_MODEL,
+    chatModel: env.AI_CHAT_MODEL,
+    fallbackVisionModels: env.AI_FALLBACK_VISION_MODELS,
+    apiKeyConfigured: Boolean(apiKey),
+    apiKeyPreview: keyPreview,
+    isSupabaseConfigured: isSupabaseConfigured(),
+  });
+}
 
 export async function POST(req: Request) {
   try {

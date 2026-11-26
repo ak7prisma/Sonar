@@ -236,11 +236,17 @@ export function OcrDocumentScanner({
       });
 
       let data: (ScanResultData & { error?: string }) | null = null;
+      let rawResponseText = "";
       try {
-        const rawText = await response.text();
-        data = rawText ? JSON.parse(rawText) : null;
+        rawResponseText = await response.text();
+        data = rawResponseText ? JSON.parse(rawResponseText) : null;
       } catch (parseErr) {
-        console.error("[OcrDocumentScanner] Non-JSON response received:", parseErr);
+        console.error(
+          "[OcrDocumentScanner] Non-JSON response received:",
+          parseErr,
+          "\nRaw response body:",
+          rawResponseText
+        );
       }
 
       if (progressTimerRef.current) {
@@ -249,10 +255,29 @@ export function OcrDocumentScanner({
       }
 
       if (!response.ok || !data || data.error) {
-        throw new Error(
-          data?.error ??
-            `Gagal memproses pemindaian OCR (HTTP ${response.status}). Periksa koneksi atau konfigurasi API Key.`
-        );
+        // Extract readable server detail from JSON or HTML
+        let serverDetail = data?.error;
+        if (!serverDetail && rawResponseText) {
+          const titleMatch = rawResponseText.match(/<title>([^<]+)<\/title>/i);
+          const bodyClean = rawResponseText
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          serverDetail = titleMatch ? titleMatch[1] : bodyClean.slice(0, 250);
+        }
+
+        const formattedError = `Gagal memproses pemindaian OCR (HTTP ${response.status}${response.statusText ? ` - ${response.statusText}` : ""})${serverDetail ? `: ${serverDetail}` : ". Periksa koneksi atau konfigurasi API Key."}`;
+
+        console.error("[OcrDocumentScanner] OCR Request Failed Details:", {
+          httpStatus: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          rawResponseBody: rawResponseText,
+          parsedJson: data,
+          extractedMessage: formattedError,
+        });
+
+        throw new Error(formattedError);
       }
 
       setScanProgress(100);
