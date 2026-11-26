@@ -23,6 +23,7 @@ import { cn } from "cn";
 import { getCourseToneStyles } from "@/lib/course-theme";
 import { APP_IMAGES } from "@/lib/images";
 import type { CourseRow, DocumentRow } from "@/lib/data/workspace";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface CourseCardData {
   course: CourseRow;
@@ -62,6 +63,7 @@ export function CoursesCatalogSearch({
   courses,
   documents,
 }: CoursesCatalogSearchProps) {
+  const { isEn } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("all");
 
@@ -123,7 +125,7 @@ export function CoursesCatalogSearch({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center font-ui">
         <div className="relative flex-1">
           <label htmlFor="courses-search-input" className="sr-only">
-            Cari mata kuliah
+            {isEn ? "Search courses" : "Cari mata kuliah"}
           </label>
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
             <Search className="size-4" aria-hidden="true" />
@@ -133,7 +135,11 @@ export function CoursesCatalogSearch({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari kode, judul matkul, atau kata kunci materi…"
+            placeholder={
+              isEn
+                ? "Search course code, title, or keywords..."
+                : "Cari kode, judul matkul, atau kata kunci materi…"
+            }
             className="w-full h-11 rounded-full border border-input bg-card pl-10 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-xs"
           />
           {searchQuery && (
@@ -141,7 +147,7 @@ export function CoursesCatalogSearch({
               type="button"
               onClick={() => setSearchQuery("")}
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-              aria-label="Bersihkan pencarian"
+              aria-label={isEn ? "Clear search" : "Bersihkan pencarian"}
             >
               <X className="size-4" aria-hidden="true" />
             </button>
@@ -156,14 +162,14 @@ export function CoursesCatalogSearch({
             >
               <SelectTrigger
                 id="courses-discipline-filter"
-                aria-label="Filter berdasarkan bidang studi"
+                aria-label={isEn ? "Filter by discipline" : "Filter berdasarkan bidang studi"}
                 className="h-11 w-full rounded-full border border-input bg-card px-4 text-sm font-semibold text-foreground shadow-xs cursor-pointer"
               >
-                <SelectValue placeholder="Semua Bidang Studi" />
+                <SelectValue placeholder={isEn ? "All Disciplines" : "Semua Bidang Studi"} />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border border-border bg-popover shadow-md font-ui">
                 <SelectItem value="all" className="rounded-lg text-sm cursor-pointer py-2 font-medium">
-                  Semua Bidang ({courses.length})
+                  {isEn ? `All Disciplines (${courses.length})` : `Semua Bidang (${courses.length})`}
                 </SelectItem>
                 {disciplines.map((disc) => {
                   const count = courses.filter(
@@ -245,10 +251,10 @@ export function CoursesCatalogSearch({
                             className="size-4 text-primary"
                             aria-hidden="true"
                           />
-                          <span>Materi terverifikasi</span>
+                          <span>{isEn ? "Verified materials" : "Materi terverifikasi"}</span>
                         </span>
                         <span className="font-semibold tabular-nums text-foreground">
-                          {verifiedCount} dokumen
+                          {verifiedCount} {isEn ? "documents" : "dokumen"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -257,10 +263,10 @@ export function CoursesCatalogSearch({
                             className="size-4 text-muted-foreground"
                             aria-hidden="true"
                           />
-                          <span>Dalam proses review</span>
+                          <span>{isEn ? "In review process" : "Dalam proses review"}</span>
                         </span>
                         <span className="tabular-nums text-muted-foreground">
-                          {pendingCount} dokumen
+                          {pendingCount} {isEn ? "documents" : "dokumen"}
                         </span>
                       </div>
                     </div>
@@ -273,7 +279,7 @@ export function CoursesCatalogSearch({
                     className="min-h-10 w-full justify-between rounded-full px-4 font-semibold"
                   >
                     <Link href={`/courses/${course.id}`}>
-                      <span>Lihat Materi Kelas</span>
+                      <span>{isEn ? "View Class Materials" : "Lihat Materi Kelas"}</span>
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   </Button>
@@ -286,10 +292,14 @@ export function CoursesCatalogSearch({
         <div className="rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-card font-ui space-y-3">
           <BookOpen className="size-8 mx-auto text-muted-foreground/60" aria-hidden="true" />
           <p className="font-heading text-base font-bold text-foreground">
-            Tidak ada mata kuliah yang cocok dengan &ldquo;{searchQuery}&rdquo;
+            {isEn
+              ? `No courses matched "${searchQuery}"`
+              : `Tidak ada mata kuliah yang cocok dengan "${searchQuery}"`}
           </p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Coba gunakan kata kunci lain, bersihkan filter bidang studi, atau unggah materi baru ke mata kuliah yang Anda butuhkan.
+            {isEn
+              ? "Try different keywords, clear discipline filter, or upload new course materials."
+              : "Coba gunakan kata kunci lain, bersihkan filter bidang studi, atau unggah materi baru ke mata kuliah yang Anda butuhkan."}
           </p>
           <Button
             type="button"
@@ -301,7 +311,7 @@ export function CoursesCatalogSearch({
             }}
             className="rounded-full"
           >
-            Reset Pencarian
+            {isEn ? "Reset Search" : "Reset Pencarian"}
           </Button>
         </div>
       )}

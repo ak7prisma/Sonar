@@ -75,6 +75,150 @@ export const TRANSLATIONS = {
     continue: "Lanjutkan",
     close: "Tutup",
     loading: "Memuat...",
+
+    // Marketing Hero
+    heroTitle1: "Akses Kuliah",
+    heroTitle2: "Tanpa",
+    heroTitle3: "Batas",
+    heroTitle4: "dengan Suara",
+    heroSubtitle:
+      "SONAR mengubah PDF perkuliahan, slide scan dosen, rumus matematika, dan diagram menjadi bacaan terstruktur yang siap diakses screen reader, braille display, dan audio narasi terverifikasi volunteer.",
+    heroCtaStart: "Mulai Akses Gratis",
+    heroCtaDemo: "Coba Live MathML",
+    heroStat1Label: "Standar Aksesibilitas",
+    heroStat1Sub: "WCAG 2.2 AA",
+    heroStat2Label: "Kelas Terverifikasi",
+    heroStat2Sub: "Materi Reusable",
+    heroStat3Label: "Verifikasi Volunteer",
+    heroStat3Sub: "Akurasi MathML",
+    heroBadgeScreenReader: "Screen Reader Ready",
+    heroBadgeVolunteer: "Volunteer Verified",
+    heroBadgeMathDesc: "Narasi rumus kalkulus & matriks bilingual",
+    heroBadgeInclusiveModes: "Mode Belajar Inklusif",
+    heroBadge247Desc: "Materi terverifikasi & reusable se-kelas",
+
+    // Marketing Features
+    featuresTag: "Kemampuan Inti SONAR",
+    featuresHeading: "Mengubah materi visual kompleks menjadi narasi akademik yang jernih",
+    featuresSubtitle:
+      "Setiap PDF perkuliahan—teks scan, tabel data, rumus diferensial, hingga grafik—dipulihkan menjadi struktur semantik yang utuh.",
+    feature1Title: "Audio Reader & Narasi Sinkron",
+    feature1Category: "Screen Reader First",
+    feature1Desc:
+      "Membacakan materi kuliah per heading dan paragraf dengan sorotan teks aktif secara natural dalam Bahasa Indonesia dan Inggris.",
+    feature1Cta: "Coba Audio Reader",
+    feature2Title: "Ekstraksi Rumus ke MathML",
+    feature2Category: "STEM Accessibility",
+    feature2Desc:
+      "Mengonversi persamaan kalkulus, integral, dan matriks rumit menjadi MathML semantik yang terbaca jernih di NVDA dan VoiceOver.",
+    feature2Cta: "Lihat Contoh Rumus",
+    feature3Title: "Dukungan Braille & Struktur Semantik",
+    feature3Category: "Tactile & Keyboard",
+    feature3Desc:
+      "Memulihkan hierarki heading, tabel baris-kolom, serta deskripsi diagram berlapis agar mulus di refreshable braille display.",
+    feature3Cta: "Pelajari Struktur",
+    feature4Title: "Materi Terverifikasi Se-Kelas",
+    feature4Category: "Peer Volunteer QA",
+    feature4Desc:
+      "Volunteer memvalidasi keakuratan OCR dan rumus sekali, lalu seluruh mahasiswa sekelas langsung memakainya dengan pelacakan versi.",
+    feature4Cta: "Buka Course Library",
+
+    // Marketing Quote & Testimonials
+    quoteTag: "Suara Mahasiswa Tunanetra",
+    quoteText:
+      "“Materi perkuliahan yang tadinya hanya tumpukan gambar tak terbaca di PDF slide dosen, kini bisa saya dengarkan dan navigasikan rumus demi rumus dengan presisi. SONAR mengembalikan kemandirian belajar saya.”",
+    quoteAuthor: "Maya Lin • Mahasiswi Ilmu Komputer Universitas Indonesia (Tunanetra Total)",
+    testimonialsTag: "4.9 / 5.0 Ulasan Terverifikasi",
+    testimonialsHeading: "Dipercaya mahasiswa dan volunteer akademik",
+    testimonialPrev: "Ulasan sebelumnya",
+    testimonialNext: "Ulasan berikutnya",
+    testimonial1Quote:
+      "Sebelumnya saya harus meminta tolong teman membacakan rumus integral di slide kuliah. Dengan SONAR, saya bisa membaca mandiri memakai refreshable braille display tanpa tertinggal materi.",
+    testimonial1Role: "Mahasiswi Ilmu Komputer (Tunanetra Total)",
+    testimonial2Quote:
+      "Fitur warm paper canvas, font Atkinson Hyperlegible, dan navigasi heading di SONAR membuat saya tidak cepat lelah saat membaca jurnal puluhan halaman. Tanya AI dengan sitasi dokumen sangat membantu persiapan ujian.",
+    testimonial2Role: "Mahasiswa Matematika (Low Vision)",
+    testimonial3Quote:
+      "Review workbench SONAR memudahkan saya memeriksa LaTeX formula dan deskripsi diagram secara terstruktur. Sekali materi saya setujui, seluruh mahasiswa sekelas langsung bisa menggunakannya kembali.",
+    testimonial3Role: "Asisten Pengajar & Volunteer Reviewer",
+
+    // Marketing Shared Reusable Library
+    sharedTag: "Shared Reusable Library",
+    sharedHeading: "Satu kali review volunteer, langsung siap dipakai seluruh mahasiswa se-kelas",
+    sharedSubtitle:
+      "Tidak perlu memproses ulang slide yang sama setiap semester. Dokumen yang telah disetujui volunteer otomatis tersedia bagi mahasiswa yang terdaftar pada mata kuliah terkait dengan pelacakan versi sumber yang transparan.",
+    sharedPoint1Title: "3 Mata Kuliah Aktif:",
+    sharedPoint1Desc: "CS 201, MATH 105, dan STAT 210 siap diakses langsung dari Course Library.",
+    sharedPoint2Title: "Source-Version Tracking:",
+    sharedPoint2Desc: "Menampilkan versi sumber (misalnya v2.1), nama volunteer, dan tanggal verifikasi.",
+    sharedPoint3Title: "Notifikasi Pembaruan Slide:",
+    sharedPoint3Desc: "Otomatis memberi tanda jika dosen mengunggah revisi PDF terbaru.",
+    sharedCtaCourses: "Buka Katalog Mata Kuliah",
+    courseCsTitle: "Struktur Data dan Algoritma",
+    courseCsMeta: "2 Modul Terverifikasi · v2.1",
+    courseMathTitle: "Kalkulus Multivariabel & Aljabar Linier",
+    courseMathMeta: "2 Bab & Formula Terverifikasi · v1.2",
+    courseStatTitle: "Teori Probabilitas & Inferensi Statistik",
+    courseStatMeta: "1 Handout Terverifikasi · v2.0",
+
+    // Marketing Campus Banner
+    campusTag: "Campus Partnership • Inklusif Untuk Semua",
+    campusHeading: "Wujudkan perkuliahan yang benar-benar aksesibel di kampus Anda",
+    campusSubtitle:
+      "Bergabung bersama mahasiswa tunanetra dan volunteer akademik untuk menghadirkan materi kuliah terstruktur, ramah screen reader, dan siap dibagikan se-kelas.",
+    campusCtaRegister: "Daftar Akun Gratis",
+    campusCtaWorkflow: "Pelajari Alur Konversi",
+
+    // Interactive Sandbox
+    sandboxEnginePreview: "Pratinjau Langsung Mesin Aksesibilitas",
+    sandboxHeading: "Uji coba narator rumus, tabel semantik, dan deskripsi figur berlapis SONAR",
+    sandboxMathNarration: "Narasi Matematika",
+    sandboxSemanticTable: "Tabel Semantik",
+    sandboxLayeredFigure: "Figur Berlapis",
+    sandboxLatexInputLabel: "Input rumus akademis LaTeX",
+    sandboxLatexHelp:
+      "Penerjemahan ucapan berbasis aturan deterministik berjalan lokal secara real-time dan menandai konstruksi yang belum didukung.",
+    sandboxRuleSupported: "Tata bahasa berbasis aturan didukung",
+    sandboxHumanReview: "Konstruksi belum didukung ditandai untuk review manusia",
+    sandboxListenNow: "Dengarkan sekarang",
+    sandboxResumeSpeech: "Lanjutkan suara",
+    sandboxPause: "Jeda",
+    sandboxStopSpeech: "Hentikan pemutaran suara",
+    sandboxTableColScope: "Screen reader membacakan header baris dan kolom secara eksplisit menggunakan native",
+    sandboxTableCaption: "Tabel 1 — Ringkasan Elastisitas & Pendapatan Triwulanan (ECON-110)",
+    sandboxQuarter: "Kuartal",
+    sandboxPriceElasticity: "Elastisitas Harga",
+    sandboxUnitDemand: "Permintaan Unit",
+    sandboxTotalRevenue: "Total Pendapatan",
+    sandboxProgressiveDisclosure: "Pengungkapan bertahap menghindari beban kognitif berlebih",
+    sandboxFigureOverview: "1. Ringkasan",
+    sandboxFigureAxes: "2. Sumbu & Satuan",
+    sandboxFigureTrends: "3. Tren Utama",
+    sandboxFigureUncertainty: "4. Catatan Ketidakpastian",
+    sandboxFigureCaption: "Gambar 3.2 — Kurva Potensial Membran Aksi (BIO-204)",
+    sandboxFigDescSummary:
+      "Grafik garis menunjukkan potensial membran neuron bertransisi dari keadaan istirahat (-70 mV) melalui depolarisasi cepat ke +35 mV, diikuti oleh repolarisasi dan hiperpolarisasi singkat.",
+    sandboxFigDescAxes:
+      "Sumbu horizontal: Waktu dalam milidetik dari 0 ms hingga 5 ms dengan kenaikan 1 ms. Sumbu vertikal: Potensial membran dalam milivolt dari -90 mV hingga +40 mV, dengan garis ambang batas putus-putus pada -55 mV.",
+    sandboxFigDescTrends:
+      "Setelah stimulus melintasi ambang -55 mV pada 1,1 ms, voltase melonjak tajam hingga puncaknya di +35 mV sekitar 2,0 ms, turun di bawah tingkat istirahat hingga -80 mV pada 3,4 ms, dan stabil kembali di -70 mV pada 4,6 ms.",
+    sandboxFigDescUncertainty:
+      "Garis kisi sub-milidetik antara 2,0 ms dan 3,0 ms diperkirakan secara visual dari slide pindaian dan ditandai untuk verifikasi volunteer.",
+
+    // Footer
+    footerTagline:
+      "Platform aksesibilitas yang mengubah PDF perkuliahan menjadi materi terstruktur: siap dibaca screen reader, dinarasikan audio, dan diverifikasi volunteer.",
+    footerGroupProducts: "Produk",
+    footerGroupLearn: "Pelajari",
+    footerGroupStandards: "Standar",
+    footerLinkCourses: "Mata Kuliah & Materi Reusable",
+    footerLinkUpload: "Unggah Dokumen PDF",
+    footerLinkReader: "Accessible Reader",
+    footerLinkRegister: "Daftar Akun",
+    footerCopyright: "© 2026 SONAR. Materi kuliah yang dapat diakses semua mahasiswa.",
+    footerWcag: "Dirancang untuk WCAG 2.2 Level AA",
+    footerNavAria: "Tautan footer",
+    footerHomeAria: "SONAR — kembali ke beranda",
   },
   en: {
     // Header & Navigation
@@ -152,6 +296,150 @@ export const TRANSLATIONS = {
     continue: "Continue",
     close: "Close",
     loading: "Loading...",
+
+    // Marketing Hero
+    heroTitle1: "Academic Access",
+    heroTitle2: "Without",
+    heroTitle3: "Limits",
+    heroTitle4: "through Voice",
+    heroSubtitle:
+      "SONAR transforms lecture PDFs, scanned professor slides, math formulas, and diagrams into structured content ready for screen readers, braille displays, and volunteer-verified audio narration.",
+    heroCtaStart: "Get Started Free",
+    heroCtaDemo: "Try Live MathML",
+    heroStat1Label: "Accessibility Standard",
+    heroStat1Sub: "WCAG 2.2 AA",
+    heroStat2Label: "Verified Classes",
+    heroStat2Sub: "Reusable Materials",
+    heroStat3Label: "Volunteer Verification",
+    heroStat3Sub: "MathML Accuracy",
+    heroBadgeScreenReader: "Screen Reader Ready",
+    heroBadgeVolunteer: "Volunteer Verified",
+    heroBadgeMathDesc: "Bilingual calculus & matrix formula narration",
+    heroBadgeInclusiveModes: "Inclusive Learning Modes",
+    heroBadge247Desc: "Verified & reusable materials across the class",
+
+    // Marketing Features
+    featuresTag: "SONAR Core Capabilities",
+    featuresHeading: "Transforming complex visual materials into clear academic narration",
+    featuresSubtitle:
+      "Every lecture PDF—scanned text, data tables, differential equations, and figures—is restored into full semantic structure.",
+    feature1Title: "Synchronized Audio Reader",
+    feature1Category: "Screen Reader First",
+    feature1Desc:
+      "Reads lecture materials by heading and paragraph with real-time text highlighting naturally in Indonesian and English.",
+    feature1Cta: "Try Audio Reader",
+    feature2Title: "Formula Extraction to MathML",
+    feature2Category: "STEM Accessibility",
+    feature2Desc:
+      "Converts calculus equations, integrals, and complex matrices into semantic MathML clearly spoken on NVDA and VoiceOver.",
+    feature2Cta: "View Formula Samples",
+    feature3Title: "Braille Support & Semantic Structure",
+    feature3Category: "Tactile & Keyboard",
+    feature3Desc:
+      "Restores heading hierarchies, row-column tables, and layered diagram descriptions smoothly on refreshable braille displays.",
+    feature3Cta: "Explore Structure",
+    feature4Title: "Class-Verified Materials",
+    feature4Category: "Peer Volunteer QA",
+    feature4Desc:
+      "Volunteers validate OCR and formula accuracy once, and all classmates instantly access it with source version tracking.",
+    feature4Cta: "Open Course Library",
+
+    // Marketing Quote & Testimonials
+    quoteTag: "Blind Student Perspective",
+    quoteText:
+      "“Lecture materials that were once just unreadable image stacks in professor slide PDFs can now be listened to and navigated formula by formula with precision. SONAR restores my learning independence.”",
+    quoteAuthor: "Maya Lin • Computer Science Student, Universitas Indonesia (Totally Blind)",
+    testimonialsTag: "4.9 / 5.0 Verified Reviews",
+    testimonialsHeading: "Trusted by students and academic volunteers",
+    testimonialPrev: "Previous review",
+    testimonialNext: "Next review",
+    testimonial1Quote:
+      "Previously I had to ask friends to read out integral formulas from lecture slides. With SONAR, I can study independently on a refreshable braille display without lagging behind.",
+    testimonial1Role: "Computer Science Student (Totally Blind)",
+    testimonial2Quote:
+      "The warm paper canvas, Atkinson Hyperlegible typeface, and heading navigation keep my eyes comfortable through dozens of journal pages. Ask AI with source citations is a lifesaver for exams.",
+    testimonial2Role: "Mathematics Student (Low Vision)",
+    testimonial3Quote:
+      "The review workbench makes verifying LaTeX equations and diagram descriptions structured and swift. Once approved, the entire class can reuse the verified material immediately.",
+    testimonial3Role: "Teaching Assistant & Volunteer Reviewer",
+
+    // Marketing Shared Reusable Library
+    sharedTag: "Shared Reusable Library",
+    sharedHeading: "Reviewed once by a volunteer, instantly ready for the whole class",
+    sharedSubtitle:
+      "No need to re-process identical slides every semester. Documents approved by volunteers are automatically available to students enrolled in the course with transparent source-version tracking.",
+    sharedPoint1Title: "3 Active Courses:",
+    sharedPoint1Desc: "CS 201, MATH 105, and STAT 210 ready to access directly from the Course Library.",
+    sharedPoint2Title: "Source-Version Tracking:",
+    sharedPoint2Desc: "Displays source version (e.g. v2.1), volunteer name, and verification date.",
+    sharedPoint3Title: "Slide Update Notifications:",
+    sharedPoint3Desc: "Automatically alerts students when professors upload revised lecture PDFs.",
+    sharedCtaCourses: "Open Course Catalog",
+    courseCsTitle: "Data Structures and Algorithms",
+    courseCsMeta: "2 Verified Modules · v2.1",
+    courseMathTitle: "Multivariable Calculus & Linear Algebra",
+    courseMathMeta: "2 Chapters & Verified Formulas · v1.2",
+    courseStatTitle: "Probability Theory & Statistical Inference",
+    courseStatMeta: "1 Verified Handout · v2.0",
+
+    // Marketing Campus Banner
+    campusTag: "Campus Partnership • Inclusive for Everyone",
+    campusHeading: "Build a truly accessible learning environment at your university",
+    campusSubtitle:
+      "Join blind students and academic volunteers to deliver structured, screen reader-friendly course materials ready for the entire classroom.",
+    campusCtaRegister: "Register Free Account",
+    campusCtaWorkflow: "Explore Conversion Flow",
+
+    // Interactive Sandbox
+    sandboxEnginePreview: "Live Accessibility Engine Preview",
+    sandboxHeading: "Test SONAR's equation narrator, structured tables, and layered figure descriptions",
+    sandboxMathNarration: "Math Narration",
+    sandboxSemanticTable: "Semantic Table",
+    sandboxLayeredFigure: "Layered Figure",
+    sandboxLatexInputLabel: "LaTeX academic equation input",
+    sandboxLatexHelp:
+      "Deterministic rule-based speech translation runs locally in real time and flags unsupported constructs instead of hiding them.",
+    sandboxRuleSupported: "Supported rule-based grammar",
+    sandboxHumanReview: "Unsupported construct flagged for human review",
+    sandboxListenNow: "Listen now",
+    sandboxResumeSpeech: "Resume speech",
+    sandboxPause: "Pause",
+    sandboxStopSpeech: "Stop speech playback",
+    sandboxTableColScope: "Screen readers announce explicit row and column headers using native",
+    sandboxTableCaption: "Table 1 — Quarterly Elasticity & Revenue Summary (ECON-110)",
+    sandboxQuarter: "Quarter",
+    sandboxPriceElasticity: "Price Elasticity",
+    sandboxUnitDemand: "Unit Demand",
+    sandboxTotalRevenue: "Total Revenue",
+    sandboxProgressiveDisclosure: "Progressive disclosure avoids cognitive overload",
+    sandboxFigureOverview: "1. Overview",
+    sandboxFigureAxes: "2. Axes & Units",
+    sandboxFigureTrends: "3. Key Trends",
+    sandboxFigureUncertainty: "4. Uncertainty Notes",
+    sandboxFigureCaption: "Figure 3.2 — Action Potential Membrane Voltage Curve (BIO-204)",
+    sandboxFigDescSummary:
+      "Line graph showing neuron membrane potential transitioning from resting state (-70 mV) through rapid depolarization to +35 mV, followed by repolarization and brief hyperpolarization.",
+    sandboxFigDescAxes:
+      "Horizontal axis: Time in milliseconds from 0 ms to 5 ms in 1 ms increments. Vertical axis: Membrane potential in millivolts from -90 mV to +40 mV, with a dashed threshold line marked at -55 mV.",
+    sandboxFigDescTrends:
+      "Once stimulus crosses the -55 mV threshold at 1.1 ms, voltage rises steeply to peak at +35 mV near 2.0 ms, drops below resting level to -80 mV at 3.4 ms, and stabilizes back at -70 mV by 4.6 ms.",
+    sandboxFigDescUncertainty:
+      "Sub-millisecond grid ticks between 2.0 ms and 3.0 ms are estimated visually from the scanned slide and flagged for volunteer verification.",
+
+    // Footer
+    footerTagline:
+      "Accessibility platform transforming lecture PDFs into structured materials: screen-reader ready, audio narrated, and volunteer verified.",
+    footerGroupProducts: "Products",
+    footerGroupLearn: "Learn",
+    footerGroupStandards: "Standards",
+    footerLinkCourses: "Courses & Reusable Materials",
+    footerLinkUpload: "Upload PDF Document",
+    footerLinkReader: "Accessible Reader",
+    footerLinkRegister: "Register Account",
+    footerCopyright: "© 2026 SONAR. Accessible academic materials for every student.",
+    footerWcag: "Designed for WCAG 2.2 Level AA",
+    footerNavAria: "Footer navigation",
+    footerHomeAria: "SONAR — back to homepage",
   },
 } as const;
 

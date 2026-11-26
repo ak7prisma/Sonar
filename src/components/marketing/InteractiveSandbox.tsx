@@ -18,6 +18,7 @@ import { useAccessibilityStore } from "@/stores/accessibility-store";
 import { useAudioReader } from "@/features/audio/use-audio-reader";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 const PRESET_EQUATIONS = [
   {
@@ -33,12 +34,13 @@ const PRESET_EQUATIONS = [
     latex: "f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}} e^{-\\frac{(x - \\mu)^2}{2\\sigma^2}}",
   },
   {
-    label: "Matrix (flagged for volunteer review)",
+    label: "Matrix (flagged for review)",
     latex: "A = \\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}",
   },
 ];
 
 export function InteractiveSandbox() {
+  const { t } = useTranslation();
   const [latexInput, setLatexInput] = useState(PRESET_EQUATIONS[0].latex);
   const [expandedLayer, setExpandedLayer] = useState<
     "summary" | "axes" | "trends" | "uncertainty"
@@ -76,20 +78,19 @@ export function InteractiveSandbox() {
       <div className="flex flex-col justify-between gap-4 border-b pb-5 sm:flex-row sm:items-end">
         <div className="space-y-1.5">
           <p className="text-sm font-medium text-accent-teal-text">
-            Live Accessibility Engine Preview
+            {t("sandboxEnginePreview")}
           </p>
           <h2
             id="sandbox-heading"
             className="font-heading text-2xl font-semibold tracking-tight text-foreground"
           >
-            Test SONAR&apos;s equation narrator, structured tables, and layered
-            figure descriptions
+            {t("sandboxHeading")}
           </h2>
         </div>
 
         <div
           role="group"
-          aria-label="Narration language"
+          aria-label={t("language")}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border bg-surface-subtle p-1"
         >
           <Button
@@ -119,9 +120,15 @@ export function InteractiveSandbox() {
 
       <Tabs defaultValue="equations" className="mt-6">
         <TabsList className="grid h-auto w-full grid-cols-3 sm:inline-flex sm:h-9 sm:w-auto">
-          <TabsTrigger value="equations" className="text-xs sm:text-sm">Math Narration</TabsTrigger>
-          <TabsTrigger value="tables" className="text-xs sm:text-sm">Semantic Table</TabsTrigger>
-          <TabsTrigger value="figures" className="text-xs sm:text-sm">Layered Figure</TabsTrigger>
+          <TabsTrigger value="equations" className="text-xs sm:text-sm">
+            {t("sandboxMathNarration")}
+          </TabsTrigger>
+          <TabsTrigger value="tables" className="text-xs sm:text-sm">
+            {t("sandboxSemanticTable")}
+          </TabsTrigger>
+          <TabsTrigger value="figures" className="text-xs sm:text-sm">
+            {t("sandboxLayeredFigure")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="equations" className="mt-6 space-y-5">
@@ -143,7 +150,7 @@ export function InteractiveSandbox() {
 
           <div className="space-y-2">
             <Label htmlFor="sandbox-latex-input">
-              LaTeX academic equation input
+              {t("sandboxLatexInputLabel")}
             </Label>
             <Input
               id="sandbox-latex-input"
@@ -153,8 +160,7 @@ export function InteractiveSandbox() {
               aria-describedby="sandbox-latex-help"
             />
             <p id="sandbox-latex-help" className="text-xs text-muted-foreground">
-              Deterministic rule-based speech translation runs locally in real
-              time and flags unsupported constructs instead of hiding them.
+              {t("sandboxLatexHelp")}
             </p>
           </div>
 
@@ -168,8 +174,8 @@ export function InteractiveSandbox() {
                 )}
                 <span className="text-xs text-muted-foreground">
                   {narrationResult.supported
-                    ? "Supported rule-based grammar"
-                    : "Unsupported construct flagged for human review"}
+                    ? t("sandboxRuleSupported")
+                    : t("sandboxHumanReview")}
                 </span>
               </div>
 
@@ -182,7 +188,7 @@ export function InteractiveSandbox() {
               {audio.isPlaying ? (
                 <Button variant="outline" onClick={audio.pause}>
                   <Pause className="size-4" aria-hidden="true" />
-                  <span>Pause</span>
+                  <span>{t("sandboxPause")}</span>
                 </Button>
               ) : (
                 <Button
@@ -194,7 +200,11 @@ export function InteractiveSandbox() {
                   ) : (
                     <Volume2 className="size-4" aria-hidden="true" />
                   )}
-                  <span>{audio.isPaused ? "Resume speech" : "Listen now"}</span>
+                  <span>
+                    {audio.isPaused
+                      ? t("sandboxResumeSpeech")
+                      : t("sandboxListenNow")}
+                  </span>
                 </Button>
               )}
               {(audio.isPlaying || audio.isPaused) && (
@@ -202,7 +212,7 @@ export function InteractiveSandbox() {
                   variant="ghost"
                   size="icon"
                   onClick={audio.stop}
-                  aria-label="Stop speech playback"
+                  aria-label={t("sandboxStopSpeech")}
                 >
                   <Square className="size-4" aria-hidden="true" />
                 </Button>
@@ -214,7 +224,7 @@ export function InteractiveSandbox() {
         <TabsContent value="tables" className="mt-6 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
-              Screen readers announce explicit row and column headers using native{" "}
+              {t("sandboxTableColScope")}{" "}
               <code className="font-mono text-xs">&lt;th scope=&quot;col&quot;&gt;</code>{" "}
               and <code className="font-mono text-xs">&lt;th scope=&quot;row&quot;&gt;</code>.
             </p>
@@ -224,21 +234,21 @@ export function InteractiveSandbox() {
           <div className="overflow-x-auto rounded-xl border">
             <table className="w-full border-collapse text-left text-sm">
               <caption className="border-b bg-surface-subtle px-4 py-3 text-left font-medium text-foreground">
-                Table 1 — Quarterly Elasticity &amp; Revenue Summary (ECON-110)
+                {t("sandboxTableCaption")}
               </caption>
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th scope="col" className="px-4 py-3 font-semibold text-foreground">
-                    Quarter
+                    {t("sandboxQuarter")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold text-foreground">
-                    Price Elasticity
+                    {t("sandboxPriceElasticity")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold text-foreground">
-                    Unit Demand
+                    {t("sandboxUnitDemand")}
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold text-foreground">
-                    Total Revenue
+                    {t("sandboxTotalRevenue")}
                   </th>
                 </tr>
               </thead>
@@ -247,7 +257,7 @@ export function InteractiveSandbox() {
                   <th scope="row" className="px-4 py-3 font-medium text-foreground">
                     Q1 2026
                   </th>
-                  <td className="px-4 py-3">-0.82 (Inelastic)</td>
+                  <td className="px-4 py-3">-0.82</td>
                   <td className="px-4 py-3 tabular-nums">14,200</td>
                   <td className="px-4 py-3 tabular-nums">$142,000</td>
                 </tr>
@@ -255,7 +265,7 @@ export function InteractiveSandbox() {
                   <th scope="row" className="px-4 py-3 font-medium text-foreground">
                     Q2 2026
                   </th>
-                  <td className="px-4 py-3">-1.15 (Elastic)</td>
+                  <td className="px-4 py-3">-1.15</td>
                   <td className="px-4 py-3 tabular-nums">18,650</td>
                   <td className="px-4 py-3 tabular-nums">$167,850</td>
                 </tr>
@@ -263,7 +273,7 @@ export function InteractiveSandbox() {
                   <th scope="row" className="px-4 py-3 font-medium text-foreground">
                     Q3 2026
                   </th>
-                  <td className="px-4 py-3">-1.04 (Unit near-elastic)</td>
+                  <td className="px-4 py-3">-1.04</td>
                   <td className="px-4 py-3 tabular-nums">17,900</td>
                   <td className="px-4 py-3 tabular-nums">$161,100</td>
                 </tr>
@@ -276,7 +286,7 @@ export function InteractiveSandbox() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
-              <span>Progressive disclosure avoids cognitive overload</span>
+              <span>{t("sandboxProgressiveDisclosure")}</span>
             </div>
             <StatusBadge status="ai_draft" />
           </div>
@@ -288,10 +298,10 @@ export function InteractiveSandbox() {
           >
             {(
               [
-                { id: "summary", label: "1. Overview" },
-                { id: "axes", label: "2. Axes & Units" },
-                { id: "trends", label: "3. Key Trends" },
-                { id: "uncertainty", label: "4. Uncertainty Notes" },
+                { id: "summary", label: t("sandboxFigureOverview") },
+                { id: "axes", label: t("sandboxFigureAxes") },
+                { id: "trends", label: t("sandboxFigureTrends") },
+                { id: "uncertainty", label: t("sandboxFigureUncertainty") },
               ] as const
             ).map((layer) => (
               <Button
@@ -308,29 +318,17 @@ export function InteractiveSandbox() {
 
           <figure className="rounded-xl border bg-surface-subtle p-5">
             <figcaption className="font-heading text-base font-semibold text-foreground">
-              Figure 3.2 — Action Potential Membrane Voltage Curve (BIO-204)
+              {t("sandboxFigureCaption")}
             </figcaption>
             <div className="sonar-reader-prose mt-3 space-y-2 text-foreground">
               {expandedLayer === "summary" && (
-                <p>
-                  Line graph showing neuron membrane potential transitioning from
-                  resting state (-70 mV) through rapid depolarization to +35 mV,
-                  followed by repolarization and brief hyperpolarization.
-                </p>
+                <p>{t("sandboxFigDescSummary")}</p>
               )}
               {expandedLayer === "axes" && (
-                <p>
-                  Horizontal axis: Time in milliseconds from 0 ms to 5 ms in 1 ms
-                  increments. Vertical axis: Membrane potential in millivolts from
-                  -90 mV to +40 mV, with a dashed threshold line marked at -55 mV.
-                </p>
+                <p>{t("sandboxFigDescAxes")}</p>
               )}
               {expandedLayer === "trends" && (
-                <p>
-                  Once stimulus crosses the -55 mV threshold at 1.1 ms, voltage
-                  rises steeply to peak at +35 mV near 2.0 ms, drops below resting
-                  level to -80 mV at 3.4 ms, and stabilizes back at -70 mV by 4.6 ms.
-                </p>
+                <p>{t("sandboxFigDescTrends")}</p>
               )}
               {expandedLayer === "uncertainty" && (
                 <p className="flex items-start gap-2">
@@ -338,11 +336,7 @@ export function InteractiveSandbox() {
                     className="mt-1 size-4 shrink-0 text-warning"
                     aria-hidden="true"
                   />
-                  <span>
-                    Sub-millisecond grid ticks between 2.0 ms and 3.0 ms are
-                    estimated visually from the scanned slide and flagged for
-                    volunteer verification.
-                  </span>
+                  <span>{t("sandboxFigDescUncertainty")}</span>
                 </p>
               )}
             </div>
