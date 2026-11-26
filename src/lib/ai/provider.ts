@@ -49,13 +49,39 @@ export function createFallbackLanguageModel(
           for (let i = 0; i < models.length; i++) {
             const current = models[i] as unknown as { doGenerate: (opts: unknown) => Promise<unknown> };
             const name = modelNames[i];
+            const hasMoreFallbacks = i < models.length - 1;
+            const rawOpts = (options && typeof options === "object" ? options : {}) as Record<string, unknown>;
+
             try {
+              if (hasMoreFallbacks) {
+                const timeoutController = new AbortController();
+                const timeoutId = setTimeout(() => {
+                  timeoutController.abort(new Error(`Model "${name}" call timed out after 5500ms`));
+                }, 5500);
+
+                const existingSignal = rawOpts.abortSignal as AbortSignal | undefined;
+                const combinedSignal = existingSignal
+                  ? AbortSignal.any([existingSignal, timeoutController.signal])
+                  : timeoutController.signal;
+
+                try {
+                  const res = await current.doGenerate({
+                    ...rawOpts,
+                    abortSignal: combinedSignal,
+                  });
+                  clearTimeout(timeoutId);
+                  return res;
+                } finally {
+                  clearTimeout(timeoutId);
+                }
+              }
+
               return await current.doGenerate(options);
             } catch (err) {
               lastError = err;
               if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
                 console.warn(
-                  `[AI Model Fallback] Model "${name}" failed with rate limit / quota exhaustion (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
+                  `[AI Model Fallback] Model "${name}" failed with rate limit / capacity error (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
                 );
                 continue;
               }
@@ -72,13 +98,39 @@ export function createFallbackLanguageModel(
           for (let i = 0; i < models.length; i++) {
             const current = models[i] as unknown as { doStream: (opts: unknown) => Promise<unknown> };
             const name = modelNames[i];
+            const hasMoreFallbacks = i < models.length - 1;
+            const rawOpts = (options && typeof options === "object" ? options : {}) as Record<string, unknown>;
+
             try {
+              if (hasMoreFallbacks) {
+                const timeoutController = new AbortController();
+                const timeoutId = setTimeout(() => {
+                  timeoutController.abort(new Error(`Model "${name}" stream timed out after 5500ms`));
+                }, 5500);
+
+                const existingSignal = rawOpts.abortSignal as AbortSignal | undefined;
+                const combinedSignal = existingSignal
+                  ? AbortSignal.any([existingSignal, timeoutController.signal])
+                  : timeoutController.signal;
+
+                try {
+                  const res = await current.doStream({
+                    ...rawOpts,
+                    abortSignal: combinedSignal,
+                  });
+                  clearTimeout(timeoutId);
+                  return res;
+                } finally {
+                  clearTimeout(timeoutId);
+                }
+              }
+
               return await current.doStream(options);
             } catch (err) {
               lastError = err;
               if (i < models.length - 1 && isRateLimitOrQuotaError(err)) {
                 console.warn(
-                  `[AI Model Fallback] Model "${name}" failed with rate limit / quota exhaustion (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
+                  `[AI Model Fallback] Model "${name}" failed with rate limit / capacity error (${(err as Error).message}). Switching to fallback model "${modelNames[i + 1]}"...`
                 );
                 continue;
               }

@@ -12,7 +12,7 @@ const serverEnvSchema = publicEnvSchema.extend({
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
   AI_PROVIDER: z.enum(["google"]).default("google"),
   AI_CHAT_MODEL: z.string().min(1).default("gemini-3.1-flash-lite"),
-  AI_VISION_MODEL: z.string().min(1).default("gemini-3.8-flash"),
+  AI_VISION_MODEL: z.string().min(1).default("gemini-3.1-flash-lite"),
   AI_EMBEDDING_MODEL: z.string().min(1).default("gemini-embedding-001"),
   AI_FALLBACK_CHAT_MODELS: z
     .string()
@@ -21,7 +21,7 @@ const serverEnvSchema = publicEnvSchema.extend({
     ),
   AI_FALLBACK_VISION_MODELS: z
     .string()
-    .default("gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite"),
+    .default("gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.6-flash"),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_SIGNING_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -75,12 +75,12 @@ export function getServerEnv() {
       GOOGLE_GENERATIVE_AI_API_KEY: googleApiKey,
       AI_PROVIDER: "google" as const,
       AI_CHAT_MODEL: "gemini-3.1-flash-lite",
-      AI_VISION_MODEL: "gemini-3.8-flash",
+      AI_VISION_MODEL: "gemini-3.1-flash-lite",
       AI_EMBEDDING_MODEL: "gemini-embedding-001",
       AI_FALLBACK_CHAT_MODELS:
         "gemini-3.1-flash-lite-preview,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
       AI_FALLBACK_VISION_MODELS:
-        "gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.6-flash",
     };
   }
 
