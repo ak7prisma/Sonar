@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getAppUrl, isSupabaseConfigured } from "@/lib/env";
@@ -217,10 +217,17 @@ export async function signInWithGoogleAction(redirectTo?: string) {
   if (isSupabaseConfigured()) {
     const supabase = await createServerSupabaseClient();
     if (supabase) {
-      const appUrl = getAppUrl();
+      const headerList = await headers();
+      const forwardedHost =
+        headerList.get("x-forwarded-host") ?? headerList.get("host");
+      const forwardedProto = headerList.get("x-forwarded-proto") ?? "https";
+      const baseUrl = forwardedHost
+        ? `${forwardedProto}://${forwardedHost}`
+        : getAppUrl();
+
       const safeRedirect =
         redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard";
-      const callbackUrl = `${appUrl}/auth/callback?next=${encodeURIComponent(safeRedirect)}`;
+      const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(safeRedirect)}`;
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",

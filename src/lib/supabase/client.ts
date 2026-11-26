@@ -14,5 +14,13 @@ export function createClient() {
     return null;
   }
 
-  return createBrowserClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, key);
+  return createBrowserClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, key, {
+    cookieOptions: {
+      name: "sb",
+      path: "/",
+      sameSite: "lax",
+      secure:
+        typeof window !== "undefined" && window.location.protocol === "https:",
+    },
+  });
 }

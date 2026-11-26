@@ -186,6 +186,16 @@ export default function LandingPage() {
             <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
               {/* Left Column: Trust Pill, Expressive Display Headline, CTAs & Stats */}
               <div className="min-w-0 space-y-7 lg:col-span-6">
+                <div
+                  data-hero-reveal
+                  className="inline-flex items-center gap-2.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs font-ui"
+                >
+                  <span className="inline-flex size-5 items-center justify-center rounded-md bg-brand-gold text-brand-ink">
+                    <Star className="size-3.5 fill-current" aria-hidden="true" />
+                  </span>
+                  <span>4.9 / 5.0 oleh Mahasiswa Tunanetra &amp; Volunteer</span>
+                </div>
+
                 <h1
                   id="hero-heading"
                   data-hero-reveal
@@ -579,11 +589,10 @@ export default function LandingPage() {
                 return (
                   <article
                     key={t.name}
-                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${
-                      isActive
-                        ? "border-primary bg-card shadow-float ring-2 ring-primary/20"
-                        : "border-border bg-card/80 shadow-xs hover:border-primary/40"
-                    }`}
+                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${isActive
+                      ? "border-primary bg-card shadow-float ring-2 ring-primary/20"
+                      : "border-border bg-card/80 shadow-xs hover:border-primary/40"
+                      }`}
                   >
                     <div>
                       <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-tint-gold px-2.5 py-1 text-brand-ink">

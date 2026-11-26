@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { signInWithGoogleAction } from "@/features/authentication/actions";
 import { mapAuthErrorMessage } from "@/features/authentication/utils";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 
@@ -25,43 +26,54 @@ export function GoogleSignInButton({
       setLoading(true);
       announce("Menghubungkan ke akun Google...", "polite");
 
-      const supabase = createClient();
-      if (!supabase) {
-        const msg =
-          "Supabase belum dikonfigurasi. Pastikan NEXT_PUBLIC_SUPABASE_URL dan Publishable Key telah diisi di .env.local.";
-        onError?.(msg);
-        announce(msg, "assertive");
-        setLoading(false);
-        return;
-      }
+      // 1. First attempt: Use Server Action so that PKCE verifier cookies are set reliably via HTTP Set-Cookie headers
+      const res = await signInWithGoogleAction(redirectTo);
+      if (res?.error) {
+        // Fallback to client-side OAuth if Server Action returned an explicit error
+        const supabase = createClient();
+        if (!supabase) {
+          onError?.(res.error);
+          announce(res.error, "assertive");
+          setLoading(false);
+          return;
+        }
 
-      const safeRedirect = redirectTo.startsWith("/") ? redirectTo : "/dashboard";
-      const origin = window.location.origin;
-      const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(safeRedirect)}`;
+        const safeRedirect = redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+        const origin = window.location.origin;
+        const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(safeRedirect)}`;
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: callbackUrl,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: callbackUrl,
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        const errorMsg = mapAuthErrorMessage(error.message);
-        onError?.(errorMsg);
-        announce(errorMsg, "assertive");
-        setLoading(false);
-        return;
-      }
+        if (error) {
+          const errorMsg = mapAuthErrorMessage(error.message);
+          onError?.(errorMsg);
+          announce(errorMsg, "assertive");
+          setLoading(false);
+          return;
+        }
 
-      if (data?.url) {
-        window.location.href = data.url;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
       }
     } catch (err) {
+      // NEXT_REDIRECT is the expected signal thrown by Next.js Server Action redirect()
+      if (
+        (err as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT") ||
+        (err instanceof Error && err.message.includes("NEXT_REDIRECT"))
+      ) {
+        return;
+      }
+
       const fallbackMsg =
         err instanceof Error
           ? err.message

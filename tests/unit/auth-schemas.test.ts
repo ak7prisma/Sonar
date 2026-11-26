@@ -109,5 +109,8 @@ describe("Authentication Schemas & Validation", () => {
     expect(mapAuthErrorMessage("Password should be at least 6 characters")).toContain(
       "Kata sandi minimal 8 karakter"
     );
+    expect(
+      mapAuthErrorMessage("PKCE code verifier not found in storage")
+    ).toContain("PKCE code verifier mismatch");
   });
 });
