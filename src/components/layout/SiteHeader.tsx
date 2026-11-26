@@ -33,6 +33,7 @@ import { SonarLogo } from "@/components/shared/SonarLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { AccessibilityToolbar } from "@/components/accessibility/AccessibilityToolbar";
 import { CommandMenu } from "@/components/accessibility/CommandMenu";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface NavLink {
   label: string;
@@ -62,13 +63,32 @@ function isActive(pathname: string | null, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getPrimaryNavLabel(href: string, defaultLabel: string, isEn: boolean) {
+  if (!isEn) return defaultLabel;
+  if (href === "/#features") return "Features";
+  if (href === "/courses") return "Courses";
+  if (href === "/how-it-works") return "How It Works";
+  if (href === "/#testimonials") return "Reviews";
+  return defaultLabel;
+}
+
+function getInfoNavLabel(href: string, defaultLabel: string, defaultDesc: string, isEn: boolean) {
+  if (!isEn) return { label: defaultLabel, description: defaultDesc };
+  if (href === "/about") return { label: "About SONAR", description: "Vision, mission, and inclusivity" };
+  if (href === "/accessibility") return { label: "Accessibility Statement", description: "WCAG 2.2 AA commitment" };
+  if (href === "/help") return { label: "Help Center", description: "Guides and FAQ" };
+  return { label: defaultLabel, description: defaultDesc };
+}
+
 function DesktopNavView({ pathname }: { pathname: string | null }) {
+  const { isEn } = useTranslation();
   const infoActive = INFO_LINKS.some((item) => isActive(pathname, item.href));
 
   return (
     <ul className="flex items-center gap-0.5">
       {PRIMARY_LINKS.map((item) => {
         const active = isActive(pathname, item.href);
+        const label = getPrimaryNavLabel(item.href, item.label, isEn);
         return (
           <li key={item.href}>
             <Link
@@ -79,7 +99,7 @@ function DesktopNavView({ pathname }: { pathname: string | null }) {
                 active ? "bg-muted text-foreground font-semibold" : "text-muted-foreground"
               )}
             >
-              <span>{item.label}</span>
+              <span>{label}</span>
               {item.badge ? (
                 <>
                   <span
@@ -106,13 +126,14 @@ function DesktopNavView({ pathname }: { pathname: string | null }) {
                 infoActive ? "text-foreground font-semibold" : "text-muted-foreground"
               )}
             >
-              <span>Informasi</span>
+              <span>{isEn ? "Information" : "Informasi"}</span>
               <ChevronDown className="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-72 rounded-xl p-1.5">
             {INFO_LINKS.map((item) => {
               const Icon = item.icon;
+              const info = getInfoNavLabel(item.href, item.label, item.description, isEn);
               return (
                 <DropdownMenuItem key={item.href} asChild className="cursor-pointer rounded-lg p-2.5">
                   <Link href={item.href} className="flex items-start gap-3">
@@ -120,8 +141,8 @@ function DesktopNavView({ pathname }: { pathname: string | null }) {
                       <Icon className="size-4" aria-hidden="true" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold font-ui text-foreground">{item.label}</span>
-                      <span className="block text-xs text-muted-foreground">{item.description}</span>
+                      <span className="block text-sm font-semibold font-ui text-foreground">{info.label}</span>
+                      <span className="block text-xs text-muted-foreground">{info.description}</span>
                     </span>
                   </Link>
                 </DropdownMenuItem>
@@ -141,6 +162,7 @@ function DesktopNav() {
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t, isEn } = useTranslation();
 
   return (
     <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4">
@@ -175,7 +197,7 @@ export function SiteHeader() {
             asChild
             className="hidden h-10 px-3 font-ui font-medium text-foreground md:inline-flex"
           >
-            <Link href="/login">Masuk</Link>
+            <Link href="/login">{t("signIn")}</Link>
           </Button>
           <Button
             size="sm"
@@ -183,7 +205,7 @@ export function SiteHeader() {
             className="hidden h-10 rounded-xl bg-brand-ink px-4 font-ui font-semibold text-brand-paper hover:bg-brand-teal dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 md:inline-flex"
           >
             <Link href="/register">
-              <span>Mulai Gratis</span>
+              <span>{isEn ? "Get Started" : "Mulai Gratis"}</span>
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -194,7 +216,7 @@ export function SiteHeader() {
                 variant="outline"
                 size="icon"
                 className="lg:hidden"
-                aria-label="Buka menu navigasi"
+                aria-label={isEn ? "Open navigation menu" : "Buka menu navigasi"}
               >
                 <Menu className="size-5" aria-hidden="true" />
               </Button>
@@ -211,31 +233,35 @@ export function SiteHeader() {
 
               <nav aria-label="Navigasi seluler" className="flex-1 overflow-y-auto px-3 py-4">
                 <ul className="space-y-1 font-ui">
-                  {PRIMARY_LINKS.map((item) => (
-                    <li key={item.href}>
-                      <SheetClose asChild>
-                        <Link
-                          href={item.href}
-                          className="flex min-h-12 items-center justify-between rounded-xl px-4 text-base font-medium text-foreground transition-colors hover:bg-muted"
-                        >
-                          <span>{item.label}</span>
-                          {item.badge ? (
-                            <span className="rounded-full bg-brand-ink px-2 py-0.5 text-xs font-semibold text-brand-paper dark:bg-primary dark:text-primary-foreground">
-                              {item.badgeLabel}
-                            </span>
-                          ) : null}
-                        </Link>
-                      </SheetClose>
-                    </li>
-                  ))}
+                  {PRIMARY_LINKS.map((item) => {
+                    const label = getPrimaryNavLabel(item.href, item.label, isEn);
+                    return (
+                      <li key={item.href}>
+                        <SheetClose asChild>
+                          <Link
+                            href={item.href}
+                            className="flex min-h-12 items-center justify-between rounded-xl px-4 text-base font-medium text-foreground transition-colors hover:bg-muted"
+                          >
+                            <span>{label}</span>
+                            {item.badge ? (
+                              <span className="rounded-full bg-brand-ink px-2 py-0.5 text-xs font-semibold text-brand-paper dark:bg-primary dark:text-primary-foreground">
+                                {item.badgeLabel}
+                              </span>
+                            ) : null}
+                          </Link>
+                        </SheetClose>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <p className="mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground font-ui">
-                  Informasi
+                  {isEn ? "Information" : "Informasi"}
                 </p>
                 <ul className="mt-2 space-y-1 font-ui">
                   {INFO_LINKS.map((item) => {
                     const Icon = item.icon;
+                    const info = getInfoNavLabel(item.href, item.label, item.description, isEn);
                     return (
                       <li key={item.href}>
                         <SheetClose asChild>
@@ -244,7 +270,7 @@ export function SiteHeader() {
                             className="flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                           >
                             <Icon className="size-4 text-primary" aria-hidden="true" />
-                            <span>{item.label}</span>
+                            <span>{info.label}</span>
                           </Link>
                         </SheetClose>
                       </li>
@@ -262,13 +288,13 @@ export function SiteHeader() {
                   >
                     <Link href="/register">
                       <BookOpenCheck className="size-4" aria-hidden="true" />
-                      <span>Mulai Gratis</span>
+                      <span>{isEn ? "Get Started" : "Mulai Gratis"}</span>
                     </Link>
                   </Button>
                 </SheetClose>
                 <SheetClose asChild>
                   <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-xl font-semibold">
-                    <Link href="/login">Masuk</Link>
+                    <Link href="/login">{t("signIn")}</Link>
                   </Button>
                 </SheetClose>
               </div>

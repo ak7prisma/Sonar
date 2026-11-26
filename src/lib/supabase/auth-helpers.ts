@@ -45,10 +45,41 @@ export const getAuthenticatedContext = cache(async function getAuthenticatedCont
       .eq("user_id", user.id),
   ]);
 
-  const roles: AppRole[] =
-    rolesRows && rolesRows.length > 0
-      ? rolesRows.map((row) => row.role)
-      : ["student"];
+  // Robust multi-tier role resolution:
+  // 1. Explicit rows in user_roles table
+  // 2. User metadata saved during registration (raw_user_meta_data->role)
+  // 3. App metadata or email heuristics (admin@sonar.ac.id, faculty.ac.id)
+  const metaRole = (
+    user.user_metadata?.role ||
+    user.app_metadata?.role ||
+    ""
+  )
+    .toString()
+    .toLowerCase()
+    .trim();
+
+  const isExplicitAdmin =
+    metaRole === "admin" ||
+    user.email === "admin@sonar.ac.id" ||
+    user.email === "hendra.gunawan@faculty.ac.id";
+
+  const isExplicitVolunteer =
+    !isExplicitAdmin &&
+    (metaRole === "volunteer" ||
+      metaRole === "reviewer" ||
+      user.email === "volunteer@sonar.ac.id" ||
+      user.email === "dewi.sartika@volunteer.sonar.ac.id");
+
+  let roles: AppRole[];
+  if (rolesRows && rolesRows.length > 0) {
+    roles = rolesRows.map((row) => row.role as AppRole);
+  } else if (isExplicitAdmin) {
+    roles = ["admin"];
+  } else if (isExplicitVolunteer) {
+    roles = ["volunteer"];
+  } else {
+    roles = ["student"];
+  }
 
   return {
     supabase,

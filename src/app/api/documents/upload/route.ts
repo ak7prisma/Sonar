@@ -78,11 +78,22 @@ export async function POST(req: Request) {
 
     if (dbCourse) {
       targetCourseId = dbCourse.id;
+    } else {
+      return NextResponse.json(
+        {
+          error: `Mata kuliah '${targetCourseId}' tidak ditemukan di database Supabase. Jalankan script seed_courses_data.sql di Supabase SQL Editor untuk menghubungkan katalog mata kuliah.`,
+        },
+        { status: 400 }
+      );
     }
   }
 
-  // Ensure user belongs to the selected course, or auto-enroll them as student
-  const { data: membership } = await supabase
+  const dbClient = isSupabaseAdminConfigured()
+    ? (createAdminSupabaseClient() ?? supabase)
+    : supabase;
+
+  // Ensure user belongs to the selected course, or auto-enroll them as student/volunteer
+  const { data: membership } = await dbClient
     .from("course_members")
     .select("id")
     .eq("course_id", targetCourseId)
@@ -90,14 +101,13 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!membership && !auth.roles.includes("admin")) {
-    try {
-      await supabase.from("course_members").insert({
-        course_id: targetCourseId,
-        user_id: auth.userId,
-        member_role: "student",
-      });
-    } catch (enrollErr) {
-      console.warn("[Upload Route] Auto-enrollment info:", enrollErr);
+    const { error: enrollErr } = await dbClient.from("course_members").insert({
+      course_id: targetCourseId,
+      user_id: auth.userId,
+      member_role: "student",
+    });
+    if (enrollErr) {
+      console.warn("[Upload Route] Auto-enrollment info:", enrollErr.message);
     }
   }
 
@@ -115,7 +125,7 @@ export async function POST(req: Request) {
   }
 
   // Duplicate detection inside the course
-  const { data: duplicate } = await supabase
+  const { data: duplicate } = await dbClient
     .from("documents")
     .select("id, title, review_status")
     .eq("course_id", targetCourseId)
@@ -139,7 +149,7 @@ export async function POST(req: Request) {
   const safeSlug = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const storagePath = `${targetCourseId}/${nanoid(12)}-${safeSlug}`;
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await dbClient.storage
     .from("course-documents")
     .upload(storagePath, buffer, {
       contentType: "application/pdf",
@@ -147,15 +157,14 @@ export async function POST(req: Request) {
     });
 
   if (uploadError) {
+    console.error("[Upload Route] Storage upload error:", uploadError);
     return NextResponse.json(
-      { error: `Storage upload failed: ${uploadError.message}` },
+      {
+        error: `Storage upload failed: ${uploadError.message}. Pastikan migrasi 0010_fix_storage_and_upload_rls.sql telah dijalankan di Supabase SQL Editor.`,
+      },
       { status: 500 }
     );
   }
-
-  const dbClient = isSupabaseAdminConfigured()
-    ? (createAdminSupabaseClient() ?? supabase)
-    : supabase;
 
   // Intelligently detect real document title from PDF content if user didn't customize it
   let finalTitle = parsedMeta.data.title;

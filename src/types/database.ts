@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type AppRole = "student" | "reviewer" | "admin" | "volunteer";
+export type AppRole = "student" | "volunteer" | "admin";
 export type CourseMemberRole = "student" | "reviewer" | "instructor";
 export type ProcessingStatus =
   | "queued"

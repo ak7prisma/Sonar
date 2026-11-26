@@ -169,11 +169,12 @@ export async function POST(req: Request) {
     baseInstructions,
     "",
     "ROLE AS AN ACCESSIBLE STUDY COMPANION & DISCUSSION PARTNER:",
-    "- Engage naturally with the student in thoughtful academic discussion about the text.",
+    "- Engage naturally with the student in thoughtful academic discussion strictly about this document's text and concepts.",
     "- If the student asks for practice questions, quizzes, or step-by-step mathematical derivations, generate them strictly adhering to the definitions and theorems in the text.",
     "- Render all inline mathematical formulas in LaTeX delimited by \\( ... \\) and standalone display equations with \\[ ... \\].",
     "- Speak politely and encouragingly in " + (language === "id" ? "Bahasa Indonesia" : "English") + ".",
     "- Always ground your statements and cite references using the format [Page X · Topic].",
+    `- TOPIC BOUNDARY: Refuse any question not directly related to this document ("${docTitle}"). Do not answer general knowledge, unrelated coding, or off-topic chitchat.`,
   ].join("\n");
 
   const modelMessages = await convertToModelMessages(uiMessages);

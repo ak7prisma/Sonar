@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  GraduationCap,
   Headphones,
   Plus,
   Sparkles,
@@ -20,95 +19,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { InteractiveSandbox } from "@/components/marketing/InteractiveSandbox";
 import { APP_IMAGES } from "@/lib/images";
-
-const PARTNERS = [
-  "Universitas Indonesia",
-  "Institut Teknologi Bandung",
-  "Universitas Gadjah Mada",
-  "Kampus Merdeka Inklusif",
-  "W3C WCAG 2.2 AA",
-  "NVDA & VoiceOver Ready",
-];
-
-const FEATURE_CARDS = [
-  {
-    title: "Audio Reader & Narasi Sinkron",
-    category: "Screen Reader First",
-    badgeClass: "bg-brand-mint text-brand-ink",
-    accentBar: "bg-brand-teal",
-    description:
-      "Membacakan materi kuliah per heading dan paragraf dengan sorotan teks aktif secara natural dalam Bahasa Indonesia dan Inggris.",
-    image: APP_IMAGES.featureAudio,
-    href: "/reader",
-    cta: "Coba Audio Reader",
-  },
-  {
-    title: "Ekstraksi Rumus ke MathML",
-    category: "STEM Accessibility",
-    badgeClass: "bg-tint-blue text-brand-ink",
-    accentBar: "bg-brand-blue",
-    description:
-      "Mengonversi persamaan kalkulus, integral, dan matriks rumit menjadi MathML semantik yang terbaca jernih di NVDA dan VoiceOver.",
-    image: APP_IMAGES.courseMath,
-    href: "/courses/math-105",
-    cta: "Lihat Contoh Rumus",
-  },
-  {
-    title: "Dukungan Braille & Struktur Semantik",
-    category: "Tactile & Keyboard",
-    badgeClass: "bg-tint-peach text-brand-ink",
-    accentBar: "bg-brand-peach",
-    description:
-      "Memulihkan hierarki heading, tabel baris-kolom, serta deskripsi diagram berlapis agar mulus di refreshable braille display.",
-    image: APP_IMAGES.featureBraille,
-    href: "/courses/cs-201",
-    cta: "Pelajari Struktur",
-  },
-  {
-    title: "Materi Terverifikasi Se-Kelas",
-    category: "Peer Volunteer QA",
-    badgeClass: "bg-tint-gold text-brand-ink",
-    accentBar: "bg-brand-gold",
-    description:
-      "Volunteer memvalidasi keakuratan OCR dan rumus sekali, lalu seluruh mahasiswa sekelas langsung memakainya dengan pelacakan versi.",
-    image: APP_IMAGES.featureStudy,
-    href: "/courses",
-    cta: "Buka Course Library",
-  },
-];
-
-const COURSE_PREVIEWS = [
-  {
-    code: "CS 201",
-    title: "Struktur Data dan Algoritma",
-    image: APP_IMAGES.courseCS,
-    materials: "2 Modul Terverifikasi · v2.1",
-    badgeClass: "bg-brand-mint text-brand-ink",
-    href: "/courses/cs-201",
-  },
-  {
-    code: "MATH 105",
-    title: "Kalkulus Multivariabel & Aljabar Linier",
-    image: APP_IMAGES.courseMath,
-    materials: "2 Bab & Formula Terverifikasi · v1.2",
-    badgeClass: "bg-tint-blue text-brand-ink",
-    href: "/courses/math-105",
-  },
-  {
-    code: "STAT 210",
-    title: "Teori Probabilitas & Inferensi Statistik",
-    image: APP_IMAGES.courseStat,
-    materials: "1 Handout Terverifikasi · v2.0",
-    badgeClass: "bg-tint-peach text-brand-ink",
-    href: "/courses/stat-210",
-  },
-];
-
-const TESTIMONIALS = [
-  APP_IMAGES.testimonialStudent1,
-  APP_IMAGES.testimonialStudent2,
-  APP_IMAGES.testimonialVolunteer,
-];
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 const HERO_AVATARS = [
   APP_IMAGES.testimonialStudent1.src,
@@ -117,8 +28,109 @@ const HERO_AVATARS = [
 ];
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const heroRef = useRef<HTMLDivElement>(null);
   const [activeTestimonialIdx, setActiveTestimonialIdx] = useState(0);
+
+  const featureCards = [
+    {
+      title: t("feature1Title"),
+      category: t("feature1Category"),
+      badgeClass: "bg-brand-mint text-brand-ink",
+      accentBar: "bg-brand-teal",
+      description: t("feature1Desc"),
+      image: APP_IMAGES.featureAudio,
+      href: "/reader",
+      cta: t("feature1Cta"),
+    },
+    {
+      title: t("feature2Title"),
+      category: t("feature2Category"),
+      badgeClass: "bg-tint-blue text-brand-ink",
+      accentBar: "bg-brand-blue",
+      description: t("feature2Desc"),
+      image: APP_IMAGES.courseMath,
+      href: "/courses/math-105",
+      cta: t("feature2Cta"),
+    },
+    {
+      title: t("feature3Title"),
+      category: t("feature3Category"),
+      badgeClass: "bg-tint-peach text-brand-ink",
+      accentBar: "bg-brand-peach",
+      description: t("feature3Desc"),
+      image: APP_IMAGES.featureBraille,
+      href: "/courses/cs-201",
+      cta: t("feature3Cta"),
+    },
+    {
+      title: t("feature4Title"),
+      category: t("feature4Category"),
+      badgeClass: "bg-tint-gold text-brand-ink",
+      accentBar: "bg-brand-gold",
+      description: t("feature4Desc"),
+      image: APP_IMAGES.featureStudy,
+      href: "/courses",
+      cta: t("feature4Cta"),
+    },
+  ];
+
+  const coursePreviews = [
+    {
+      code: "CS 201",
+      title: t("courseCsTitle"),
+      image: APP_IMAGES.courseCS,
+      materials: t("courseCsMeta"),
+      badgeClass: "bg-brand-mint text-brand-ink",
+      href: "/courses/cs-201",
+    },
+    {
+      code: "MATH 105",
+      title: t("courseMathTitle"),
+      image: APP_IMAGES.courseMath,
+      materials: t("courseMathMeta"),
+      badgeClass: "bg-tint-blue text-brand-ink",
+      href: "/courses/math-105",
+    },
+    {
+      code: "STAT 210",
+      title: t("courseStatTitle"),
+      image: APP_IMAGES.courseStat,
+      materials: t("courseStatMeta"),
+      badgeClass: "bg-tint-peach text-brand-ink",
+      href: "/courses/stat-210",
+    },
+  ];
+
+  const testimonials = [
+    {
+      src: APP_IMAGES.testimonialStudent1.src,
+      alt: APP_IMAGES.testimonialStudent1.alt,
+      name: APP_IMAGES.testimonialStudent1.name,
+      role: t("testimonial1Role"),
+      university: APP_IMAGES.testimonialStudent1.university,
+      quote: t("testimonial1Quote"),
+      rating: 5,
+    },
+    {
+      src: APP_IMAGES.testimonialStudent2.src,
+      alt: APP_IMAGES.testimonialStudent2.alt,
+      name: APP_IMAGES.testimonialStudent2.name,
+      role: t("testimonial2Role"),
+      university: APP_IMAGES.testimonialStudent2.university,
+      quote: t("testimonial2Quote"),
+      rating: 5,
+    },
+    {
+      src: APP_IMAGES.testimonialVolunteer.src,
+      alt: APP_IMAGES.testimonialVolunteer.alt,
+      name: APP_IMAGES.testimonialVolunteer.name,
+      role: t("testimonial3Role"),
+      university: APP_IMAGES.testimonialVolunteer.university,
+      quote: t("testimonial3Quote"),
+      rating: 5,
+    },
+  ];
 
   // Catch any OAuth code landing on the root landing page and forward to auth callback
   useEffect(() => {
@@ -153,11 +165,11 @@ export default function LandingPage() {
   }, []);
 
   const nextTestimonial = () => {
-    setActiveTestimonialIdx((prev) => (prev + 1) % TESTIMONIALS.length);
+    setActiveTestimonialIdx((prev) => (prev + 1) % testimonials.length);
   };
 
   const prevTestimonial = () => {
-    setActiveTestimonialIdx((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+    setActiveTestimonialIdx((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   return (
@@ -184,7 +196,7 @@ export default function LandingPage() {
 
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
-              {/* Left Column: Trust Pill, Expressive Display Headline, CTAs & Stats */}
+              {/* Left Column: Expressive Display Headline, CTAs & Stats */}
               <div className="min-w-0 space-y-7 lg:col-span-6">
                 <div
                   data-hero-reveal
@@ -201,9 +213,9 @@ export default function LandingPage() {
                   data-hero-reveal
                   className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-[3.45rem] leading-[1.08]"
                 >
-                  <span className="block">Akses Kuliah</span>
+                  <span className="block">{t("heroTitle1")}</span>
                   <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span>Tanpa</span>
+                    <span>{t("heroTitle2")}</span>
                     <span
                       aria-hidden="true"
                       className="inline-flex items-center -space-x-2.5 align-middle"
@@ -225,19 +237,17 @@ export default function LandingPage() {
                       ))}
                     </span>
                     <span className="italic font-bold text-brand-teal dark:text-brand-aqua">
-                      Batas
+                      {t("heroTitle3")}
                     </span>
                   </span>
-                  <span className="mt-1 block">dengan Suara</span>
+                  <span className="mt-1 block">{t("heroTitle4")}</span>
                 </h1>
 
                 <p
                   data-hero-reveal
                   className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg font-sans"
                 >
-                  SONAR mengubah PDF perkuliahan, slide scan dosen, rumus matematika, dan diagram
-                  menjadi bacaan terstruktur yang siap diakses screen reader, braille display, dan
-                  audio narasi terverifikasi volunteer.
+                  {t("heroSubtitle")}
                 </p>
 
                 <div
@@ -250,7 +260,7 @@ export default function LandingPage() {
                     className="h-12 rounded-full bg-brand-teal px-6 font-semibold text-white shadow-md hover:bg-brand-ink dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
                   >
                     <Link href="/register">
-                      <span>Mulai Akses Gratis</span>
+                      <span>{t("heroCtaStart")}</span>
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   </Button>
@@ -262,45 +272,45 @@ export default function LandingPage() {
                   >
                     <a href="#sandbox-heading">
                       <Headphones className="size-4 text-primary" aria-hidden="true" />
-                      <span>Coba Live MathML</span>
+                      <span>{t("heroCtaDemo")}</span>
                     </a>
                   </Button>
                 </div>
 
-                {/* 3 Bold Metric Pillars (Enlango bottom row) */}
+                {/* 3 Bold Metric Pillars */}
                 <dl
                   data-hero-reveal
                   className="grid grid-cols-3 gap-4 border-t border-border/80 pt-7 sm:gap-6"
                 >
                   <div>
                     <dt className="text-xs font-medium text-muted-foreground font-ui">
-                      Standar Aksesibilitas
+                      {t("heroStat1Label")}
                     </dt>
                     <dd className="mt-1 font-heading text-2xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-3xl">
                       100%
                     </dd>
-                    <dd className="text-[11px] font-medium text-primary font-ui">WCAG 2.2 AA</dd>
+                    <dd className="text-[11px] font-medium text-primary font-ui">{t("heroStat1Sub")}</dd>
                   </div>
                   <div className="border-l border-border/80 pl-4 sm:pl-6">
                     <dt className="text-xs font-medium text-muted-foreground font-ui">
-                      Kelas Terverifikasi
+                      {t("heroStat2Label")}
                     </dt>
                     <dd className="mt-1 font-heading text-2xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-3xl">
                       3+
                     </dd>
                     <dd className="text-[11px] font-medium text-muted-foreground font-ui">
-                      Materi Reusable
+                      {t("heroStat2Sub")}
                     </dd>
                   </div>
                   <div className="border-l border-border/80 pl-4 sm:pl-6">
                     <dt className="text-xs font-medium text-muted-foreground font-ui">
-                      Verifikasi Volunteer
+                      {t("heroStat3Label")}
                     </dt>
                     <dd className="mt-1 font-heading text-2xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-3xl">
                       4.9/5
                     </dd>
                     <dd className="text-[11px] font-medium text-muted-foreground font-ui">
-                      Akurasi MathML
+                      {t("heroStat3Sub")}
                     </dd>
                   </div>
                 </dl>
@@ -338,11 +348,11 @@ export default function LandingPage() {
                   <div className="hidden flex-col items-end gap-2 sm:flex sm:absolute sm:-right-3 sm:top-6">
                     <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/95 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-float backdrop-blur-md font-ui">
                       <CheckCircle2 className="size-4 text-brand-teal dark:text-brand-aqua" aria-hidden="true" />
-                      <span>Screen Reader Ready</span>
+                      <span>{t("heroBadgeScreenReader")}</span>
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/95 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-float backdrop-blur-md font-ui">
                       <CheckCircle2 className="size-4 text-brand-blue-strong dark:text-brand-blue" aria-hidden="true" />
-                      <span>Volunteer Verified</span>
+                      <span>{t("heroBadgeVolunteer")}</span>
                     </div>
                   </div>
 
@@ -350,14 +360,14 @@ export default function LandingPage() {
                   <div className="hidden sm:block sm:absolute sm:-left-6 sm:top-1/3 sm:w-44 rounded-2xl bg-brand-blue-strong p-4 text-white shadow-float ring-4 ring-brand-blue/30 animate-float-slow">
                     <p className="font-heading text-2xl font-extrabold leading-none">MathML</p>
                     <p className="mt-1.5 text-xs font-medium text-white/90 font-ui leading-snug">
-                      Narasi rumus kalkulus &amp; matriks bilingual
+                      {t("heroBadgeMathDesc")}
                     </p>
                   </div>
 
                   {/* Floating Badge 3 (Bottom-Left): White Mode Selector Card */}
                   <div className="hidden sm:block sm:absolute sm:-left-5 sm:bottom-10 rounded-2xl border border-border/80 bg-card/95 p-4 shadow-float backdrop-blur-md">
                     <p className="font-heading text-xs font-bold text-foreground">
-                      Mode Belajar Inklusif
+                      {t("heroBadgeInclusiveModes")}
                     </p>
                     <div className="mt-2.5 flex flex-wrap gap-1.5 font-ui text-[11px] font-semibold">
                       <span className="inline-flex items-center gap-1 rounded-full bg-brand-mint px-2.5 py-1 text-brand-ink">
@@ -379,48 +389,25 @@ export default function LandingPage() {
                   <div className="hidden sm:block sm:absolute sm:-bottom-5 sm:right-4 sm:w-44 rounded-2xl bg-brand-peach p-4 text-brand-ink shadow-float ring-4 ring-background animate-float">
                     <p className="font-heading text-2xl font-extrabold leading-none">24/7</p>
                     <p className="mt-1.5 text-xs font-semibold text-brand-ink/90 font-ui leading-snug">
-                      Materi terverifikasi &amp; reusable se-kelas
+                      {t("heroBadge247Desc")}
                     </p>
                   </div>
 
-                  {/* Mobile-only compact summary cards (zero overflow on small screens) */}
+                  {/* Mobile-only compact summary cards */}
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:hidden font-ui">
                     <div className="rounded-2xl bg-brand-blue-strong p-3.5 text-white shadow-xs">
                       <p className="font-heading text-lg font-extrabold">MathML</p>
-                      <p className="mt-0.5 text-xs text-white/90">Narasi rumus bilingual</p>
+                      <p className="mt-0.5 text-xs text-white/90">{t("heroBadgeMathDesc")}</p>
                     </div>
                     <div className="rounded-2xl bg-brand-peach p-3.5 text-brand-ink shadow-xs">
                       <p className="font-heading text-lg font-extrabold">24/7</p>
                       <p className="mt-0.5 text-xs font-semibold text-brand-ink/90">
-                        Materi reusable se-kelas
+                        {t("heroBadge247Desc")}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* PARTNER STRIP */}
-        <section
-          aria-label="Mitra Perguruan Tinggi dan Standar Aksesibilitas"
-          className="border-y border-border bg-brand-mint/70 py-6 dark:bg-surface-subtle"
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground font-ui">
-              Dirancang untuk Ekosistem Pendidikan Tinggi Inklusif &bull; Standar WCAG 2.2 AA
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-              {PARTNERS.map((partner) => (
-                <div
-                  key={partner}
-                  className="inline-flex items-center gap-2 text-xs font-bold text-foreground/85 font-ui"
-                >
-                  <GraduationCap className="size-4 text-primary" aria-hidden="true" />
-                  <span>{partner}</span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -436,23 +423,22 @@ export default function LandingPage() {
               <div className="max-w-2xl space-y-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-mint px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-ink font-ui">
                   <Sparkles className="size-3.5 text-brand-teal" aria-hidden="true" />
-                  Kemampuan Inti SONAR
+                  {t("featuresTag")}
                 </span>
                 <h2
                   id="features-heading"
                   className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
                 >
-                  Mengubah materi visual kompleks menjadi narasi akademik yang jernih
+                  {t("featuresHeading")}
                 </h2>
               </div>
               <p className="max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base font-sans">
-                Setiap PDF perkuliahan—teks scan, tabel data, rumus diferensial, hingga grafik—dipulihkan
-                menjadi struktur semantik yang utuh.
+                {t("featuresSubtitle")}
               </p>
             </div>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {FEATURE_CARDS.map((card) => (
+              {featureCards.map((card) => (
                 <article
                   key={card.title}
                   className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-float"
@@ -504,7 +490,7 @@ export default function LandingPage() {
 
         {/* EDITORIAL QUOTE & BRAILLE SPOTLIGHT */}
         <section
-          aria-label="Kutipan Pengalaman Mahasiswa"
+          aria-label={t("quoteTag")}
           className="px-4 py-4 sm:px-6 lg:px-8"
         >
           <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-brand-peach/40 bg-tint-peach dark:border-border dark:bg-card">
@@ -521,15 +507,13 @@ export default function LandingPage() {
 
               <div className="space-y-4 p-7 sm:p-10 lg:col-span-7 lg:p-12">
                 <span className="inline-block rounded-full bg-brand-ink px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-paper font-ui dark:bg-brand-peach dark:text-brand-ink">
-                  Suara Mahasiswa Tunanetra
+                  {t("quoteTag")}
                 </span>
                 <blockquote className="font-heading text-xl font-bold leading-relaxed tracking-tight text-brand-ink sm:text-2xl dark:text-foreground">
-                  &ldquo;Materi perkuliahan yang tadinya hanya tumpukan gambar tak terbaca di PDF
-                  slide dosen, kini bisa saya dengarkan dan navigasikan rumus demi rumus dengan
-                  presisi. SONAR mengembalikan kemandirian belajar saya.&rdquo;
+                  {t("quoteText")}
                 </blockquote>
                 <p className="text-sm font-semibold text-brand-ink/80 font-ui dark:text-muted-foreground">
-                  Maya Lin &bull; Mahasiswi Ilmu Komputer Universitas Indonesia (Tunanetra Total)
+                  {t("quoteAuthor")}
                 </p>
               </div>
             </div>
@@ -551,13 +535,13 @@ export default function LandingPage() {
                       <Star key={i} className="size-3.5 fill-current" aria-hidden="true" />
                     ))}
                   </div>
-                  <span className="text-xs font-bold">4.9 / 5.0 Ulasan Terverifikasi</span>
+                  <span className="text-xs font-bold">{t("testimonialsTag")}</span>
                 </div>
                 <h2
                   id="testimonials-heading"
                   className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
                 >
-                  Dipercaya mahasiswa dan volunteer akademik
+                  {t("testimonialsHeading")}
                 </h2>
               </div>
 
@@ -566,7 +550,7 @@ export default function LandingPage() {
                   variant="outline"
                   size="icon"
                   onClick={prevTestimonial}
-                  aria-label="Ulasan sebelumnya"
+                  aria-label={t("testimonialPrev")}
                   className="rounded-full"
                 >
                   <ChevronLeft className="size-4" aria-hidden="true" />
@@ -575,7 +559,7 @@ export default function LandingPage() {
                   variant="outline"
                   size="icon"
                   onClick={nextTestimonial}
-                  aria-label="Ulasan berikutnya"
+                  aria-label={t("testimonialNext")}
                   className="rounded-full"
                 >
                   <ChevronRight className="size-4" aria-hidden="true" />
@@ -584,33 +568,34 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-              {TESTIMONIALS.map((t, idx) => {
+              {testimonials.map((testimonialItem, idx) => {
                 const isActive = idx === activeTestimonialIdx;
                 return (
                   <article
-                    key={t.name}
-                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${isActive
-                      ? "border-primary bg-card shadow-float ring-2 ring-primary/20"
-                      : "border-border bg-card/80 shadow-xs hover:border-primary/40"
-                      }`}
+                    key={testimonialItem.name}
+                    className={`flex flex-col justify-between rounded-2xl border p-6 transition-all ${
+                      isActive
+                        ? "border-primary bg-card shadow-float ring-2 ring-primary/20"
+                        : "border-border bg-card/80 shadow-xs hover:border-primary/40"
+                    }`}
                   >
                     <div>
                       <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-tint-gold px-2.5 py-1 text-brand-ink">
-                        {[...Array(t.rating)].map((_, i) => (
+                        {[...Array(testimonialItem.rating)].map((_, i) => (
                           <Star key={i} className="size-3.5 fill-current" aria-hidden="true" />
                         ))}
                       </div>
 
                       <p className="text-sm leading-relaxed text-foreground/90 font-sans">
-                        &ldquo;{t.quote}&rdquo;
+                        &ldquo;{testimonialItem.quote}&rdquo;
                       </p>
                     </div>
 
                     <div className="mt-6 flex items-center gap-3 border-t border-border/60 pt-4">
                       <div className="relative size-11 shrink-0 overflow-hidden rounded-full border-2 border-brand-mint">
                         <Image
-                          src={t.src}
-                          alt={t.alt}
+                          src={testimonialItem.src}
+                          alt={testimonialItem.alt}
                           fill
                           className="object-cover"
                           sizes="44px"
@@ -618,11 +603,13 @@ export default function LandingPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate font-heading text-sm font-bold text-foreground">
-                          {t.name}
+                          {testimonialItem.name}
                         </h3>
-                        <p className="truncate text-xs text-muted-foreground font-ui">{t.role}</p>
+                        <p className="truncate text-xs text-muted-foreground font-ui">
+                          {testimonialItem.role}
+                        </p>
                         <p className="truncate text-[11px] font-semibold text-primary font-ui">
-                          {t.university}
+                          {testimonialItem.university}
                         </p>
                       </div>
                     </div>
@@ -649,40 +636,35 @@ export default function LandingPage() {
             <div className="grid items-center gap-10 lg:grid-cols-12">
               <div className="min-w-0 space-y-5 lg:col-span-6">
                 <span className="inline-block rounded-full bg-tint-blue px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-brand-ink font-ui">
-                  Shared Reusable Library
+                  {t("sharedTag")}
                 </span>
                 <h2
                   id="shared-heading"
                   className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
                 >
-                  Satu kali review volunteer, langsung siap dipakai seluruh mahasiswa se-kelas
+                  {t("sharedHeading")}
                 </h2>
                 <p className="text-base leading-relaxed text-muted-foreground font-sans">
-                  Tidak perlu memproses ulang slide yang sama setiap semester. Dokumen yang telah
-                  disetujui volunteer otomatis tersedia bagi mahasiswa yang terdaftar pada mata kuliah
-                  terkait dengan pelacakan versi sumber yang transparan.
+                  {t("sharedSubtitle")}
                 </p>
 
                 <ul className="space-y-3 text-sm font-ui">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                     <span>
-                      <strong>3 Mata Kuliah Aktif:</strong> CS 201, MATH 105, dan STAT 210 siap
-                      diakses langsung dari Course Library.
+                      <strong>{t("sharedPoint1Title")}</strong> {t("sharedPoint1Desc")}
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                     <span>
-                      <strong>Source-Version Tracking:</strong> Menampilkan versi sumber (misalnya{" "}
-                      <code>v2.1</code>), nama volunteer, dan tanggal verifikasi.
+                      <strong>{t("sharedPoint2Title")}</strong> {t("sharedPoint2Desc")}
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                     <span>
-                      <strong>Notifikasi Pembaruan Slide:</strong> Otomatis memberi tanda jika dosen
-                      mengunggah revisi PDF terbaru.
+                      <strong>{t("sharedPoint3Title")}</strong> {t("sharedPoint3Desc")}
                     </span>
                   </li>
                 </ul>
@@ -694,7 +676,7 @@ export default function LandingPage() {
                     className="h-12 rounded-full bg-brand-teal px-7 font-ui font-semibold text-white hover:bg-brand-ink dark:bg-primary dark:text-primary-foreground"
                   >
                     <Link href="/courses">
-                      <span>Buka Katalog Mata Kuliah</span>
+                      <span>{t("sharedCtaCourses")}</span>
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   </Button>
@@ -703,7 +685,7 @@ export default function LandingPage() {
 
               {/* Course Preview Cards */}
               <div className="min-w-0 space-y-4 lg:col-span-6">
-                {COURSE_PREVIEWS.map((c) => (
+                {coursePreviews.map((c) => (
                   <Link
                     key={c.code}
                     href={c.href}
@@ -743,7 +725,7 @@ export default function LandingPage() {
 
         {/* GOLDEN CAMPUS IMPACT BANNER */}
         <section
-          aria-label="Daftarkan Kampus Anda"
+          aria-label={t("campusHeading")}
           className="px-4 pb-16 pt-2 sm:px-6 sm:pb-24 lg:px-8"
         >
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-brand-gold px-6 py-14 text-center text-brand-ink shadow-float sm:px-12 sm:py-16">
@@ -758,14 +740,13 @@ export default function LandingPage() {
 
             <div className="relative mx-auto max-w-3xl">
               <span className="inline-block rounded-full bg-brand-ink/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-brand-ink font-ui">
-                Campus Partnership &bull; Inklusif Untuk Semua
+                {t("campusTag")}
               </span>
               <h2 className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-brand-ink sm:text-4xl">
-                Wujudkan perkuliahan yang benar-benar aksesibel di kampus Anda
+                {t("campusHeading")}
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-brand-ink/85 font-sans">
-                Bergabung bersama mahasiswa tunanetra dan volunteer akademik untuk menghadirkan
-                materi kuliah terstruktur, ramah screen reader, dan siap dibagikan se-kelas.
+                {t("campusSubtitle")}
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3 font-ui">
                 <Button
@@ -774,7 +755,7 @@ export default function LandingPage() {
                   className="h-12 rounded-full bg-brand-ink px-7 font-semibold text-brand-paper hover:bg-brand-teal"
                 >
                   <Link href="/register">
-                    <span>Daftar Akun Gratis</span>
+                    <span>{t("campusCtaRegister")}</span>
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
@@ -784,7 +765,7 @@ export default function LandingPage() {
                   asChild
                   className="h-12 rounded-full border-brand-ink/35 bg-brand-paper/70 px-7 font-semibold text-brand-ink hover:bg-brand-paper"
                 >
-                  <Link href="/how-it-works">Pelajari Alur Konversi</Link>
+                  <Link href="/how-it-works">{t("campusCtaWorkflow")}</Link>
                 </Button>
               </div>
             </div>

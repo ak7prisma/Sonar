@@ -58,7 +58,7 @@ export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferencesValues =
   readingSurface: "default",
   narrationSpeed: 1,
   motionPreference: "system",
-  language: "en",
+  language: "id",
 };
 
 export const useAccessibilityStore = create<AccessibilityPreferencesState>()(

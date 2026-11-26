@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { FileUp, Headphones } from "lucide-react";
 import { cn } from "cn";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 export interface ReadyMaterialItem {
   id: string;
@@ -29,6 +30,7 @@ export function DashboardReadyList({
   items: ReadyMaterialItem[];
   courses: ReadyCourseFilter[];
 }) {
+  const { t } = useTranslation();
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
 
   const filteredItems =
@@ -46,13 +48,13 @@ export function DashboardReadyList({
           id="ready-materials-heading"
           className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl"
         >
-          Materi Siap Dibaca
+          {t("readyMaterialsHeading")}
         </h2>
 
         {courses.length > 1 ? (
           <div
             role="group"
-            aria-label="Filter materi berdasarkan mata kuliah"
+            aria-label={t("readyMaterialsFilterAria")}
             className="flex flex-wrap items-center gap-1.5 font-ui"
           >
             <button
@@ -66,7 +68,7 @@ export function DashboardReadyList({
                   : "border border-border bg-card text-foreground hover:bg-brand-mint hover:text-brand-ink dark:hover:bg-muted dark:hover:text-foreground"
               )}
             >
-              <span>Semua</span>
+              <span>{t("filterAll")}</span>
               <span className="tabular-nums opacity-80">{items.length}</span>
             </button>
 
@@ -97,10 +99,10 @@ export function DashboardReadyList({
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card px-6 py-10 text-center shadow-card">
           <p className="font-heading text-base font-bold text-foreground">
-            Belum ada materi siap baca pada kategori ini
+            {t("readyMaterialsEmptyTitle")}
           </p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Unggah dokumen PDF kuliah baru atau pilih mata kuliah lain untuk membuka materi yang sudah diverifikasi.
+            {t("readyMaterialsEmptyDesc")}
           </p>
           <div className="mt-4 flex justify-center gap-2 font-ui">
             {selectedCourse !== "all" ? (
@@ -109,7 +111,7 @@ export function DashboardReadyList({
                 onClick={() => setSelectedCourse("all")}
                 className="inline-flex min-h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-semibold text-foreground hover:bg-brand-mint hover:text-brand-ink"
               >
-                Tampilkan semua materi
+                {t("readyMaterialsShowAll")}
               </button>
             ) : null}
             <Link
@@ -117,7 +119,7 @@ export function DashboardReadyList({
               className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
             >
               <FileUp className="size-3.5" aria-hidden="true" />
-              <span>Unggah PDF</span>
+              <span>{t("readyMaterialsUploadBtn")}</span>
             </Link>
           </div>
         </div>
@@ -144,7 +146,7 @@ export function DashboardReadyList({
                         {item.prefix
                           ? `${item.prefix}, ${item.pageLabel}`
                           : item.pageLabel}
-                        {item.isSpotlight ? " (terakhir diakses)" : ""}
+                        {item.isSpotlight ? t("lastAccessed") : ""}
                       </span>
                     </div>
                     <p className="font-heading text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
@@ -152,9 +154,8 @@ export function DashboardReadyList({
                     </p>
                   </div>
 
-                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-subtle font-ui text-xs font-semibold text-foreground transition-colors group-hover:bg-brand-teal group-hover:text-white dark:group-hover:bg-primary dark:group-hover:text-primary-foreground sm:h-9 sm:w-auto sm:gap-1.5 sm:px-3.5">
-                    <Headphones className="size-3.5" aria-hidden="true" />
-                    <span className="hidden sm:inline">Baca</span>
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-subtle text-muted-foreground transition-colors group-hover:bg-brand-mint group-hover:text-brand-ink">
+                    <Headphones className="size-4" aria-hidden="true" />
                   </span>
                 </Link>
               </li>

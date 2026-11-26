@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,8 +14,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
-import { formatDate, formatPageCount, splitDocumentTitle } from "@/lib/format";
+import { formatDate, splitDocumentTitle } from "@/lib/format";
 import type { CourseRow, DocumentRow } from "@/lib/data/workspace";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 interface VolunteerDashboardViewProps {
   displayName: string;
@@ -26,6 +29,8 @@ export function VolunteerDashboardView({
   documents,
   courses,
 }: VolunteerDashboardViewProps) {
+  const { t, isEn } = useTranslation();
+
   const courseLookup = new Map<string, CourseRow>();
   for (const c of courses) {
     courseLookup.set(c.id.toLowerCase(), c);
@@ -50,20 +55,20 @@ export function VolunteerDashboardView({
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-brand-mint/60 px-3 py-1 text-xs font-semibold text-brand-ink mb-2">
             <ClipboardCheck className="size-3.5" aria-hidden="true" />
-            <span>Workspace Volunteer & Kurator Konten</span>
+            <span>{t("volunteerBadge")}</span>
           </div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-            Halo, {displayName}
+            {t("greetingHello")}, {displayName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-            Fokus Anda adalah memverifikasi keakuratan teks OCR, deskripsi visual gambar, dan formula MathML agar mahasiswa tunanetra mendapatkan materi aksesibel berkualitas tinggi.
+            {t("volunteerGreetingDesc")}
           </p>
         </div>
 
         <Button asChild className="rounded-full px-5 font-ui font-semibold shadow-xs">
           <Link href="/review" className="flex items-center gap-2">
             <ClipboardCheck className="size-4" aria-hidden="true" />
-            <span>Buka Antrean Review</span>
+            <span>{t("openReviewQueue")}</span>
           </Link>
         </Button>
       </div>
@@ -72,48 +77,48 @@ export function VolunteerDashboardView({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 font-ui">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Menunggu Review</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("statPendingReview")}</span>
             <Clock className="size-4 text-amber-600 dark:text-amber-400" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground font-mono tabular-nums">
             {pendingDocs.length}
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {unreviewedCount} berkas belum dibuka
+            {unreviewedCount} {t("statUnreviewedSub")}
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Sedang Ditinjau</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("statInReview")}</span>
             <Eye className="size-4 text-primary" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground font-mono tabular-nums">
             {inReviewDocs.length}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Sedang dalam proses koreksi</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{t("statInReviewSub")}</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Perlu Perbaikan</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("statNeedsRevision")}</span>
             <AlertTriangle className="size-4 text-destructive" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground font-mono tabular-nums">
             {needsRevisionDocs.length}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Formula/teks butuh revisi</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{t("statNeedsRevisionSub")}</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Terverifikasi</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("statVerified")}</span>
             <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground font-mono tabular-nums">
             {verifiedDocs.length}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">Siap dipelajari mahasiswa</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{t("statVerifiedSub")}</p>
         </div>
       </div>
 
@@ -127,52 +132,44 @@ export function VolunteerDashboardView({
             <Sparkles className="size-4" aria-hidden="true" />
           </span>
           <h2 id="volunteer-rules-heading" className="font-heading text-lg font-bold text-foreground">
-            Pedoman & Tanggung Jawab Volunteer
+            {t("volunteerRulesTitle")}
           </h2>
         </div>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Sebagai volunteer kurator materi, fokus utama Anda adalah kualitas konten semantik dokumen. Harap perhatikan 4 aspek berikut saat melakukan peninjauan:
+          {t("volunteerRulesDesc")}
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 font-ui">
           <div className="rounded-2xl border border-border bg-card p-4 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <FileCheck className="size-3.5 text-primary" aria-hidden="true" />
-              <span>1. Teks & Tabel Semantik</span>
+              <span>{t("rule1Title")}</span>
             </div>
-            <p className="text-muted-foreground">
-              Pastikan ejaan teks OCR akurat, heading tersusun runtut (H1–H3), dan sel baris/kolom tabel terbaca berurutan.
-            </p>
+            <p className="text-muted-foreground">{t("rule1Desc")}</p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <Eye className="size-3.5 text-primary" aria-hidden="true" />
-              <span>2. Deskripsi Visual Figur</span>
+              <span>{t("rule2Title")}</span>
             </div>
-            <p className="text-muted-foreground">
-              Periksa deskripsi gambar hasil vision AI agar mahasiswa tunanetra memahami informasi visual grafik atau diagram.
-            </p>
+            <p className="text-muted-foreground">{t("rule2Desc")}</p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
-              <span>3. Rumus MathML & LaTeX</span>
+              <span>{t("rule3Title")}</span>
             </div>
-            <p className="text-muted-foreground">
-              Verifikasi formula matematika (integral, matriks, pecahan) dan pastikan narasi lisan rumus terbaca alami.
-            </p>
+            <p className="text-muted-foreground">{t("rule3Desc")}</p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-4 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden="true" />
-              <span>4. Update Status Verifikasi</span>
+              <span>{t("rule4Title")}</span>
             </div>
-            <p className="text-muted-foreground">
-              Ubah status dokumen ke &quot;Verified&quot; jika sudah sempurna, agar langsung dapat diakses mahasiswa se-kelas.
-            </p>
+            <p className="text-muted-foreground">{t("rule4Desc")}</p>
           </div>
         </div>
       </section>
@@ -182,15 +179,17 @@ export function VolunteerDashboardView({
         <div className="flex items-center justify-between">
           <div>
             <h2 id="priority-queue-heading" className="font-heading text-lg font-bold text-foreground sm:text-xl">
-              Dokumen Prioritas Menunggu Review
+              {t("priorityQueueTitle")}
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Dokumen yang baru diunggah mahasiswa dan membutuhkan koreksi sebelum dapat dibaca bebas.
+              {t("priorityQueueDesc")}
             </p>
           </div>
           <Button asChild variant="ghost" size="sm" className="rounded-full text-xs font-semibold">
             <Link href="/review" className="flex items-center gap-1.5">
-              <span>Lihat Semua Antrean ({pendingDocs.length})</span>
+              <span>
+                {t("viewAllQueue")} ({pendingDocs.length})
+              </span>
               <ArrowRight className="size-3.5" aria-hidden="true" />
             </Link>
           </Button>
@@ -200,10 +199,10 @@ export function VolunteerDashboardView({
           <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
             <CheckCircle2 className="mx-auto size-8 text-emerald-600" />
             <h3 className="mt-2 font-heading text-base font-semibold text-foreground">
-              Semua antrean review telah selesai!
+              {t("queueEmptyTitle")}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Tidak ada dokumen baru yang membutuhkan verifikasi saat ini. Terima kasih atas kontribusi Anda!
+              {t("queueEmptyDesc")}
             </p>
           </div>
         ) : (
@@ -212,6 +211,7 @@ export function VolunteerDashboardView({
               const course = resolveCourse(doc.course_id);
               const courseCode = course?.code ?? doc.course_id.toUpperCase();
               const parsed = splitDocumentTitle(doc.title);
+              const pageCountLabel = isEn ? `${doc.page_count} pages` : `${doc.page_count} halaman`;
 
               return (
                 <div
@@ -238,7 +238,7 @@ export function VolunteerDashboardView({
                     </div>
 
                     <div className="flex items-center gap-3 text-xs text-muted-foreground font-ui">
-                      <span>{formatPageCount(doc.page_count)}</span>
+                      <span>{pageCountLabel}</span>
                       <span>·</span>
                       <span>{formatDate(doc.created_at)}</span>
                     </div>
@@ -248,7 +248,7 @@ export function VolunteerDashboardView({
                     <Button asChild size="sm" className="w-full rounded-full text-xs font-ui font-semibold">
                       <Link href={`/review/${doc.id}`} className="flex items-center justify-center gap-1.5">
                         <FileText className="size-3.5" aria-hidden="true" />
-                        <span>Mulai Tinjau Dokumen</span>
+                        <span>{t("startReviewDocument")}</span>
                       </Link>
                     </Button>
                   </div>
