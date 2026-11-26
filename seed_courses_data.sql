@@ -47,7 +47,7 @@ BEGIN
       FOR DELETE USING (user_id = auth.uid() OR public.has_role('admin'));
   END IF;
 
-  -- 3. Ensure RLS on Documents allows reading verified course materials
+  -- 3. Ensure RLS on Documents allows reading and inserting verified course materials
   IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'documents') THEN
     DROP POLICY IF EXISTS documents_select_accessible ON public.documents;
     CREATE POLICY documents_select_accessible ON public.documents
@@ -58,6 +58,81 @@ BEGIN
         OR public.has_role('admin')
         OR public.has_role('volunteer')
       );
+
+    DROP POLICY IF EXISTS documents_insert_course_member ON public.documents;
+    DROP POLICY IF EXISTS documents_insert_authenticated ON public.documents;
+    CREATE POLICY documents_insert_authenticated ON public.documents
+      FOR INSERT TO authenticated
+      WITH CHECK (uploaded_by = auth.uid() OR public.has_role('admin') OR public.has_role('volunteer'));
+
+    DROP POLICY IF EXISTS documents_update_authorized ON public.documents;
+    CREATE POLICY documents_update_authorized ON public.documents
+      FOR UPDATE TO authenticated
+      USING (uploaded_by = auth.uid() OR public.can_review_document(id) OR public.has_role('admin') OR public.has_role('volunteer'));
+  END IF;
+
+  -- 3b. Ensure RLS on Document Versions and Processing Jobs allows inserts
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'document_versions') THEN
+    DROP POLICY IF EXISTS doc_versions_insert_authorized ON public.document_versions;
+    CREATE POLICY doc_versions_insert_authorized ON public.document_versions
+      FOR INSERT TO authenticated
+      WITH CHECK (created_by = auth.uid() OR public.can_access_document(document_id) OR public.has_role('admin') OR public.has_role('volunteer'));
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'processing_jobs') THEN
+    DROP POLICY IF EXISTS processing_jobs_insert ON public.processing_jobs;
+    CREATE POLICY processing_jobs_insert ON public.processing_jobs
+      FOR INSERT TO authenticated
+      WITH CHECK (public.can_access_document(document_id) OR public.has_role('admin') OR public.has_role('volunteer'));
+
+    DROP POLICY IF EXISTS processing_jobs_update ON public.processing_jobs;
+    CREATE POLICY processing_jobs_update ON public.processing_jobs
+      FOR UPDATE TO authenticated
+      USING (public.can_access_document(document_id) OR public.has_role('admin') OR public.has_role('volunteer'));
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'document_blocks') THEN
+    DROP POLICY IF EXISTS doc_blocks_insert ON public.document_blocks;
+    CREATE POLICY doc_blocks_insert ON public.document_blocks
+      FOR INSERT TO authenticated
+      WITH CHECK (public.can_access_document(document_id) OR public.has_role('admin') OR public.has_role('volunteer'));
+  END IF;
+
+  -- 3c. Storage Bucket and Object Policies
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'storage' AND tablename = 'buckets') THEN
+    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    VALUES (
+      'course-documents',
+      'course-documents',
+      true,
+      52428800,
+      ARRAY['application/pdf']
+    )
+    ON CONFLICT (id) DO UPDATE SET public = true;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'storage' AND tablename = 'objects') THEN
+    DROP POLICY IF EXISTS storage_course_docs_insert ON storage.objects;
+    DROP POLICY IF EXISTS storage_course_docs_read ON storage.objects;
+    DROP POLICY IF EXISTS storage_course_docs_update ON storage.objects;
+    DROP POLICY IF EXISTS storage_course_docs_delete ON storage.objects;
+
+    CREATE POLICY storage_course_docs_insert ON storage.objects
+      FOR INSERT TO authenticated
+      WITH CHECK (bucket_id = 'course-documents');
+
+    CREATE POLICY storage_course_docs_read ON storage.objects
+      FOR SELECT TO authenticated
+      USING (bucket_id = 'course-documents');
+
+    CREATE POLICY storage_course_docs_update ON storage.objects
+      FOR UPDATE TO authenticated
+      USING (bucket_id = 'course-documents')
+      WITH CHECK (bucket_id = 'course-documents');
+
+    CREATE POLICY storage_course_docs_delete ON storage.objects
+      FOR DELETE TO authenticated
+      USING (bucket_id = 'course-documents');
   END IF;
 END $$;
 
