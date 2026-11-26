@@ -58,11 +58,11 @@ export async function PUT(req: Request) {
     .from("accessibility_preferences")
     .upsert({
       user_id: auth.userId,
-      reading_font: parsed.data.readingFont,
+      reading_font: parsed.data.readingFont === "atkinson" ? "atkinson" : "inter",
       font_size_px: parsed.data.fontSizePx,
       line_height: parsed.data.lineHeight,
       letter_spacing_em: parsed.data.letterSpacingEm,
-      reading_width: parsed.data.readingWidth,
+      reading_width: parsed.data.readingWidth || "comfortable",
       contrast_mode: parsed.data.contrastMode,
       reading_surface: parsed.data.readingSurface,
       narration_speed: parsed.data.narrationSpeed,

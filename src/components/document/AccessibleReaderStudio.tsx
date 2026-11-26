@@ -1002,7 +1002,10 @@ export function AccessibleReaderStudio({
               aria-label={document.title}
               className="w-full rounded-2xl border border-border bg-card px-3 py-5 shadow-card sm:px-4 sm:py-6"
             >
-              <div className="sonar-reader-prose w-full space-y-6">
+              <div
+                className="sonar-reader-prose w-full space-y-6"
+                style={{ "--reader-font-size": `${fontSizePx}px` } as React.CSSProperties}
+              >
                 {filteredBlocks.map((block, index) => {
                   const isCurrent = activeBlockId === block.id;
                   const isBookmarked = bookmarks.includes(block.id);

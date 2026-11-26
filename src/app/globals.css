@@ -15,7 +15,7 @@
   --font-ui: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
   --font-subheading: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
   --font-atkinson: var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif;
-  --font-reader: var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif;
+  --font-reader: var(--reader-font-family, var(--font-poppins), ui-sans-serif, sans-serif);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --color-sidebar-ring: var(--sidebar-ring);
@@ -354,11 +354,33 @@ html.dark[data-contrast="high"] {
 
 /* Accessible Document Reader Surface Typography */
 .sonar-reader-prose {
-  font-family: var(--reader-font-family);
-  font-size: var(--reader-font-size);
-  line-height: var(--reader-line-height);
-  letter-spacing: var(--reader-letter-spacing);
-  max-width: var(--reader-max-width);
+  font-family: var(--reader-font-family, var(--font-poppins), ui-sans-serif, sans-serif);
+  font-size: var(--reader-font-size, 1.125rem);
+  line-height: var(--reader-line-height, 1.72);
+  letter-spacing: var(--reader-letter-spacing, 0em);
+  width: 100%;
+}
+
+.sonar-reader-prose p,
+.sonar-reader-prose li,
+.sonar-reader-prose blockquote,
+.sonar-reader-prose .font-reader {
+  font-family: var(--reader-font-family, inherit) !important;
+  font-size: var(--reader-font-size, inherit) !important;
+  line-height: var(--reader-line-height, inherit);
+  letter-spacing: var(--reader-letter-spacing, inherit);
+}
+
+.sonar-reader-prose h2 {
+  font-size: calc(var(--reader-font-size, 1.125rem) * 1.45) !important;
+}
+
+.sonar-reader-prose h3 {
+  font-size: calc(var(--reader-font-size, 1.125rem) * 1.25) !important;
+}
+
+.sonar-reader-prose h4 {
+  font-size: calc(var(--reader-font-size, 1.125rem) * 1.1) !important;
 }
 
 /* Respect Reduced Motion both via OS media query and explicit user toggle */

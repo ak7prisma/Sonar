@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ReadingFont = "atkinson" | "inter" | "lexend";
+export type ReadingFont = "default" | "atkinson" | "inter" | "lexend";
 export type ReadingWidth = "narrow" | "comfortable" | "wide";
 export type ContrastMode = "standard" | "high";
 export type ReadingSurface = "default" | "warm";
@@ -49,7 +49,7 @@ export interface AccessibilityPreferencesValues {
 }
 
 export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferencesValues = {
-  readingFont: "atkinson",
+  readingFont: "default",
   fontSizePx: 18,
   lineHeight: 1.72,
   letterSpacingEm: 0,

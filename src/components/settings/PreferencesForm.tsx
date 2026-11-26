@@ -19,7 +19,6 @@ import {
 import {
   useAccessibilityStore,
   type ReadingFont,
-  type ReadingWidth,
 } from "@/stores/accessibility-store";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -101,20 +100,12 @@ export function PreferencesForm({
           )}
         >
           <div
-            className={cn(
-              "w-full transition-all",
-              store.readingWidth === "narrow"
-                ? "max-w-md"
-                : store.readingWidth === "wide"
-                  ? "max-w-3xl"
-                  : "max-w-xl",
-              store.readingFont === "lexend"
-                ? "font-heading"
-                : store.readingFont === "inter"
-                  ? "font-sans"
-                  : "font-sans"
-            )}
+            className="w-full transition-all"
             style={{
+              fontFamily:
+                store.readingFont === "atkinson"
+                  ? "var(--font-atkinson-hyperlegible), sans-serif"
+                  : "var(--font-poppins), sans-serif",
               fontSize: `${store.fontSizePx}px`,
               lineHeight: store.lineHeight,
               letterSpacing: `${store.letterSpacingEm}em`,
@@ -131,7 +122,7 @@ export function PreferencesForm({
           <div className="space-y-1.5">
             <Label htmlFor="settings-font">{t("prefFontLabel")}</Label>
             <Select
-              value={store.readingFont}
+              value={store.readingFont === "atkinson" ? "atkinson" : "default"}
               onValueChange={(val) => store.setReadingFont(val as ReadingFont)}
             >
               <SelectTrigger
@@ -141,18 +132,11 @@ export function PreferencesForm({
                 <SelectValue placeholder={isEn ? "Select typeface" : "Pilih jenis huruf"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                <SelectItem value="default" className="rounded-lg text-sm cursor-pointer">
+                  Default
+                </SelectItem>
                 <SelectItem value="atkinson" className="rounded-lg text-sm cursor-pointer">
-                  {isEn
-                    ? "Atkinson Hyperlegible (Recommended for low vision)"
-                    : "Atkinson Hyperlegible (Direkomendasikan untuk low vision)"}
-                </SelectItem>
-                <SelectItem value="lexend" className="rounded-lg text-sm cursor-pointer">
-                  {isEn
-                    ? "Lexend (Designed for reading fluency)"
-                    : "Lexend (Dirancang untuk kelancaran membaca)"}
-                </SelectItem>
-                <SelectItem value="inter" className="rounded-lg text-sm cursor-pointer">
-                  {isEn ? "Inter (Neutral sans-serif)" : "Inter (Sans-serif netral)"}
+                  Atkinson
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -220,63 +204,31 @@ export function PreferencesForm({
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="settings-width">
-                {isEn ? "Column width" : "Lebar kolom bacaan"}
-              </Label>
-              <Select
-                value={store.readingWidth}
-                onValueChange={(val) =>
-                  store.setReadingWidth(val as ReadingWidth)
-                }
+          <div className="space-y-1.5">
+            <Label htmlFor="settings-language">
+              {isEn ? "Default voice narration language" : "Bahasa bawaan narasi suara"}
+            </Label>
+            <Select
+              value={store.language}
+              onValueChange={(val) =>
+                store.setLanguage(val === "id" ? "id" : "en")
+              }
+            >
+              <SelectTrigger
+                id="settings-language"
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
               >
-                <SelectTrigger
-                  id="settings-width"
-                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
-                >
-                  <SelectValue placeholder={isEn ? "Select column width" : "Pilih lebar kolom"} />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
-                  <SelectItem value="narrow" className="rounded-lg text-sm cursor-pointer">
-                    {isEn ? "Narrow (56 characters)" : "Sempit (56 karakter)"}
-                  </SelectItem>
-                  <SelectItem value="comfortable" className="rounded-lg text-sm cursor-pointer">
-                    {isEn ? "Balanced (68 characters)" : "Seimbang (68 karakter)"}
-                  </SelectItem>
-                  <SelectItem value="wide" className="rounded-lg text-sm cursor-pointer">
-                    {isEn ? "Wide (82 characters)" : "Lebar (82 karakter)"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="settings-language">
-                {isEn ? "Default voice narration language" : "Bahasa bawaan narasi suara"}
-              </Label>
-              <Select
-                value={store.language}
-                onValueChange={(val) =>
-                  store.setLanguage(val === "id" ? "id" : "en")
-                }
-              >
-                <SelectTrigger
-                  id="settings-language"
-                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground shadow-xs"
-                >
-                  <SelectValue placeholder={isEn ? "Select language" : "Pilih bahasa"} />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
-                  <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
-                    Bahasa Indonesia (id-ID)
-                  </SelectItem>
-                  <SelectItem value="en" className="rounded-lg text-sm cursor-pointer">
-                    English (en-US)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder={isEn ? "Select language" : "Pilih bahasa"} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-border bg-popover shadow-md">
+                <SelectItem value="id" className="rounded-lg text-sm cursor-pointer">
+                  Bahasa Indonesia (id-ID)
+                </SelectItem>
+                <SelectItem value="en" className="rounded-lg text-sm cursor-pointer">
+                  English (en-US)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </Panel>

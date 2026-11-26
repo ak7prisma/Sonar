@@ -8,10 +8,11 @@ import {
 } from "@/stores/accessibility-store";
 
 const FONT_CSS_MAP: Record<ReadingFont, string> = {
+  default: "var(--font-poppins), ui-sans-serif, sans-serif",
   atkinson:
-    "var(--font-atkinson-hyperlegible), var(--font-inter), ui-sans-serif, sans-serif",
-  inter: "var(--font-inter), ui-sans-serif, sans-serif",
-  lexend: "var(--font-lexend-readable), var(--font-inter), ui-sans-serif, sans-serif",
+    "var(--font-atkinson-hyperlegible), var(--font-poppins), ui-sans-serif, sans-serif",
+  inter: "var(--font-poppins), ui-sans-serif, sans-serif",
+  lexend: "var(--font-poppins), ui-sans-serif, sans-serif",
 };
 
 const WIDTH_CSS_MAP: Record<ReadingWidth, string> = {
@@ -37,8 +38,9 @@ export function AccessibilityProvider({
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--reader-font-family", FONT_CSS_MAP[readingFont]);
-    root.style.setProperty("--reader-font-size", `${fontSizePx / 16}rem`);
+    const fontCss = FONT_CSS_MAP[readingFont] || FONT_CSS_MAP.default;
+    root.style.setProperty("--reader-font-family", fontCss);
+    root.style.setProperty("--reader-font-size", `${fontSizePx}px`);
     root.style.setProperty("--reader-line-height", String(lineHeight));
     root.style.setProperty("--reader-letter-spacing", `${letterSpacingEm}em`);
     root.style.setProperty("--reader-max-width", WIDTH_CSS_MAP[readingWidth]);

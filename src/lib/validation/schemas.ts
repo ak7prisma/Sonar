@@ -97,11 +97,11 @@ export const documentShareSchema = z.object({
 });
 
 export const accessibilityPreferencesSchema = z.object({
-  readingFont: z.enum(["atkinson", "inter", "lexend"]),
+  readingFont: z.enum(["default", "atkinson", "inter", "lexend"]),
   fontSizePx: z.number().int().min(14).max(28),
   lineHeight: z.number().min(1.3).max(2.4),
   letterSpacingEm: z.number().min(0).max(0.12),
-  readingWidth: z.enum(["narrow", "comfortable", "wide"]),
+  readingWidth: z.enum(["narrow", "comfortable", "wide"]).default("comfortable").optional(),
   contrastMode: z.enum(["standard", "high"]),
   readingSurface: z.enum(["default", "warm"]),
   narrationSpeed: z.number().min(0.5).max(2.5),

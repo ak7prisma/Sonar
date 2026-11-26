@@ -13,7 +13,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   useAccessibilityStore,
   type ReadingFont,
-  type ReadingWidth,
 } from "@/stores/accessibility-store";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -101,31 +100,34 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
           <legend className="text-xs font-medium text-muted-foreground">
             {t("readingTypeface")}
           </legend>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(
-              [
-                { id: "atkinson", label: "Atkinson" },
-                { id: "inter", label: "Inter" },
-                { id: "lexend", label: "Lexend" },
-              ] as Array<{ id: ReadingFont; label: string }>
-            ).map((font) => (
-              <Button
-                key={font.id}
-                size="xs"
-                variant={store.readingFont === font.id ? "default" : "outline"}
-                aria-pressed={store.readingFont === font.id}
-                onClick={() => {
-                  store.setReadingFont(font.id);
-                  announce(
-                    isEn
-                      ? `Reading font set to ${font.label}.`
-                      : `Font pembaca diatur ke ${font.label}.`
-                  );
-                }}
-              >
-                {font.label}
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { id: "default", label: "Default" },
+              { id: "atkinson", label: "Atkinson" },
+            ].map((font) => {
+              const isSelected =
+                font.id === "atkinson"
+                  ? store.readingFont === "atkinson"
+                  : store.readingFont !== "atkinson";
+              return (
+                <Button
+                  key={font.id}
+                  size="xs"
+                  variant={isSelected ? "default" : "outline"}
+                  aria-pressed={isSelected}
+                  onClick={() => {
+                    store.setReadingFont(font.id as ReadingFont);
+                    announce(
+                      isEn
+                        ? `Reading font set to ${font.label}.`
+                        : `Font pembaca diatur ke ${font.label}.`
+                    );
+                  }}
+                >
+                  {font.label}
+                </Button>
+              );
+            })}
           </div>
         </fieldset>
 
@@ -139,7 +141,7 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
             id="pref-font-size"
             aria-label={t("textSize")}
             min={14}
-            max={26}
+            max={28}
             step={1}
             value={[store.fontSizePx]}
             onValueChange={([val]) => store.setFontSizePx(val)}
@@ -162,32 +164,6 @@ export function AccessibilityToolbar({ compact = false }: { compact?: boolean })
             onValueChange={([val]) => store.setLineHeight(val)}
           />
         </div>
-
-        {/* Reading Width */}
-        <fieldset className="space-y-2">
-          <legend className="text-xs font-medium text-muted-foreground">
-            {t("columnWidth")}
-          </legend>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(
-              [
-                { id: "narrow", label: isEn ? "Narrow" : "Ramping" },
-                { id: "comfortable", label: isEn ? "Balanced" : "Seimbang" },
-                { id: "wide", label: isEn ? "Wide" : "Lebar" },
-              ] as Array<{ id: ReadingWidth; label: string }>
-            ).map((width) => (
-              <Button
-                key={width.id}
-                size="xs"
-                variant={store.readingWidth === width.id ? "default" : "outline"}
-                aria-pressed={store.readingWidth === width.id}
-                onClick={() => store.setReadingWidth(width.id)}
-              >
-                {width.label}
-              </Button>
-            ))}
-          </div>
-        </fieldset>
 
         {/* Toggles */}
         <div className="space-y-3 border-t pt-3">
