@@ -32,6 +32,15 @@ function extractLatestUserText(messages: UIMessage[]): string {
   return "";
 }
 
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    route: "/api/ai/chat",
+    timestamp: new Date().toISOString(),
+    isAiConfigured: isAiConfigured(),
+  });
+}
+
 export async function POST(req: Request) {
   if (!isAiConfigured()) {
     return NextResponse.json(

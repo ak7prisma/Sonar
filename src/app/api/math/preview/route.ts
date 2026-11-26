@@ -7,6 +7,14 @@ const previewSchema = z.object({
   latex: z.string().trim().min(1).max(4000),
 });
 
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    route: "/api/math/preview",
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export async function POST(req: Request) {
   let body: unknown;
   try {
