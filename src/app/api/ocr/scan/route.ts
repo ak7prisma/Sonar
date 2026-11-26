@@ -8,6 +8,7 @@ import { getDefaultOcrProvider, type ExtractedBlockOutput } from "@/features/ocr
 import { extractPdfTextPages } from "@/features/pdf-processing/text-extractor";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
 import { narrateLatexEquation, narrateMixedText } from "@/features/math-ocr/math-narration";
+import { normalizeMarkdownText } from "@/lib/math/math-markdown-parser";
 import {
   FALLBACK_COURSES,
   registerScannedDocument,
@@ -160,19 +161,29 @@ export async function POST(req: Request) {
 
     // Enrich blocks with MathML and Speech Narration
     const enrichedBlocks: ExtractedBlockOutput[] = rawBlocks.map((block) => {
-      if (block.blockType === "equation" && block.latex) {
-        const mathMlResult = latexToMathMl(block.latex);
-        const narration = narrateLatexEquation(block.latex);
+      const normalizedText = normalizeMarkdownText(block.contentText);
+      const targetLatex =
+        block.latex?.trim() ||
+        (block.blockType === "equation"
+          ? normalizedText.replace(/^[•\-\*]\s*/, "").replace(/^\$+|\$+$/g, "").trim()
+          : undefined);
+
+      if (block.blockType === "equation" && targetLatex) {
+        const mathMlResult = latexToMathMl(targetLatex);
+        const narration = narrateLatexEquation(targetLatex);
         const spoken = language === "en" ? narration.narrationEn : narration.narrationId;
         return {
           ...block,
+          contentText: normalizedText,
+          latex: targetLatex,
           mathMl: mathMlResult.mathml ?? undefined,
           spokenText: spoken,
         };
       }
       return {
         ...block,
-        spokenText: narrateMixedText(block.contentText, language),
+        contentText: normalizedText,
+        spokenText: narrateMixedText(normalizedText, language),
       };
     });
 

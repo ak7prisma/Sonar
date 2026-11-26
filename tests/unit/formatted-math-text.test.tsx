@@ -101,4 +101,16 @@ describe("FormattedMathText & KaTeX rendering", () => {
     expect(html2?.textContent).not.toContain("\\frac{1}{2}");
     expect(html2?.textContent).not.toContain("\\times");
   });
+
+  it("renders complex nested set and inequality equations via KaTeX", () => {
+    const text =
+      "Kejadian E_8 = \\{(x, y) \\in S, (x - L / 2)^2 + (y - W / 2)^2 \\le \\varepsilon^2\\}.";
+    const { container } = render(<FormattedMathText text={text} as="div" />);
+    const katexNodes = container.querySelectorAll(".katex");
+    expect(katexNodes.length).toBeGreaterThanOrEqual(1);
+    const html = container.querySelector(".katex-html");
+    expect(html).toBeInTheDocument();
+    expect(html?.textContent).not.toContain("\\le");
+    expect(html?.textContent).not.toContain("\\varepsilon");
+  });
 });

@@ -23,19 +23,20 @@ export function autoWrapUnescapedMath(text: string): string {
 
   // 1. Set notation: e.g. \{(x, y), L - 3 \le x \le L, 0 \le y \le W\} or \{(x, y) \in S, ...\}
   workingText = workingText.replace(
-    /\\?\{([^{}\n]*?(?:\\in|\\le|\\ge|\\ne|\\subset|\\cup|\\cap|\\times|\^|_|=|\\varepsilon|\\alpha|\\beta|\\gamma|\\delta|\\theta|\\lambda|\\mu|\\pi|\\sigma|\\omega)[^{}\n]*?)\\?\}/g,
+    /(?<![a-zA-Z0-9_\\])\\?\{((?:[^{}\n]|\{[^{}\n]*\})*?(?:\\in|\\le|\\ge|\\ne|\\subset|\\cup|\\cap|\\times|\^|_|=|\\varepsilon|\\alpha|\\beta|\\gamma|\\delta|\\theta|\\lambda|\\mu|\\pi|\\sigma|\\omega)(?:[^{}\n]|\{[^{}\n]*\})*?)\\?\}/g,
     (_m, inner) => protect(`\\(\\{${inner}\\}\\)`)
   );
 
   // 2. Norms / Double vertical bar magnitudes, with optional fraction or coefficient prefix
   // e.g. \frac{1}{2} \|\bar{u} \times \bar{v}\| or \|\bar{u} \times \bar{v}\|
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:\\frac\{[^{}\n]+\}\{[^{}\n]+\}\s*)?\\?\|([^|\n]+?)\\?\|/g,
-    (_m, inner) => {
+    /(?<![a-zA-Z0-9_\\])(?:(?:\\frac\{[^{}\n]+\}\{[^{}\n]+\}|-?[0-9a-zA-Z\/\.\-]+)\s*)?\\?\|([^|\n]+?)\\?\|/g,
+    (m, inner) => {
       if (inner.includes("___MATH_PLACEHOLDER_") || inner.includes("\\")) {
-        return protect(`\\(\\|${inner}\\|\\)`);
+        const clean = m.replace(/^\\?\|/, "\\|").replace(/\\?\|$/, "\\|");
+        return protect(`\\(${clean}\\)`);
       }
-      return _m;
+      return m;
     }
   );
 
@@ -63,34 +64,51 @@ export function autoWrapUnescapedMath(text: string): string {
     }
   );
 
-  // 6. Standalone fractions: \frac{a}{b}
+  // 6. Standalone fractions: \frac{a}{b} with optional scalar/variable prefix
   workingText = workingText.replace(
-    /\\frac\{[^{}\n]+\}\{[^{}\n]+\}/g,
+    /(?<![a-zA-Z0-9_\\])(?:-?[0-9a-zA-Z\+\-\*\/]+\s*)?\\frac\{[^{}\n]+\}\{[^{}\n]+\}(?:\s*[a-zA-Z0-9\+\-\*\/]+)?/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
-  // 7. Vector/math accents and Blackboard/Mathbb: e.g. \bar{a}, \bar{b}, \bar{u}, \bar{v}, \mathbb{R}^3, k\bar{a}
+  // 7. Vector/math accents and Blackboard/Mathbb: e.g. \bar{a}, \bar{b}, \bar{u}, \bar{v}, \mathbb{R}^3, k\bar{a}, 2\bar{a}
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:k\s*)?\\(?:bar|vec|hat|tilde|dot|ddot|mathbf|mathcal|mathbb|mathrm)\{[^{}\n]+\}(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?/g,
+    /(?<![a-zA-Z0-9_\\])(?:-?[0-9a-zA-Z]+\s*)?\\(?:bar|vec|hat|tilde|dot|ddot|mathbf|mathcal|mathbb|mathrm)\{[^{}\n]+\}(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
-  // 8. Coordinate tuples with subscripts: e.g. (a_1, a_2, a_3) or (ka_1, ka_2, ka_3)
+  // 8. Square roots, integrals, summations, limits: e.g. \sqrt{a_1^2 + a_2^2}, \sum_{i=1}^n
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])\\(?:sqrt|sum|prod|int|iint|iiint|oint|lim)\b(?:_[^{}\n]+|_\{\s*[^{}\n]+\s*\})?(?:\^[^{}\n]+|\^\{\s*[^{}\n]+\s*\})?(?:\{[^{}\n]+\})?/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 9. Coordinate tuples with subscripts: e.g. (a_1, a_2, a_3) or (ka_1, ka_2, ka_3)
   workingText = workingText.replace(
     /\(\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+(?:\s*[\+\-]\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+)?(?:\s*,\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+(?:\s*[\+\-]\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+)?)+\s*\)/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
-  // 9. Subscript variables: e.g. E_7, E_8, X_1, a_k
+  // 10. Subscript variables: e.g. E_7, E_8, X_1, a_k
   workingText = workingText.replace(
     /(?<![a-zA-Z0-9_\\])\b([A-Za-z])_([0-9a-zA-Z]+|\{[^}]+\})\b/g,
     (_m, varName, sub) => protect(`\\(${varName}_${sub}\\)`)
   );
 
-  // 10. Standalone Greek / LaTeX symbols with text or exponents: e.g. \varepsilon \text{ kaki}, \varepsilon^2
+  // 11. Standalone Greek / LaTeX symbols with text or exponents: e.g. \varepsilon \text{ kaki}, \varepsilon^2
   workingText = workingText.replace(
     /\\(?:varepsilon|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Delta|Gamma|Theta|Lambda|Xi|Pi|Sigma|Phi|Psi|Omega)(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?(?:\s*\\text\{[^}]+\})?/g,
     (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 12. Inline inequalities and comparisons: e.g. L - 3 \le x \le L, 0 \le y \le W, x \ge 0
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])(?:[a-zA-Z0-9_\(\)\-\+\*\/]+\s*)?\\(?:le|ge|ne|approx|sim|equiv|subset|subseteq|in|notin)\s*(?:[a-zA-Z0-9_\(\)\-\+\*\/]+(?:\s*\\(?:le|ge|ne|approx|sim|equiv)\s*[a-zA-Z0-9_\(\)\-\+\*\/]+)?)/g,
+    (m) => {
+      if (!m.includes("___MATH_PLACEHOLDER_")) {
+        return protect(`\\(${m}\\)`);
+      }
+      return m;
+    }
   );
 
   // Expand all placeholders iteratively until all nested levels are resolved
@@ -121,7 +139,7 @@ export function normalizeMarkdownText(raw: string): string {
   let s = raw.replace(/\r\n/g, "\n");
 
   // Fix common OCR artifact where vector arrow/bar \vec{a} or \bar{a} was read as o{a} or o{b}
-  s = s.replace(/\bo\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}");
+  s = s.replace(/(?<![a-zA-Z0-9\\])o\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}");
 
   // Separate glued horizontal rules: e.g. "(*screen reader*). --- ### Pertanyaan"
   s = s.replace(

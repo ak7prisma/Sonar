@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getVisionModel, getVisionFallbackChain } from "@/lib/ai/provider";
 import { STRUCTURED_PAGE_EXTRACTION_PROMPT } from "@/lib/ai/prompts";
 import { isAiConfigured } from "@/lib/env";
+import { normalizeMarkdownText } from "@/lib/math/math-markdown-parser";
 
 export interface ExtractedBlockOutput {
   blockType: "heading" | "paragraph" | "list" | "table" | "equation" | "figure";
@@ -109,6 +110,62 @@ const extractedPageSchema = z.object({
     })
   ),
 });
+
+export function normalizeExtractedBlocks(
+  blocks: ExtractedBlockOutput[]
+): ExtractedBlockOutput[] {
+  return blocks.map((block) => {
+    // 1. Clean OCR artifacts in contentText and latex: o{a} -> \bar{a}
+    let content = (block.contentText || "").trim();
+    content = content.replace(/(?<![a-zA-Z0-9\\])o\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}");
+
+    let latex = block.latex?.trim();
+    if (latex) {
+      latex = latex.replace(/(?<![a-zA-Z0-9\\])o\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}");
+      latex = latex.replace(/^\$+|\$+$/g, "").trim();
+    }
+
+    // 2. Detect if a paragraph / list item is actually a mathematical equation (e.g. • \bar{a} + \bar{b} = ...)
+    let blockType = block.blockType;
+    const strippedBullet = content.replace(/^[•\-\*]\s*/, "").trim();
+    const isEquationCandidate =
+      (blockType === "paragraph" || blockType === "list") &&
+      (/^(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z]_[0-9a-zA-Z]+|[a-zA-Z]\s*=)\s*[\+\-\*\/=]/.test(strippedBullet) ||
+        /^\\?\|[^|\n]+\\?\|\s*=/.test(strippedBullet) ||
+        /^\\(?:frac|begin|sqrt|int|sum)\b/.test(strippedBullet) ||
+        /^[A-Za-z]\s*=\s*\\?\{/.test(strippedBullet));
+
+    if (isEquationCandidate && strippedBullet.length < 150) {
+      blockType = "equation";
+      if (!latex) {
+        latex = strippedBullet.replace(/^\$+|\$+$/g, "").trim();
+      }
+    }
+
+    // 3. Ensure equation blocks always have valid latex
+    if (blockType === "equation" && !latex && content) {
+      latex = strippedBullet.replace(/^\$+|\$+$/g, "").trim();
+    }
+
+    // 4. Auto-wrap inline math constructs in contentText
+    const normalizedContent = normalizeMarkdownText(content);
+
+    // 5. Clean tables if present
+    const tableHeaders = block.tableHeaders?.map((h) => normalizeMarkdownText(h));
+    const tableRows = block.tableRows?.map((row) =>
+      row.map((cell) => normalizeMarkdownText(cell))
+    );
+
+    return {
+      ...block,
+      blockType,
+      contentText: normalizedContent,
+      latex,
+      tableHeaders,
+      tableRows,
+    };
+  });
+}
 
 export function convertRawTextLayerToBlocks(rawText: string): ExtractedBlockOutput[] {
   const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -372,14 +429,15 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       });
 
       const rawBlocks = result.output.blocks;
+      const normalizedBlocks = normalizeExtractedBlocks(rawBlocks);
       const detectedTitle =
         result.output.documentTitle?.trim() ||
-        rawBlocks.find((b) => b.blockType === "heading")?.contentText ||
+        normalizedBlocks.find((b) => b.blockType === "heading")?.contentText ||
         undefined;
 
       return {
         documentTitle: detectedTitle,
-        blocks: rawBlocks,
+        blocks: normalizedBlocks,
       };
     } catch (err) {
       console.error("[GeminiVisionOcrProvider] Error during OCR extraction:", err);
@@ -387,7 +445,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
       // If a real PDF text layer is available, convert it into real blocks rather than returning dummy data!
       if (input.rawTextLayer && input.rawTextLayer.trim().length > 0) {
         console.warn("[GeminiVisionOcrProvider] Using extracted PDF text layer fallback blocks.");
-        const layerBlocks = convertRawTextLayerToBlocks(input.rawTextLayer);
+        const layerBlocks = normalizeExtractedBlocks(convertRawTextLayerToBlocks(input.rawTextLayer));
         const title =
           layerBlocks.find((b) => b.blockType === "heading")?.contentText ||
           undefined;
@@ -399,7 +457,7 @@ export class GeminiVisionOcrProvider implements OcrProvider {
         err
       );
 
-      const fallbackBlocks = generateFallbackOcrBlocks(input);
+      const fallbackBlocks = normalizeExtractedBlocks(generateFallbackOcrBlocks(input));
       const title =
         fallbackBlocks.find((b) => b.blockType === "heading")?.contentText ||
         "Dokumen Akademik Aksesibel";

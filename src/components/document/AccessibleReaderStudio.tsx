@@ -1059,21 +1059,21 @@ export function AccessibleReaderStudio({
                       {block.block_type === "heading" &&
                         (!block.heading_level || block.heading_level === 1) && (
                           <h2 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
-                            {block.content_text}
+                            <FormattedMathText text={block.content_text} as="span" />
                           </h2>
                         )}
 
                       {block.block_type === "heading" &&
                         block.heading_level === 2 && (
                           <h3 className="font-heading text-xl font-bold tracking-tight text-foreground">
-                            {block.content_text}
+                            <FormattedMathText text={block.content_text} as="span" />
                           </h3>
                         )}
 
                       {block.block_type === "heading" &&
                         (block.heading_level ?? 0) >= 3 && (
                           <h4 className="font-heading text-lg font-bold text-foreground">
-                            {block.content_text}
+                            <FormattedMathText text={block.content_text} as="span" />
                           </h4>
                         )}
 

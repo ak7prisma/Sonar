@@ -58,6 +58,9 @@ describe("AI Fallback System", () => {
       expect(chain).toContain("gemini-3.6-flash");
       expect(chain).toContain("gemini-3.5-flash-lite");
       expect(chain).toContain("gemini-3.1-flash-lite");
+      expect(chain).not.toContain("gemini-2.0-flash");
+      expect(chain).not.toContain("gemini-2.5-flash");
+      expect(chain).not.toContain("gemini-1.5-flash");
       expect(new Set(chain).size).toBe(chain.length);
     });
 
