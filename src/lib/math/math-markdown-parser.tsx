@@ -3,11 +3,55 @@ import katex from "katex";
 import { cn } from "cn";
 
 /**
+ * Automatically detects raw LaTeX and math constructs (sets like \{...\}, subscripts like E_7,
+ * Greek commands like \varepsilon, and equations) that lack standard delimiters,
+ * and safely wraps them in \( ... \) so KaTeX can render them visually.
+ */
+export function autoWrapUnescapedMath(text: string): string {
+  if (!text) return "";
+  const protectedMath: string[] = [];
+  const mathRegex =
+    /(?:\$\$[\s\S]*?\$\$|\\+\[[\s\S]*?\\+\]|\\+\([\s\S]*?\\+\)|\$[^\$\n]+?\$|\\+begin\{[a-zA-Z*]+\}[\s\S]*?\\+end\{[a-zA-Z*]+\})/g;
+
+  const protect = (m: string): string => {
+    const idx = protectedMath.length;
+    protectedMath.push(m);
+    return `___MATH_PLACEHOLDER_${idx}___`;
+  };
+
+  let workingText = text.replace(mathRegex, (m) => protect(m));
+
+  // 1. Set notation: e.g. \{(x, y), L - 3 \le x \le L, 0 \le y \le W\} or \{(x, y) \in S, ...\}
+  workingText = workingText.replace(
+    /\\?\{([^{}\n]*?(?:\\in|\\le|\\ge|\\ne|\\subset|\\cup|\\cap|\\times|\^|_|=|\\varepsilon|\\alpha|\\beta|\\gamma|\\delta|\\theta|\\lambda|\\mu|\\pi|\\sigma|\\omega)[^{}\n]*?)\\?\}/g,
+    (_m, inner) => protect(`\\(\\{${inner}\\}\\)`)
+  );
+
+  // 2. Subscript variables: e.g. E_7, E_8, X_1, a_k
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])\b([A-Za-z])_([0-9a-zA-Z]+|\{[^}]+\})\b/g,
+    (_m, varName, sub) => protect(`\\(${varName}_${sub}\\)`)
+  );
+
+  // 3. Standalone Greek / LaTeX symbols with text or exponents: e.g. \varepsilon \text{ kaki}, \varepsilon^2
+  workingText = workingText.replace(
+    /\\(?:varepsilon|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Delta|Gamma|Theta|Lambda|Xi|Pi|Sigma|Phi|Psi|Omega)(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?(?:\s*\\text\{[^}]+\})?/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  return workingText.replace(
+    /___MATH_PLACEHOLDER_(\d+)___/g,
+    (_m, idx) => protectedMath[Number(idx)] ?? _m
+  );
+}
+
+/**
  * Normalizes text to prevent common markdown/LaTeX formatting issues:
  * 1. Windows carriage returns (\r\n -> \n)
  * 2. Glued horizontal rules ("text. --- ### Title" -> "text.\n\n---\n\n### Title")
  * 3. Glued headings ("text. ### Title" -> "text.\n\n### Title")
  * 4. Glued Q&A markers ("**Soal:** ... **Jawaban:** ..." -> "**Soal:** ...\n\n**Jawaban:** ...")
+ * 5. Auto-wraps raw LaTeX mathematical symbols and set notations
  */
 export function normalizeMarkdownText(raw: string): string {
   if (!raw) return "";
@@ -31,6 +75,9 @@ export function normalizeMarkdownText(raw: string): string {
     /([^\n])\s+(\*\*(?:Jawaban|Soal|Penjelasan|Langkah|Catatan|Pertanyaan\s+\d+):\*\*)/gi,
     (_m, p1, p2) => `${p1}\n\n${p2}`
   );
+
+  // Auto-wrap raw/un-escaped LaTeX math formulas
+  s = autoWrapUnescapedMath(s);
 
   return s;
 }
@@ -56,6 +103,9 @@ export function renderInlineMathAndMarkdown(
 ): React.ReactNode[] {
   if (!text) return [];
 
+  // Automatically wrap unescaped LaTeX math formulas (e.g. \{(x, y)...\}, E_7, \varepsilon)
+  const preparedText = autoWrapUnescapedMath(text);
+
   // Match:
   // 1. $$ ... $$ (display math)
   // 2. \[ ... \] or \\[ ... \\] (display math)
@@ -70,9 +120,9 @@ export function renderInlineMathAndMarkdown(
   let match: RegExpExecArray | null;
   let keyIdx = 0;
 
-  while ((match = mathRegex.exec(text)) !== null) {
+  while ((match = mathRegex.exec(preparedText)) !== null) {
     if (match.index > lastIndex) {
-      const plainSegment = text.slice(lastIndex, match.index);
+      const plainSegment = preparedText.slice(lastIndex, match.index);
       result.push(
         ...parseInlineMarkdownOnly(plainSegment, `${baseKey}-txt-${keyIdx++}`)
       );
@@ -162,10 +212,10 @@ export function renderInlineMathAndMarkdown(
     lastIndex = mathRegex.lastIndex;
   }
 
-  if (lastIndex < text.length) {
+  if (lastIndex < preparedText.length) {
     result.push(
       ...parseInlineMarkdownOnly(
-        text.slice(lastIndex),
+        preparedText.slice(lastIndex),
         `${baseKey}-txt-${keyIdx++}`
       )
     );

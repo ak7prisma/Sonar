@@ -1,4 +1,5 @@
 import type { ReaderLanguage } from "@/stores/accessibility-store";
+import { autoWrapUnescapedMath } from "@/lib/math/math-markdown-parser";
 
 export interface EquationNarrationResult {
   narrationEn: string;
@@ -98,14 +99,15 @@ function translateSimpleTokens(
 ): string {
   let out = expr
     .replace(/\\,|\\;|\\:|\\!/g, " ")
-    .replace(/\\left\s*\(/g, "(")
-    .replace(/\\right\s*\)/g, ")")
-    .replace(/\\left\s*\[/g, "[")
-    .replace(/\\right\s*\]/g, "]")
+    .replace(/\\left\s*\\\{|\\\{/g, lang === "id" ? " himpunan " : " set of ")
+    .replace(/\\right\s*\\\}|\\\}/g, " ")
+    .replace(/\\left\s*\(|\\right\s*\)/g, " ")
+    .replace(/\\left\s*\[|\\right\s*\]/g, " ")
     .replace(/\\left\s*\|/g, "|")
     .replace(/\\right\s*\|/g, "|")
-    .replace(/\\left\s*\\\{/g, "{")
-    .replace(/\\right\s*\\\}/g, "}")
+    .replace(/([A-Za-z0-9\)])\s*\/\s*([A-Za-z0-9\(])/g, (_m, a, b) =>
+      lang === "id" ? `${a} per ${b}` : `${a} over ${b}`
+    )
     .replace(/\^\{\\circ\}|\^\\circ/g, lang === "id" ? " derajat" : " degrees")
     // Set operations
     .replace(/\\cap\b|\\bigcap\b/g, lang === "id" ? " irisan " : " intersection ")
@@ -193,7 +195,7 @@ function translateSimpleTokens(
     )
     .replace(/[{}]/g, " ")
     // Strip leftover backslashes so speech synthesizer never speaks literal "backslash"
-    .replace(/\\([a-zA-Z]+)/g, "$1")
+    .replace(/\\+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -201,7 +203,15 @@ function translateSimpleTokens(
     out = out
       .replace(/\b0\b/g, "nol")
       .replace(/\b1\b/g, "satu")
-      .replace(/\b2\b/g, "dua");
+      .replace(/\b2\b/g, "dua")
+      .replace(/\b3\b/g, "tiga")
+      .replace(/\b4\b/g, "empat")
+      .replace(/\b5\b/g, "lima")
+      .replace(/\b6\b/g, "enam")
+      .replace(/\b7\b/g, "tujuh")
+      .replace(/\b8\b/g, "delapan")
+      .replace(/\b9\b/g, "sembilan")
+      .replace(/\b10\b/g, "sepuluh");
   }
 
   return out;
@@ -587,6 +597,9 @@ export function narrateMixedText(
 ): string {
   if (!text) return "";
 
+  // Automatically wrap unescaped LaTeX math formulas (e.g. \{(x, y)...\}, E_7, \varepsilon)
+  const preparedText = autoWrapUnescapedMath(text);
+
   // Match:
   // 1. \[ ... \]
   // 2. \( ... \)
@@ -595,7 +608,7 @@ export function narrateMixedText(
   const mathRegex =
     /\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)|\$\$([\s\S]*?)\$\$|\$([^\$\n]+)\$/g;
 
-  let result = text.replace(mathRegex, (_m, disp1, in1, disp2, in2) => {
+  let result = preparedText.replace(mathRegex, (_m, disp1, in1, disp2, in2) => {
     const rawFormula = (disp1 || in1 || disp2 || in2 || "").trim();
     if (!rawFormula) return "";
     const narration = narrateLatexEquation(rawFormula);

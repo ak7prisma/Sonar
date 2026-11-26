@@ -67,4 +67,16 @@ describe("FormattedMathText & KaTeX rendering", () => {
     expect(container.querySelector(".inline-math-container")).toBeNull();
     expect(screen.getByText(/Biaya langganan adalah/)).toBeInTheDocument();
   });
+
+  it("renders un-delimited LaTeX sets, subscripts, and Greek symbols cleanly via KaTeX", () => {
+    const text =
+      'kejadian E_7 = "robot berada 3 kaki" himpunan \\{(x, y), L - 3 \\le x \\le L, 0 \\le y \\le W\\}. E_8 = \\varepsilon \\text{ kaki}';
+    const { container } = render(<FormattedMathText text={text} as="div" />);
+    const katexNodes = container.querySelectorAll(".katex");
+    expect(katexNodes.length).toBeGreaterThanOrEqual(3);
+    const katexHtml = container.querySelector(".katex-html");
+    expect(katexHtml).toBeInTheDocument();
+    expect(katexHtml?.textContent).not.toContain("\\le");
+    expect(katexHtml?.textContent).not.toContain("\\varepsilon");
+  });
 });

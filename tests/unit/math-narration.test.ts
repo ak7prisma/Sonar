@@ -85,4 +85,15 @@ describe("SONAR Deterministic Math Narration & MathML Engine", () => {
     expect(spokenId).not.toContain("\\vec");
     expect(spokenId).not.toContain("backslash");
   });
+
+  it("narrates un-delimited LaTeX sets, subscripts, and Greek symbols naturally without raw code", () => {
+    const text =
+      'kejadian E_7 = "robot" himpunan \\{(x, y), L - 3 \\le x \\le L, 0 \\le y \\le W\\}. E_8 = "robot" \\varepsilon \\text{ kaki}';
+    const spoken = narrateMixedText(text, "id");
+    expect(spoken).toContain("E indeks tujuh");
+    expect(spoken).toContain("himpunan");
+    expect(spoken).toContain("kurang dari atau sama dengan");
+    expect(spoken).toContain("epsilon kaki");
+    expect(spoken).not.toContain("\\");
+  });
 });
