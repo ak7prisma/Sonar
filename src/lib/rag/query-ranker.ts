@@ -79,6 +79,14 @@ export function rankChunksByQuery(
     .split(/\s+/)
     .filter((t) => t.length > 2 && !QUERY_STOPWORDS.has(t));
 
+  const isBroadQuery =
+    /^(apa|tentang apa|rangkum|ringkas|jelaskan|overview|summary|outline|daftar isi|materi apa|isi dari|apa saja)/i.test(
+      query.trim()
+    ) ||
+    /(isi (pdf|dokumen|materi)|ringkasan|rangkuman|garis besar|lanjutan|pembahasan selanjutnya|next topic|overview)/i.test(
+      query
+    );
+
   const scored = chunks.map((chunk, index) => {
     let score = 0;
     const lowerContent = chunk.content.toLowerCase();
@@ -91,8 +99,15 @@ export function rankChunksByQuery(
       if (count === 0 && lowerContent.includes(term)) score += 0.5;
     }
 
+    // For overview or broad continuation queries, ensure early introduction & key section chunks are included
+    if (isBroadQuery) {
+      if (chunk.pageNumber <= 2) score += 2.5;
+      if (chunk.sectionHeading) score += 1.5;
+      score += 1.0;
+    }
+
     const normalizedScore =
-      terms.length > 0 ? Math.min(1.0, score / (terms.length * 2.5)) : 0.5;
+      terms.length > 0 ? Math.min(1.0, score / (terms.length * 2.5)) : isBroadQuery ? 0.85 : 0.5;
 
     return {
       chunkId: `chunk-${documentId}-${chunk.chunkIndex ?? index + 1}`,

@@ -174,7 +174,7 @@ export async function POST(req: Request) {
     "- Render all inline mathematical formulas in LaTeX delimited by \\( ... \\) and standalone display equations with \\[ ... \\].",
     "- Speak politely and encouragingly in " + (language === "id" ? "Bahasa Indonesia" : "English") + ".",
     "- Always ground your statements and cite references using the format [Page X · Topic].",
-    `- TOPIC BOUNDARY: Refuse any question not directly related to this document ("${docTitle}"). Do not answer general knowledge, unrelated coding, or off-topic chitchat.`,
+    `- SCOPE: Support all questions about this document ("${docTitle}"), including summarizing its contents, explaining steps, and discussing the continuation of concepts in this subject. Only refuse completely unrelated chitchat or off-topic queries.`,
   ].join("\n");
 
   const modelMessages = await convertToModelMessages(uiMessages);
