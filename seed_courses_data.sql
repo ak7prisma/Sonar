@@ -47,6 +47,34 @@ BEGIN
       FOR DELETE USING (user_id = auth.uid() OR public.has_role('admin'));
   END IF;
 
+  -- 2b. Ensure can_access_document allows verified documents, volunteers, and course members
+  CREATE OR REPLACE FUNCTION public.can_access_document(target_document_id UUID)
+  RETURNS BOOLEAN
+  LANGUAGE SQL
+  STABLE
+  SECURITY DEFINER
+  SET search_path = public
+  AS $func$
+    SELECT public.has_role('admin') OR public.has_role('volunteer') OR EXISTS (
+      SELECT 1
+      FROM public.documents d
+      LEFT JOIN public.course_members cm
+        ON cm.course_id = d.course_id AND cm.user_id = auth.uid()
+      LEFT JOIN public.document_shares ds
+        ON ds.document_id = d.id
+       AND ds.shared_with_user_id = auth.uid()
+       AND (ds.expires_at IS NULL OR ds.expires_at > NOW())
+      WHERE d.id = target_document_id
+        AND (
+          d.uploaded_by = auth.uid()
+          OR d.review_status = 'verified'
+          OR cm.id IS NOT NULL
+          OR ds.id IS NOT NULL
+          OR public.is_course_member(d.course_id)
+        )
+    );
+  $func$;
+
   -- 3. Ensure RLS on Documents allows reading and inserting verified course materials
   IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'documents') THEN
     DROP POLICY IF EXISTS documents_select_accessible ON public.documents;

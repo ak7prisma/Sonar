@@ -63,6 +63,34 @@ BEGIN
     );
   $func$;
 
+  -- 3b. Update public.can_access_document function to allow verified documents and volunteers
+  CREATE OR REPLACE FUNCTION public.can_access_document(target_document_id UUID)
+  RETURNS BOOLEAN
+  LANGUAGE SQL
+  STABLE
+  SECURITY DEFINER
+  SET search_path = public
+  AS $func$
+    SELECT public.has_role('admin') OR public.has_role('volunteer') OR EXISTS (
+      SELECT 1
+      FROM public.documents d
+      LEFT JOIN public.course_members cm
+        ON cm.course_id = d.course_id AND cm.user_id = auth.uid()
+      LEFT JOIN public.document_shares ds
+        ON ds.document_id = d.id
+       AND ds.shared_with_user_id = auth.uid()
+       AND (ds.expires_at IS NULL OR ds.expires_at > NOW())
+      WHERE d.id = target_document_id
+        AND (
+          d.uploaded_by = auth.uid()
+          OR d.review_status = 'verified'
+          OR cm.id IS NOT NULL
+          OR ds.id IS NOT NULL
+          OR public.is_course_member(d.course_id)
+        )
+    );
+  $func$;
+
   -- 4. Course Members RLS: allow users to enroll themselves
   IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'course_members') THEN
     DROP POLICY IF EXISTS course_members_select_all ON public.course_members;
@@ -164,3 +192,65 @@ BEGIN
       USING (public.can_access_document(document_id) OR public.has_role('admin') OR public.has_role('volunteer'));
   END IF;
 END $$;
+
+-- 9. Seed/Ensure Accessible Document Blocks for CS 201, MATH 105, STAT 210
+DO $$
+DECLARE
+  v_doc_cs UUID := 'b0000000-0000-0000-0000-000000000001'::uuid;
+  v_doc_math UUID := 'b0000000-0000-0000-0000-000000000002'::uuid;
+  v_doc_stat UUID := 'b0000000-0000-0000-0000-000000000003'::uuid;
+
+  v_ver_cs UUID := 'c0000000-0000-0000-0000-000000000001'::uuid;
+  v_ver_math UUID := 'c0000000-0000-0000-0000-000000000002'::uuid;
+  v_ver_stat UUID := 'c0000000-0000-0000-0000-000000000003'::uuid;
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.documents WHERE id = v_doc_cs) THEN
+    -- Ensure current_version_id is set
+    UPDATE public.documents SET current_version_id = v_ver_cs WHERE id = v_doc_cs AND current_version_id IS NULL;
+
+    -- Insert blocks if not yet populated
+    IF NOT EXISTS (SELECT 1 FROM public.document_blocks WHERE document_id = v_doc_cs) THEN
+      INSERT INTO public.document_blocks (
+        document_id, version_id, page_number, reading_order, block_type, heading_level,
+        content_text, content_html, spoken_text, confidence_score, is_verified, metadata
+      )
+      VALUES
+        (
+          v_doc_cs, v_ver_cs, 1, 1, 'heading', 1,
+          '1. Pendahuluan Struktur Pohon Biner Seimbang (AVL Trees)',
+          '<h1>1. Pendahuluan Struktur Pohon Biner Seimbang (AVL Trees)</h1>',
+          'Bab Satu. Pendahuluan Struktur Pohon Biner Seimbang atau AVL Trees.',
+          0.995, true, '{}'::jsonb
+        ),
+        (
+          v_doc_cs, v_ver_cs, 1, 2, 'paragraph', NULL,
+          'Pohon biner pencarian (Binary Search Tree / BST) adalah struktur data hierarkis di mana setiap simpul memiliki maksimal dua anak dengan properti: anak kiri selalu bernilai lebih kecil dan anak kanan selalu bernilai lebih besar dari simpul induk.',
+          '<p>Pohon biner pencarian (Binary Search Tree / BST) adalah struktur data hierarkis di mana setiap simpul memiliki maksimal dua anak dengan properti: anak kiri selalu bernilai lebih kecil dan anak kanan selalu bernilai lebih besar dari simpul induk.</p>',
+          'Pohon biner pencarian adalah struktur data hierarkis di mana setiap simpul memiliki maksimal dua anak dengan properti: anak kiri selalu bernilai lebih kecil dan anak kanan selalu bernilai lebih besar dari simpul induk.',
+          0.985, true, '{}'::jsonb
+        ),
+        (
+          v_doc_cs, v_ver_cs, 1, 3, 'heading', 2,
+          '1.1 Definisi Faktor Keseimbangan (Balance Factor)',
+          '<h2>1.1 Definisi Faktor Keseimbangan (Balance Factor)</h2>',
+          'Subbab satu titik satu. Definisi Faktor Keseimbangan atau Balance Factor.',
+          0.990, true, '{}'::jsonb
+        ),
+        (
+          v_doc_cs, v_ver_cs, 1, 4, 'equation', NULL,
+          'BF(v) = height(left(v)) - height(right(v)) \in \{-1, 0, 1\}',
+          '<math display="block"><mrow><mi>BF</mi><mo>(</mo><mi>v</mi><mo>)</mo><mo>=</mo><mi>height</mi><mo>(</mo><mi>left</mi><mo>(</mo><mi>v</mi><mo>)</mo><mo>)</mo><mo>-</mo><mi>height</mi><mo>(</mo><mi>right</mi><mo>(</mo><mi>v</mi><mo>)</mo><mo>)</mo><mo>&isin;</mo><mo>{</mo><mo>-</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>}</mo></mrow></math>',
+          'B F dari v sama dengan tinggi anak kiri dikurang tinggi anak kanan v, merupakan elemen minus satu, nol, atau satu.',
+          0.990, true, '{"latex": "BF(v) = height(left(v)) - height(right(v)) \\in \\{-1, 0, 1\\}"}'::jsonb
+        ),
+        (
+          v_doc_cs, v_ver_cs, 1, 5, 'table', NULL,
+          'Tabel Perbandingan Kompleksitas Operasi BST vs AVL Tree',
+          '<table><thead><tr><th>Operasi</th><th>BST Kasus Rata-rata</th><th>AVL Tree (Terjamin)</th></tr></thead><tbody><tr><td>Pencarian</td><td>O(log n)</td><td>O(log n)</td></tr><tr><td>Penyisipan</td><td>O(log n)</td><td>O(log n)</td></tr></tbody></table>',
+          'Tabel Perbandingan Kompleksitas Operasi BST versus AVL Tree. Baris satu: Pencarian, BST O log n, AVL O log n. Baris dua: Penyisipan, BST O log n, AVL O log n.',
+          0.975, true, '{"headers": ["Operasi", "BST Kasus Rata-rata", "AVL Tree (Terjamin)"], "rows": [["Pencarian", "O(log n)", "O(log n)"], ["Penyisipan", "O(log n)", "O(log n)"]]}'::jsonb
+        );
+    END IF;
+  END IF;
+END $$;
+
