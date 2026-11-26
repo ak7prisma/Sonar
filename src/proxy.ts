@@ -7,6 +7,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|brand/.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Rute unggah & pemrosesan AI dikecualikan agar body tidak di-buffer/terpotong oleh proxy;
+    // rute tersebut sudah memverifikasi sesi sendiri via getAuthenticatedContext().
+    "/((?!_next/static|_next/image|favicon.ico|brand/.*|api/ocr/scan|api/documents/upload|api/documents/translate|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

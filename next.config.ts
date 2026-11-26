@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   serverExternalPackages: ["mathjax-full", "pdfjs-dist"],
+  experimental: {
+    proxyClientMaxBodySize: "25mb",
+  },
   allowedDevOrigins: [
     "localhost",
     "127.0.0.1",

@@ -26,6 +26,7 @@ import { ReviewStatusChip } from "@/components/app/ReviewStatusChip";
 import { StructuredTable } from "@/components/app/StructuredTable";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { sanitizeDocumentHtml } from "@/lib/accessibility/sanitize";
+import { readJsonSafely } from "@/lib/http/safe-json";
 import { formatVersion } from "@/lib/format";
 import type {
   DocumentBlockRow,
@@ -123,8 +124,8 @@ function BlockReviewEditor({
           signal: controller.signal,
         });
         if (!res.ok) return;
-        const payload = (await res.json()) as { mathml?: string };
-        if (payload.mathml) {
+        const payload = await readJsonSafely<{ mathml?: string }>(res);
+        if (payload?.mathml) {
           setLiveMathMl(payload.mathml);
         }
       } catch {
@@ -179,12 +180,8 @@ function BlockReviewEditor({
         }
       );
 
-      let payload: { error?: string; block?: DocumentBlockRow } = {};
-      try {
-        payload = (await response.json()) as typeof payload;
-      } catch {
-        payload = {};
-      }
+      const payload =
+        (await readJsonSafely<{ error?: string; block?: DocumentBlockRow }>(response)) ?? {};
 
       if (!response.ok || !payload.block) {
         const msg =
@@ -488,12 +485,8 @@ export function ReviewWorkbench({
         }),
       });
 
-      let payload: { error?: string } = {};
-      try {
-        payload = (await response.json()) as typeof payload;
-      } catch {
-        payload = {};
-      }
+      const payload =
+        (await readJsonSafely<{ error?: string }>(response)) ?? {};
 
       if (!response.ok) {
         const msg =

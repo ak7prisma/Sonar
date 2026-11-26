@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
+import { readJsonSafely } from "@/lib/http/safe-json";
 
 export function CourseCreateForm({
   isConfigured,
@@ -34,9 +35,9 @@ export function CourseCreateForm({
         body: JSON.stringify({ code, title, discipline, description }),
       });
 
-      const payload = (await res.json()) as { error?: string };
+      const payload = await readJsonSafely<{ error?: string }>(res);
       if (!res.ok) {
-        const msg = payload.error ?? "Gagal membuat mata kuliah baru.";
+        const msg = payload?.error ?? "Gagal membuat mata kuliah baru.";
         toast.error(msg);
         announce(msg, "assertive");
         return;

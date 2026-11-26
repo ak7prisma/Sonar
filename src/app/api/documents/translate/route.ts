@@ -7,6 +7,8 @@ import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { narrateLatexEquation, narrateMixedText } from "@/features/math-ocr/math-narration";
 import type { ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
 
+export const maxDuration = 60;
+
 const translationSchema = z.object({
   blocks: z.array(
     z.object({
@@ -48,7 +50,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const json = await req.json();
+    const rawBody = await req.text();
+    if (!rawBody.trim()) {
+      return NextResponse.json({ error: "Permintaan terjemahan kosong." }, { status: 400 });
+    }
+    const json = JSON.parse(rawBody) as {
+      blocks?: ExtractedBlockOutput[];
+      targetLanguage?: string;
+    };
     const blocks: ExtractedBlockOutput[] = json.blocks ?? [];
     const targetLanguage: "id" | "en" = json.targetLanguage === "en" ? "en" : "id";
 
@@ -90,6 +99,9 @@ export async function POST(req: Request) {
 
     const result = await generateText({
       model,
+      maxRetries: 0,
+      maxOutputTokens: 8192,
+      abortSignal: AbortSignal.timeout(48_000),
       instructions: promptInstructions,
       messages: [
         {

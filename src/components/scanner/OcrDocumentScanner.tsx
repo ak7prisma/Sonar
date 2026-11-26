@@ -30,7 +30,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
+import { createClient } from "@/lib/supabase/client";
 import { validatePdfFile } from "@/lib/upload/pdf-validation";
+import {
+  SERVERLESS_UPLOAD_LIMIT_BYTES,
+  describeHttpFailure,
+  readJsonSafely,
+} from "@/lib/http/safe-json";
 import { formatFileSize } from "@/lib/format";
 import {
   FormattedMathText,
@@ -81,7 +87,6 @@ export function OcrDocumentScanner({
   const [language, setLanguage] = useState<"id" | "en">("id");
   const [documentTitle, setDocumentTitle] = useState("");
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
-  const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStageMessage, setScanStageMessage] = useState("");
@@ -110,7 +115,6 @@ export function OcrDocumentScanner({
 
   const clearSelection = () => {
     setSelectedPdfFile(null);
-    setPdfDataUrl(null);
     setScanResult(null);
     setHasShared(false);
     setShareSuccessMessage(null);
@@ -154,16 +158,7 @@ export function OcrDocumentScanner({
     }
 
     setSelectedPdfFile(file);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result;
-      if (typeof dataUrl === "string") {
-        setPdfDataUrl(dataUrl);
-        announce(`Berkas PDF ${file.name} siap dipindai.`, "polite");
-      }
-    };
-    reader.readAsDataURL(file);
+    announce(`Berkas PDF ${file.name} siap dipindai.`, "polite");
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -183,7 +178,7 @@ export function OcrDocumentScanner({
   });
 
   const executeOcrScan = async () => {
-    if (!pdfDataUrl || !selectedPdfFile) {
+    if (!selectedPdfFile) {
       const msg = "Pilih berkas dokumen PDF terlebih dahulu sebelum memindai.";
       setErrorMessage(msg);
       announce(msg, "assertive");
@@ -222,24 +217,69 @@ export function OcrDocumentScanner({
         });
       }, 400);
 
-      const response = await fetch("/api/ocr/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: pdfDataUrl,
-          courseId,
-          language,
-          title:
-            documentTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, ""),
-        }),
-        signal: controller.signal,
-      });
+      const resolvedTitle =
+        documentTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, "");
+
+      let response: Response;
+
+      if (selectedPdfFile.size > SERVERLESS_UPLOAD_LIMIT_BYTES) {
+        // Berkas di atas 3,8 MB diunggah langsung ke Supabase Storage dari browser
+        // agar tidak terpotong oleh batas payload Vercel Serverless (4,5 MB).
+        const supabase = createClient();
+        if (!supabase) {
+          throw new Error(
+            `Ukuran PDF (${formatFileSize(selectedPdfFile.size)}) melebihi batas pengiriman langsung 4 MB dan penyimpanan cloud belum terkonfigurasi.`
+          );
+        }
+
+        const safeName =
+          selectedPdfFile.name.replace(/[^\w.-]/g, "_").slice(0, 80) || "document.pdf";
+        const storagePath = `scans/${courseId}/${Date.now()}-${safeName}`;
+
+        const { error: storageErr } = await supabase.storage
+          .from("course-documents")
+          .upload(storagePath, selectedPdfFile, {
+            contentType: "application/pdf",
+            upsert: true,
+          });
+
+        if (storageErr) {
+          throw new Error(
+            `Ukuran PDF (${formatFileSize(selectedPdfFile.size)}) melebihi 4 MB. Masuk ke akun Anda terlebih dahulu atau kompres PDF agar dapat dipindai.`
+          );
+        }
+
+        response = await fetch("/api/ocr/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storagePath,
+            courseId,
+            language,
+            title: resolvedTitle,
+          }),
+          signal: controller.signal,
+        });
+      } else {
+        // Kirim berkas PDF mentah via multipart (±25% lebih kecil daripada base64 JSON)
+        const formData = new FormData();
+        formData.append("image", selectedPdfFile);
+        formData.append("courseId", courseId);
+        formData.append("language", language);
+        formData.append("title", resolvedTitle);
+
+        response = await fetch("/api/ocr/scan", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+      }
 
       let data: (ScanResultData & { error?: string }) | null = null;
       let rawResponseText = "";
       try {
         rawResponseText = await response.text();
-        data = rawResponseText ? JSON.parse(rawResponseText) : null;
+        data = rawResponseText.trim() ? JSON.parse(rawResponseText) : null;
       } catch (parseErr) {
         console.error(
           "[OcrDocumentScanner] Non-JSON response received:",
@@ -266,7 +306,9 @@ export function OcrDocumentScanner({
           serverDetail = titleMatch ? titleMatch[1] : bodyClean.slice(0, 250);
         }
 
-        const formattedError = `Gagal memproses pemindaian OCR (HTTP ${response.status}${response.statusText ? ` - ${response.statusText}` : ""})${serverDetail ? `: ${serverDetail}` : ". Periksa koneksi atau konfigurasi API Key."}`;
+        const formattedError = serverDetail
+          ? `Gagal memproses pemindaian OCR (HTTP ${response.status}${response.statusText ? ` - ${response.statusText}` : ""}): ${serverDetail}`
+          : describeHttpFailure(response.status, "pemindaian OCR");
 
         console.error("[OcrDocumentScanner] OCR Request Failed Details:", {
           httpStatus: response.status,
@@ -354,9 +396,9 @@ export function OcrDocumentScanner({
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error || "Gagal menerjemahkan dokumen.");
+      const json = await readJsonSafely<{ blocks?: ExtractedBlockOutput[]; error?: string }>(res);
+      if (!res.ok || !json || json.error || !json.blocks) {
+        throw new Error(json?.error || describeHttpFailure(res.status, "penerjemahan dokumen"));
       }
 
       const translatedBlocks: ExtractedBlockOutput[] = json.blocks;
@@ -451,9 +493,9 @@ export function OcrDocumentScanner({
         body: formData,
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = await readJsonSafely<{ error?: string }>(res);
       if (!res.ok) {
-        throw new Error(data.error || "Gagal membagikan dokumen ke mata kuliah.");
+        throw new Error(data?.error || describeHttpFailure(res.status, "pembagian dokumen"));
       }
 
       const selectedCourseObj = courses.find((c) => c.id === courseId);
@@ -725,7 +767,7 @@ export function OcrDocumentScanner({
           <Button
             type="button"
             size="lg"
-            disabled={!pdfDataUrl || scanning}
+            disabled={!selectedPdfFile || scanning}
             onClick={executeOcrScan}
             className="min-h-11 rounded-full px-6 text-sm font-semibold shadow-xs"
           >
