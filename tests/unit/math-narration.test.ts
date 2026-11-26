@@ -4,6 +4,7 @@ import {
   narrateMixedText,
 } from "@/features/math-ocr/math-narration";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
+import { parseTableData, narrateTable } from "@/lib/accessibility/table-narration";
 
 describe("SONAR Deterministic Math Narration & MathML Engine", () => {
   it("narrates definite integrals accurately in English and Indonesian", () => {
@@ -95,5 +96,40 @@ describe("SONAR Deterministic Math Narration & MathML Engine", () => {
     expect(spoken).toContain("kurang dari atau sama dengan");
     expect(spoken).toContain("epsilon kaki");
     expect(spoken).not.toContain("\\");
+  });
+
+  it("narrates un-delimited vector equations, coordinate tuples, and norms into natural speech", () => {
+    const text =
+      "Diketahui o{a} dan o{b} di ruang (\\mathbb{R}^3).\n* \\bar{a} + \\bar{b} = (a_1 + b_1, a_2 + b_2, a_3 + b_3)\n* Luas \\|\\bar{u} \\times \\bar{v}\\|";
+    const spoken = narrateMixedText(text, "id");
+    expect(spoken.toLowerCase()).toContain("vektor a");
+    expect(spoken.toLowerCase()).toContain("vektor b");
+    expect(spoken.toLowerCase()).toContain("ruang r tiga");
+    expect(spoken.toLowerCase()).toContain("panjang vektor");
+    expect(spoken.toLowerCase()).toContain("dikali silang");
+    expect(spoken).not.toContain("\\");
+  });
+
+  it("parses and narrates tabular data with mathematical cells cleanly for screen readers", () => {
+    const htmlTable = `
+      <table>
+        <caption>Operasi Vektor</caption>
+        <thead><tr><th>Vektor</th><th>Operasi</th></tr></thead>
+        <tbody>
+          <tr><td>\\bar{a}</td><td>\\bar{a} + \\bar{b}</td></tr>
+          <tr><td>\\bar{u}</td><td>\\|\\bar{u} \\times \\bar{v}\\|</td></tr>
+        </tbody>
+      </table>
+    `;
+    const parsed = parseTableData(htmlTable);
+    expect(parsed.caption).toBe("Operasi Vektor");
+    expect(parsed.headers).toEqual(["Vektor", "Operasi"]);
+    expect(parsed.rows.length).toBe(2);
+
+    const spoken = narrateTable(parsed, "id");
+    expect(spoken).toContain("Tabel: Operasi Vektor");
+    expect(spoken).toContain("Terdiri dari 2 kolom: Vektor, Operasi");
+    expect(spoken).toContain("Baris 1: Vektor: vektor a, Operasi: vektor a tambah vektor b");
+    expect(spoken).toContain("Baris 2: Vektor: vektor u, Operasi: panjang vektor u dikali silang vektor v");
   });
 });

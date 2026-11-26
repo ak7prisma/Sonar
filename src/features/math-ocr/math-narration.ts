@@ -1,5 +1,5 @@
 import type { ReaderLanguage } from "@/stores/accessibility-store";
-import { autoWrapUnescapedMath } from "@/lib/math/math-markdown-parser";
+import { autoWrapUnescapedMath, normalizeMarkdownText } from "@/lib/math/math-markdown-parser";
 
 export interface EquationNarrationResult {
   narrationEn: string;
@@ -147,7 +147,7 @@ function translateSimpleTokens(
     .replace(/\\leftarrow\b/g, lang === "id" ? " dari " : " from ")
     // Common operators
     .replace(/\\cdot\b/g, lang === "id" ? " dot " : " dot ")
-    .replace(/\\times\b/g, lang === "id" ? " dikali " : " times ")
+    .replace(/\\times\b/g, lang === "id" ? " dikali silang " : " cross ")
     .replace(/\\div\b/g, lang === "id" ? " dibagi " : " divided by ")
     .replace(/\\pm\b/g, lang === "id" ? " plus minus " : " plus or minus ")
     .replace(/\\mp\b/g, lang === "id" ? " minus plus " : " minus or plus ")
@@ -155,6 +155,15 @@ function translateSimpleTokens(
     .replace(/\\circ\b/g, lang === "id" ? " derajat " : " degrees ")
     .replace(/\\infty\b/g, lang === "id" ? " tak hingga " : " infinity ")
     .replace(/\\%/g, lang === "id" ? " persen " : " percent ")
+    // Vector & Norm notation
+    .replace(/\\(?:bar|vec|mathbf)\{([^{}]+)\}/g, lang === "id" ? " vektor $1 " : " vector $1 ")
+    .replace(/\\?\|([^|]+)\\?\|/g, (_m, inner) =>
+      lang === "id" ? ` panjang vektor ${inner} ` : ` magnitude of ${inner} `
+    )
+    .replace(/\\mathbb\{R\}\s*\^?\s*\{?([0-9a-zA-Z]*)\}?/g, (_m, dim) =>
+      dim ? (lang === "id" ? ` ruang R ${dim} ` : ` R ${dim} space `) : (lang === "id" ? " ruang bilangan riil " : " real numbers ")
+    )
+    .replace(/\\mathbb\{([A-Za-z])\}/g, "$1")
     // Unwrap formatting and text wrappers
     .replace(/\\(?:text|mathrm|mathbf|mathit|textbf|operatorname)\s*\{([^}]+)\}/g, "$1")
     .replace(/\\(?:quad|qquad|hspace|vspace)\*?(?:\{[^}]*\})?/g, " ");
@@ -597,8 +606,8 @@ export function narrateMixedText(
 ): string {
   if (!text) return "";
 
-  // Automatically wrap unescaped LaTeX math formulas (e.g. \{(x, y)...\}, E_7, \varepsilon)
-  const preparedText = autoWrapUnescapedMath(text);
+  // Normalize markdown text (including OCR vector artifacts) and auto-wrap unescaped LaTeX math formulas
+  const preparedText = autoWrapUnescapedMath(normalizeMarkdownText(text));
 
   // Match:
   // 1. \[ ... \]

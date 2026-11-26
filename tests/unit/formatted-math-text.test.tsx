@@ -79,4 +79,26 @@ describe("FormattedMathText & KaTeX rendering", () => {
     expect(katexHtml?.textContent).not.toContain("\\le");
     expect(katexHtml?.textContent).not.toContain("\\varepsilon");
   });
+
+  it("renders un-delimited vector operations, coordinate tuples, norms, and fractions cleanly via KaTeX", () => {
+    const text1 =
+      "Diketahui o{a} dan o{b} di ruang (\\mathbb{R}^3) dengan \\bar{a} = (a_1, a_2, a_3).\n* \\bar{a} + \\bar{b} = (a_1 + b_1, a_2 + b_2, a_3 + b_3)\n* k\\bar{a} = (ka_1, ka_2, ka_3)";
+    const { container: c1 } = render(<FormattedMathText text={text1} as="div" />);
+    const kNodes1 = c1.querySelectorAll(".katex");
+    expect(kNodes1.length).toBeGreaterThanOrEqual(3);
+    const html1 = c1.querySelector(".katex-html");
+    expect(html1).toBeInTheDocument();
+    expect(html1?.textContent).not.toContain("\\bar{a}");
+    expect(html1?.textContent).not.toContain("\\mathbb{R}");
+
+    const text2 =
+      "Luas jajaran-genjang: \\|\\bar{u} \\times \\bar{v}\\| dan luas segitiga: \\frac{1}{2} \\|\\bar{u} \\times \\bar{v}\\|.";
+    const { container: c2 } = render(<FormattedMathText text={text2} as="div" />);
+    const kNodes2 = c2.querySelectorAll(".katex");
+    expect(kNodes2.length).toBeGreaterThanOrEqual(2);
+    const html2 = c2.querySelector(".katex-html");
+    expect(html2).toBeInTheDocument();
+    expect(html2?.textContent).not.toContain("\\frac{1}{2}");
+    expect(html2?.textContent).not.toContain("\\times");
+  });
 });

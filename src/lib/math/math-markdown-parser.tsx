@@ -4,8 +4,8 @@ import { cn } from "cn";
 
 /**
  * Automatically detects raw LaTeX and math constructs (sets like \{...\}, subscripts like E_7,
- * Greek commands like \varepsilon, and equations) that lack standard delimiters,
- * and safely wraps them in \( ... \) so KaTeX can render them visually.
+ * vectors like \bar{a}, norms \|\bar{u} \times \bar{v}\|, fractions, Greek commands like \varepsilon,
+ * and equations) that lack standard delimiters, and safely wraps them in \( ... \) so KaTeX can render them visually.
  */
 export function autoWrapUnescapedMath(text: string): string {
   if (!text) return "";
@@ -27,36 +27,101 @@ export function autoWrapUnescapedMath(text: string): string {
     (_m, inner) => protect(`\\(\\{${inner}\\}\\)`)
   );
 
-  // 2. Subscript variables: e.g. E_7, E_8, X_1, a_k
+  // 2. Norms / Double vertical bar magnitudes, with optional fraction or coefficient prefix
+  // e.g. \frac{1}{2} \|\bar{u} \times \bar{v}\| or \|\bar{u} \times \bar{v}\|
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])(?:\\frac\{[^{}\n]+\}\{[^{}\n]+\}\s*)?\\?\|([^|\n]+?)\\?\|/g,
+    (_m, inner) => {
+      if (inner.includes("___MATH_PLACEHOLDER_") || inner.includes("\\")) {
+        return protect(`\\(\\|${inner}\\|\\)`);
+      }
+      return _m;
+    }
+  );
+
+  // 3. Parentheses containing LaTeX expressions: e.g. (\mathbb{R}^3), (\bar{u} - \bar{v})
+  workingText = workingText.replace(
+    /\(([^\(\)\n]*?\\[a-zA-Z]+[^\(\)\n]*?)\)/g,
+    (_m, inner) => protect(`\\((${inner})\\)`)
+  );
+
+  // 4. Equations with vector operations and coordinate tuples or assignments
+  // e.g. \bar{a} + \bar{b} = (a_1 + b_1, a_2 + b_2, a_3 + b_3), k\bar{a} = (ka_1, ka_2, ka_3), \bar{a} = (a_1, a_2, a_3)
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])(?:(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*[\+\-\*\/]\s*)*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*=\s*\([^\(\)\n]+\)/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 5. Vector expressions with arithmetic operators: e.g. \bar{a} + \bar{b}, \bar{u} - \bar{v}, \bar{a} \times \bar{b}
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\})\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)(?:\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+))*/g,
+    (m) => {
+      if (m.includes("\\")) {
+        return protect(`\\(${m}\\)`);
+      }
+      return m;
+    }
+  );
+
+  // 6. Standalone fractions: \frac{a}{b}
+  workingText = workingText.replace(
+    /\\frac\{[^{}\n]+\}\{[^{}\n]+\}/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 7. Vector/math accents and Blackboard/Mathbb: e.g. \bar{a}, \bar{b}, \bar{u}, \bar{v}, \mathbb{R}^3, k\bar{a}
+  workingText = workingText.replace(
+    /(?<![a-zA-Z0-9_\\])(?:k\s*)?\\(?:bar|vec|hat|tilde|dot|ddot|mathbf|mathcal|mathbb|mathrm)\{[^{}\n]+\}(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 8. Coordinate tuples with subscripts: e.g. (a_1, a_2, a_3) or (ka_1, ka_2, ka_3)
+  workingText = workingText.replace(
+    /\(\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+(?:\s*[\+\-]\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+)?(?:\s*,\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+(?:\s*[\+\-]\s*(?:k\s*)?[a-zA-Z]_[0-9a-zA-Z]+)?)+\s*\)/g,
+    (m) => protect(`\\(${m}\\)`)
+  );
+
+  // 9. Subscript variables: e.g. E_7, E_8, X_1, a_k
   workingText = workingText.replace(
     /(?<![a-zA-Z0-9_\\])\b([A-Za-z])_([0-9a-zA-Z]+|\{[^}]+\})\b/g,
     (_m, varName, sub) => protect(`\\(${varName}_${sub}\\)`)
   );
 
-  // 3. Standalone Greek / LaTeX symbols with text or exponents: e.g. \varepsilon \text{ kaki}, \varepsilon^2
+  // 10. Standalone Greek / LaTeX symbols with text or exponents: e.g. \varepsilon \text{ kaki}, \varepsilon^2
   workingText = workingText.replace(
     /\\(?:varepsilon|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Delta|Gamma|Theta|Lambda|Xi|Pi|Sigma|Phi|Psi|Omega)(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?(?:\s*\\text\{[^}]+\})?/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
-  return workingText.replace(
-    /___MATH_PLACEHOLDER_(\d+)___/g,
-    (_m, idx) => protectedMath[Number(idx)] ?? _m
-  );
+  // Expand all placeholders iteratively until all nested levels are resolved
+  let prevText = "";
+  while (workingText !== prevText && /___MATH_PLACEHOLDER_\d+___/.test(workingText)) {
+    prevText = workingText;
+    workingText = workingText.replace(
+      /___MATH_PLACEHOLDER_(\d+)___/g,
+      (_m, idx) => protectedMath[Number(idx)] ?? _m
+    );
+  }
+
+  return workingText;
 }
 
 /**
  * Normalizes text to prevent common markdown/LaTeX formatting issues:
  * 1. Windows carriage returns (\r\n -> \n)
- * 2. Glued horizontal rules ("text. --- ### Title" -> "text.\n\n---\n\n### Title")
- * 3. Glued headings ("text. ### Title" -> "text.\n\n### Title")
- * 4. Glued Q&A markers ("**Soal:** ... **Jawaban:** ..." -> "**Soal:** ...\n\n**Jawaban:** ...")
- * 5. Auto-wraps raw LaTeX mathematical symbols and set notations
+ * 2. OCR misread of vector \bar or \vec as o{a} or o{b}
+ * 3. Glued horizontal rules ("text. --- ### Title" -> "text.\n\n---\n\n### Title")
+ * 4. Glued headings ("text. ### Title" -> "text.\n\n### Title")
+ * 5. Glued Q&A markers ("**Soal:** ... **Jawaban:** ..." -> "**Soal:** ...\n\n**Jawaban:** ...")
+ * 6. Auto-wraps raw LaTeX mathematical symbols and set notations
  */
 export function normalizeMarkdownText(raw: string): string {
   if (!raw) return "";
 
   let s = raw.replace(/\r\n/g, "\n");
+
+  // Fix common OCR artifact where vector arrow/bar \vec{a} or \bar{a} was read as o{a} or o{b}
+  s = s.replace(/\bo\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}");
 
   // Separate glued horizontal rules: e.g. "(*screen reader*). --- ### Pertanyaan"
   s = s.replace(

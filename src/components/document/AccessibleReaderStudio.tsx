@@ -49,6 +49,7 @@ import { useAudioReader } from "@/features/audio/use-audio-reader";
 import { useLiveAnnouncer } from "@/components/accessibility/LiveAnnouncer";
 import { sanitizeDocumentHtml } from "@/lib/accessibility/sanitize";
 import { formatVersion } from "@/lib/format";
+import { parseTableData, narrateTable } from "@/lib/accessibility/table-narration";
 import {
   FormattedMathText,
   MathEquationView,
@@ -278,21 +279,36 @@ export function AccessibleReaderStudio({
     () =>
       renderedBlocks.map((block) => {
         const eq = equationsByBlock.get(block.id);
-        const eqSpoken = eq
-          ? language === "id"
-            ? eq.narration_id
-            : eq.narration_en
-          : null;
+        const tbl = tablesByBlock.get(block.id);
+        const fig = figuresByBlock.get(block.id);
+
+        let spoken = block.spoken_text;
+
+        if (!spoken) {
+          if (block.block_type === "equation" && eq) {
+            spoken = language === "id" ? eq.narration_id : eq.narration_en;
+          } else if (block.block_type === "table") {
+            const tableData = parseTableData(
+              block.content_html,
+              tbl,
+              block.content_text
+            );
+            spoken = narrateTable(tableData, language);
+          } else if (block.block_type === "figure" && fig?.summary) {
+            spoken = fig.summary;
+          }
+        }
+
         return {
           id: block.id,
           spokenText: narrateMixedText(
-            eqSpoken ?? block.spoken_text ?? block.content_text,
+            spoken ?? block.content_text,
             language
           ),
           label: `${blockKindLabel(block.block_type)} halaman ${block.page_number}`,
         };
       }),
-    [renderedBlocks, equationsByBlock, language]
+    [renderedBlocks, equationsByBlock, tablesByBlock, figuresByBlock, language]
   );
 
   const handleAudioBlockChange = useCallback((blockId: string) => {
@@ -1069,17 +1085,37 @@ export function AccessibleReaderStudio({
                       )}
 
                       {block.block_type === "table" && (
-                        <div
-                          tabIndex={0}
-                          role="region"
-                          aria-label={`Tabel halaman ${block.page_number}`}
-                          className="overflow-x-auto rounded-xl border border-border"
-                        >
-                          <StructuredTable
-                            html={block.content_html}
-                            table={tblData}
-                            fallbackText={block.content_text}
-                          />
+                        <div className="space-y-3 rounded-2xl border border-brand-teal/30 bg-brand-mint/25 p-4 dark:bg-secondary/25">
+                          <div className="flex flex-wrap items-center justify-start gap-2 font-ui">
+                            <span className="rounded-full bg-brand-mint px-2.5 py-0.5 text-xs font-semibold text-brand-ink">
+                              {language === "id" ? "Tabel Data" : "Data Table"}
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => audio.playFrom(index)}
+                              className="h-9 rounded-full bg-card px-3 text-xs"
+                            >
+                              <Volume2 className="size-3.5" aria-hidden="true" />
+                              <span>
+                                {language === "id" ? "Dengarkan tabel" : "Listen to table"}
+                              </span>
+                            </Button>
+                          </div>
+
+                          <div
+                            tabIndex={0}
+                            role="region"
+                            aria-label={`Tabel halaman ${block.page_number}`}
+                            className="overflow-x-auto rounded-xl border border-border bg-card shadow-2xs"
+                          >
+                            <StructuredTable
+                              html={block.content_html}
+                              table={tblData}
+                              fallbackText={block.content_text}
+                            />
+                          </div>
                         </div>
                       )}
 
