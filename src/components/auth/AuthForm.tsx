@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,8 +42,6 @@ export function AuthForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(
     resetSuccess ? "Kata sandi Anda berhasil diperbarui. Silakan masuk dengan kata sandi baru." : null
   );
-  const [summaryFocusNonce, setSummaryFocusNonce] = useState(0);
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
   const { announce } = useLiveAnnouncer();
 
   const schema = mode === "login" ? loginSchema : registerSchema;
@@ -72,16 +70,6 @@ export function AuthForm({
   });
 
   const selectedRole = useWatch({ control, name: "role" }) || "student";
-
-  const errorEntries = Object.entries(errors).filter(
-    ([, val]) => val && typeof val.message === "string"
-  );
-
-  useEffect(() => {
-    if (summaryFocusNonce > 0) {
-      errorSummaryRef.current?.focus();
-    }
-  }, [summaryFocusNonce]);
 
   useEffect(() => {
     if (initialError) {
@@ -120,7 +108,6 @@ export function AuthForm({
     if (res?.error) {
       setServerError(res.error);
       announce(res.error, "assertive");
-      setSummaryFocusNonce((n) => n + 1);
     } else if (res?.message) {
       setSuccessMessage(res.message);
       announce(res.message, "polite");
@@ -132,42 +119,10 @@ export function AuthForm({
       "Terdapat kesalahan input pada formulir. Silakan periksa kembali.",
       "assertive"
     );
-    setSummaryFocusNonce((n) => n + 1);
   };
 
   return (
     <div className="w-full max-w-md space-y-6">
-      {/* Accessible Error Summary */}
-      {errorEntries.length > 0 && (
-        <div
-          ref={errorSummaryRef}
-          tabIndex={-1}
-          role="alert"
-          aria-labelledby="error-summary-title"
-          className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive outline-none focus-visible:ring-2 focus-visible:ring-destructive"
-        >
-          <h2
-            id="error-summary-title"
-            className="flex items-center gap-2 text-sm font-semibold"
-          >
-            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-            <span>Terdapat {errorEntries.length} kesalahan pada formulir</span>
-          </h2>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
-            {errorEntries.map(([field, err]) => (
-              <li key={field}>
-                <a
-                  href={`#field-${field}`}
-                  className="underline hover:text-foreground focus-visible:outline-2"
-                >
-                  {err?.message}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {serverError && (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
@@ -335,7 +290,6 @@ export function AuthForm({
           onError={(err) => {
             setServerError(err);
             announce(err, "assertive");
-            setSummaryFocusNonce((n) => n + 1);
           }}
         />
       </div>
