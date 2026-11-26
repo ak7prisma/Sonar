@@ -76,6 +76,73 @@ export const TRANSLATIONS = {
     close: "Tutup",
     loading: "Memuat...",
 
+    // Dashboard (Student & Volunteer)
+    greetingHello: "Halo",
+    studentVerifiedSubtitle: "materi perkuliahan sudah terverifikasi dan siap Anda pelajari.",
+    studentEmptySubtitle: "Pilih mata kuliah atau unggah dokumen PDF untuk mulai belajar.",
+    uploadMaterial: "Unggah Materi",
+    mainCourses: "Mata Kuliah Utama",
+    mainCoursesDesc: "Daftar kelas aktif dan materi terstruktur semester ini.",
+    viewAllCourses: "Lihat semua mata kuliah",
+    readyCountLabel: "materi siap",
+    openClassMaterials: "Buka materi kelas",
+    continueLearning: "Lanjutkan belajar",
+    latestMaterial: "Materi terbaru",
+    startReading: "Mulai Membaca",
+    spotlightMetaSuffix: "dengan navigasi per bab, narasi suara, dan rumus MathML.",
+    inReviewSection: "Dalam Peninjauan",
+    inReviewAllVerified: "Seluruh materi yang diunggah sudah selesai diverifikasi volunteer.",
+    inReviewNotice: "Materi berikut sedang diperiksa volunteer sebelum masuk daftar baca utama.",
+    openReviewWorkspace: "Buka ruang kerja review",
+    reviewWorkspaceAria: "Status peninjauan dokumen",
+
+    // Dashboard Ready List
+    readyMaterialsHeading: "Materi Siap Dibaca",
+    readyMaterialsFilterAria: "Filter materi berdasarkan mata kuliah",
+    filterAll: "Semua",
+    readyMaterialsEmptyTitle: "Belum ada materi siap baca pada kategori ini",
+    readyMaterialsEmptyDesc: "Unggah dokumen PDF kuliah baru atau pilih mata kuliah lain untuk membuka materi yang sudah diverifikasi.",
+    readyMaterialsShowAll: "Tampilkan semua materi",
+    readyMaterialsUploadBtn: "Unggah PDF",
+    lastAccessed: " (terakhir diakses)",
+
+    // Volunteer Dashboard
+    volunteerBadge: "Workspace Volunteer & Kurator Konten",
+    volunteerGreetingDesc:
+      "Fokus Anda adalah memverifikasi keakuratan teks OCR, deskripsi visual gambar, dan formula MathML agar mahasiswa tunanetra mendapatkan materi aksesibel berkualitas tinggi.",
+    openReviewQueue: "Buka Antrean Review",
+    statPendingReview: "Menunggu Review",
+    statUnreviewedSub: "berkas belum dibuka",
+    statInReview: "Sedang Ditinjau",
+    statInReviewSub: "Sedang dalam proses koreksi",
+    statNeedsRevision: "Perlu Perbaikan",
+    statNeedsRevisionSub: "Formula/teks butuh revisi",
+    statVerified: "Terverifikasi",
+    statVerifiedSub: "Siap dipelajari mahasiswa",
+    volunteerRulesTitle: "Pedoman & Tanggung Jawab Volunteer",
+    volunteerRulesDesc:
+      "Sebagai volunteer kurator materi, fokus utama Anda adalah kualitas konten semantik dokumen. Harap perhatikan 4 aspek berikut saat melakukan peninjauan:",
+    rule1Title: "1. Teks & Tabel Semantik",
+    rule1Desc:
+      "Pastikan ejaan teks OCR akurat, heading tersusun runtut (H1–H3), dan sel baris/kolom tabel terbaca berurutan.",
+    rule2Title: "2. Deskripsi Visual Figur",
+    rule2Desc:
+      "Periksa deskripsi gambar hasil vision AI agar mahasiswa tunanetra memahami informasi visual grafik atau diagram.",
+    rule3Title: "3. Rumus MathML & LaTeX",
+    rule3Desc:
+      "Verifikasi formula matematika (integral, matriks, pecahan) dan pastikan narasi lisan rumus terbaca alami.",
+    rule4Title: "4. Update Status Verifikasi",
+    rule4Desc:
+      "Ubah status dokumen ke \"Verified\" jika sudah sempurna, agar langsung dapat diakses mahasiswa se-kelas.",
+    priorityQueueTitle: "Dokumen Prioritas Menunggu Review",
+    priorityQueueDesc:
+      "Dokumen yang baru diunggah mahasiswa dan membutuhkan koreksi sebelum dapat dibaca bebas.",
+    viewAllQueue: "Lihat Semua Antrean",
+    queueEmptyTitle: "Semua antrean review telah selesai!",
+    queueEmptyDesc:
+      "Tidak ada dokumen baru yang membutuhkan verifikasi saat ini. Terima kasih atas kontribusi Anda!",
+    startReviewDocument: "Mulai Tinjau Dokumen",
+
     // Marketing Hero
     heroTitle1: "Akses Kuliah",
     heroTitle2: "Tanpa",
@@ -296,6 +363,73 @@ export const TRANSLATIONS = {
     continue: "Continue",
     close: "Close",
     loading: "Loading...",
+
+    // Dashboard (Student & Volunteer)
+    greetingHello: "Hello",
+    studentVerifiedSubtitle: "course materials are verified and ready for you to study.",
+    studentEmptySubtitle: "Select a course or upload a PDF document to start studying.",
+    uploadMaterial: "Upload Material",
+    mainCourses: "Main Courses",
+    mainCoursesDesc: "Active classes and structured materials for this semester.",
+    viewAllCourses: "View all courses",
+    readyCountLabel: "materials ready",
+    openClassMaterials: "Open class materials",
+    continueLearning: "Continue learning",
+    latestMaterial: "Latest material",
+    startReading: "Start Reading",
+    spotlightMetaSuffix: "with chapter navigation, voice narration, and MathML equations.",
+    inReviewSection: "In Review",
+    inReviewAllVerified: "All uploaded materials have been verified by volunteers.",
+    inReviewNotice: "The following materials are being reviewed by volunteers before entering the main reading list.",
+    openReviewWorkspace: "Open review workspace",
+    reviewWorkspaceAria: "Document review status",
+
+    // Dashboard Ready List
+    readyMaterialsHeading: "Ready to Read",
+    readyMaterialsFilterAria: "Filter materials by course",
+    filterAll: "All",
+    readyMaterialsEmptyTitle: "No materials ready to read in this category",
+    readyMaterialsEmptyDesc: "Upload a new course PDF or choose another course to open verified materials.",
+    readyMaterialsShowAll: "Show all materials",
+    readyMaterialsUploadBtn: "Upload PDF",
+    lastAccessed: " (last accessed)",
+
+    // Volunteer Dashboard
+    volunteerBadge: "Volunteer & Content Curator Workspace",
+    volunteerGreetingDesc:
+      "Your focus is verifying OCR text accuracy, visual diagram descriptions, and MathML formulas so blind students receive high-quality accessible materials.",
+    openReviewQueue: "Open Review Queue",
+    statPendingReview: "Pending Review",
+    statUnreviewedSub: "files unreviewed",
+    statInReview: "In Review",
+    statInReviewSub: "Currently in correction process",
+    statNeedsRevision: "Needs Revision",
+    statNeedsRevisionSub: "Formulas/text require revision",
+    statVerified: "Verified",
+    statVerifiedSub: "Ready for students to study",
+    volunteerRulesTitle: "Volunteer Guidelines & Responsibilities",
+    volunteerRulesDesc:
+      "As a volunteer material curator, your primary focus is semantic document quality. Please observe the following 4 aspects during review:",
+    rule1Title: "1. Semantic Text & Tables",
+    rule1Desc:
+      "Ensure OCR text spelling is accurate, headings are hierarchically structured (H1–H3), and table rows/columns are sequential.",
+    rule2Title: "2. Visual Figure Descriptions",
+    rule2Desc:
+      "Verify AI vision diagram descriptions so blind students clearly grasp graphic or flowchart information.",
+    rule3Title: "3. MathML & LaTeX Formulas",
+    rule3Desc:
+      "Verify mathematical formulas (integrals, matrices, fractions) and ensure oral narration sounds natural.",
+    rule4Title: "4. Update Verification Status",
+    rule4Desc:
+      "Change document status to \"Verified\" when perfected, so classmates can instantly access it.",
+    priorityQueueTitle: "Priority Documents Pending Review",
+    priorityQueueDesc:
+      "Documents newly uploaded by students requiring correction before being openly accessible.",
+    viewAllQueue: "View All Queue",
+    queueEmptyTitle: "All review queues are cleared!",
+    queueEmptyDesc:
+      "There are no new documents requiring verification right now. Thank you for your contribution!",
+    startReviewDocument: "Start Document Review",
 
     // Marketing Hero
     heroTitle1: "Academic Access",
