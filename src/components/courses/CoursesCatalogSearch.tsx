@@ -12,6 +12,13 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "cn";
 import { getCourseToneStyles } from "@/lib/course-theme";
 import { APP_IMAGES } from "@/lib/images";
@@ -21,6 +28,7 @@ interface CourseCardData {
   course: CourseRow;
   verifiedCount: number;
   pendingCount: number;
+  docs: DocumentRow[];
 }
 
 interface CoursesCatalogSearchProps {
@@ -29,14 +37,24 @@ interface CoursesCatalogSearchProps {
 }
 
 function getCourseImage(course: { id: string; code: string; discipline: string }) {
-  if (course.id === "math-105") return APP_IMAGES.courseMath;
-  if (course.id === "stat-210") return APP_IMAGES.courseStat;
-  if (course.id === "cs-201") return APP_IMAGES.courseCS;
-
   const code = course.code.toLowerCase();
   const disc = course.discipline.toLowerCase();
-  if (code.includes("math") || disc.includes("matematika")) return APP_IMAGES.courseMath;
-  if (code.includes("stat") || disc.includes("statistika")) return APP_IMAGES.courseStat;
+  if (
+    course.id === "math-105" ||
+    course.id === "a0000000-0000-0000-0000-000000000105" ||
+    code.includes("math") ||
+    disc.includes("matematika")
+  ) {
+    return APP_IMAGES.courseMath;
+  }
+  if (
+    course.id === "stat-210" ||
+    course.id === "a0000000-0000-0000-0000-000000000210" ||
+    code.includes("stat") ||
+    disc.includes("statistika")
+  ) {
+    return APP_IMAGES.courseStat;
+  }
   return APP_IMAGES.courseCS;
 }
 
@@ -59,25 +77,37 @@ export function CoursesCatalogSearch({
     return courses.map((course) => {
       const courseSlug = course.code.toLowerCase().replace(/\s+/g, "-");
       const docs = documents.filter(
-        (d) => d.course_id === course.id || d.course_id === courseSlug
+        (d) =>
+          d.course_id === course.id ||
+          d.course_id === courseSlug ||
+          (course.code === "CS 201" && (d.course_id === "cs-201" || d.course_id === "a0000000-0000-0000-0000-000000000201")) ||
+          (course.code === "MATH 105" && (d.course_id === "math-105" || d.course_id === "a0000000-0000-0000-0000-000000000105")) ||
+          (course.code === "STAT 210" && (d.course_id === "stat-210" || d.course_id === "a0000000-0000-0000-0000-000000000210"))
       );
       const verifiedCount = docs.filter(
         (d) => d.review_status === "verified"
       ).length;
       const pendingCount = docs.length - verifiedCount;
-      return { course, verifiedCount, pendingCount };
+      return { course, verifiedCount, pendingCount, docs };
     });
   }, [courses, documents]);
 
   const filteredCards = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return cardsData.filter(({ course }) => {
+    return cardsData.filter(({ course, docs }) => {
+      const matchesDocKeyword = docs.some(
+        (d) =>
+          d.title.toLowerCase().includes(q) ||
+          d.original_filename?.toLowerCase().includes(q)
+      );
+
       const matchesSearch =
         !q ||
         course.code.toLowerCase().includes(q) ||
         course.title.toLowerCase().includes(q) ||
         course.discipline.toLowerCase().includes(q) ||
-        (course.description && course.description.toLowerCase().includes(q));
+        (course.description && course.description.toLowerCase().includes(q)) ||
+        matchesDocKeyword;
 
       const matchesDiscipline =
         selectedDiscipline === "all" ||
@@ -89,9 +119,9 @@ export function CoursesCatalogSearch({
 
   return (
     <div className="space-y-6">
-      {/* Search Bar & Discipline Filter */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md font-ui">
+      {/* Search Bar & Discipline Filter Dropdown */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center font-ui">
+        <div className="relative flex-1">
           <label htmlFor="courses-search-input" className="sr-only">
             Cari mata kuliah
           </label>
@@ -103,7 +133,7 @@ export function CoursesCatalogSearch({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari kode, judul, atau bidang studi kuliah…"
+            placeholder="Cari kode, judul matkul, atau kata kunci materi…"
             className="w-full h-11 rounded-full border border-input bg-card pl-10 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-xs"
           />
           {searchQuery && (
@@ -118,51 +148,39 @@ export function CoursesCatalogSearch({
           )}
         </div>
 
-        {disciplines.length > 1 && (
-          <div
-            role="group"
-            aria-label="Filter berdasarkan bidang studi"
-            className="flex flex-wrap items-center gap-1.5 font-ui"
-          >
-            <button
-              type="button"
-              aria-pressed={selectedDiscipline === "all"}
-              onClick={() => setSelectedDiscipline("all")}
-              className={cn(
-                "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors",
-                selectedDiscipline === "all"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "border border-border bg-card text-foreground hover:bg-muted"
-              )}
+        {disciplines.length > 0 && (
+          <div className="w-full sm:w-64 shrink-0">
+            <Select
+              value={selectedDiscipline}
+              onValueChange={setSelectedDiscipline}
             >
-              <span>Semua</span>
-              <span className="tabular-nums opacity-80">{courses.length}</span>
-            </button>
-
-            {disciplines.map((disc) => {
-              const active =
-                selectedDiscipline.toLowerCase() === disc.toLowerCase();
-              const count = courses.filter(
-                (c) => c.discipline.toLowerCase() === disc.toLowerCase()
-              ).length;
-              return (
-                <button
-                  key={disc}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setSelectedDiscipline(disc)}
-                  className={cn(
-                    "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "border border-border bg-card text-foreground hover:bg-muted"
-                  )}
-                >
-                  <span>{disc}</span>
-                  <span className="tabular-nums opacity-80">{count}</span>
-                </button>
-              );
-            })}
+              <SelectTrigger
+                id="courses-discipline-filter"
+                aria-label="Filter berdasarkan bidang studi"
+                className="h-11 w-full rounded-full border border-input bg-card px-4 text-sm font-semibold text-foreground shadow-xs cursor-pointer"
+              >
+                <SelectValue placeholder="Semua Bidang Studi" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-border bg-popover shadow-md font-ui">
+                <SelectItem value="all" className="rounded-lg text-sm cursor-pointer py-2 font-medium">
+                  Semua Bidang ({courses.length})
+                </SelectItem>
+                {disciplines.map((disc) => {
+                  const count = courses.filter(
+                    (c) => c.discipline.toLowerCase() === disc.toLowerCase()
+                  ).length;
+                  return (
+                    <SelectItem
+                      key={disc}
+                      value={disc}
+                      className="rounded-lg text-sm cursor-pointer py-2"
+                    >
+                      {disc} ({count})
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
