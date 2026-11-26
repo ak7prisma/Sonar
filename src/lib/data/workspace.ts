@@ -57,7 +57,7 @@ export function listScannedDocuments(): DocumentRow[] {
 
 export const FALLBACK_COURSES: CourseRow[] = [
   {
-    id: "cs-201",
+    id: "a0000000-0000-0000-0000-000000000201",
     code: "CS 201",
     title: "Struktur Data dan Algoritma",
     discipline: "Ilmu Komputer",
@@ -67,7 +67,7 @@ export const FALLBACK_COURSES: CourseRow[] = [
     updated_at: "2026-11-18T08:00:00.000Z",
   },
   {
-    id: "math-105",
+    id: "a0000000-0000-0000-0000-000000000105",
     code: "MATH 105",
     title: "Kalkulus Multivariabel & Aljabar Linier",
     discipline: "Matematika Terapan",
@@ -77,13 +77,43 @@ export const FALLBACK_COURSES: CourseRow[] = [
     updated_at: "2026-11-18T08:00:00.000Z",
   },
   {
-    id: "stat-210",
+    id: "a0000000-0000-0000-0000-000000000210",
     code: "STAT 210",
     title: "Teori Probabilitas & Inferensi Statistik",
     discipline: "Statistika & Sains Data",
     description: "Distribusi probabilitas diskrit dan kontinu, teorema limit pusat, estimasi parameter, uji hipotesis, dan tabel statistik terstruktur.",
     created_by: "usr-admin-001",
     created_at: "2026-10-30T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000101",
+    code: "PHYS 101",
+    title: "Fisika Dasar & Mekanika Klasik",
+    discipline: "Fisika & Rekayasa",
+    description: "Kinematika, dinamika Newton, hukum kekekalan energi, momentum, getaran harmonik, dan deskripsi visual diagram gaya.",
+    created_by: "usr-admin-001",
+    created_at: "2026-11-01T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000211",
+    code: "IF 211",
+    title: "Rekayasa Perangkat Lunak & Sistem Terdistribusi",
+    discipline: "Informatika",
+    description: "Arsitektur perangkat lunak, pemodelan semantik, desain API aksesibel, mikroservis, dan pengujian keandalan sistem.",
+    created_by: "usr-admin-001",
+    created_at: "2026-11-02T08:00:00.000Z",
+    updated_at: "2026-11-18T08:00:00.000Z",
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000301",
+    code: "AI 301",
+    title: "Pengantar Kecerdasan Buatan & Pembelajaran Mesin",
+    discipline: "Kecerdasan Buatan",
+    description: "Representasi pengetahuan, pencarian heuristik, regresi, klasifikasi, transformer multimodal, dan model pemrosesan bahasa alami.",
+    created_by: "usr-admin-001",
+    created_at: "2026-11-03T08:00:00.000Z",
     updated_at: "2026-11-18T08:00:00.000Z",
   },
 ];
