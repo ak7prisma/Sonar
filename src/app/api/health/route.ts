@@ -10,6 +10,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     service: "sonar-platform",
+    version: "sonar-build-fix-v2",
     timestamp: new Date().toISOString(),
     integrations: {
       supabasePublic: isSupabaseConfigured(),
