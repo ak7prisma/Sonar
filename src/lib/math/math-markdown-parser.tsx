@@ -463,7 +463,7 @@ export function renderMarkdownBlocks(text: string): React.ReactNode {
 
     if (pLines.length > 0) {
       elements.push(
-        <p key={`b-p-${keyIdx++}`} className="leading-relaxed mb-2 last:mb-0">
+        <p key={`b-p-${keyIdx++}`} className="mb-2 last:mb-0">
           {renderInlineMathAndMarkdown(pLines.join("\n"), `p-${keyIdx++}`)}
         </p>
       );

@@ -47,6 +47,7 @@ export function AccessibilityProvider({
 
     root.setAttribute("data-contrast", contrastMode);
     root.setAttribute("data-surface", readingSurface);
+    root.setAttribute("data-reading-font", readingFont === "atkinson" ? "atkinson" : "default");
     root.setAttribute(
       "data-reduced-motion",
       motionPreference === "reduce" ? "true" : "false"

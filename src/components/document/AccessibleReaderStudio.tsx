@@ -172,6 +172,8 @@ export function AccessibleReaderStudio({
   const setNarrationSpeed = useAccessibilityStore((s) => s.setNarrationSpeed);
   const fontSizePx = useAccessibilityStore((s) => s.fontSizePx);
   const setFontSizePx = useAccessibilityStore((s) => s.setFontSizePx);
+  const readingFont = useAccessibilityStore((s) => s.readingFont);
+  const lineHeight = useAccessibilityStore((s) => s.lineHeight);
 
   const { announce } = useLiveAnnouncer();
   const { bookmarks, toggleBookmark } = useDocumentBookmarks(document.id);
@@ -1004,7 +1006,18 @@ export function AccessibleReaderStudio({
             >
               <div
                 className="sonar-reader-prose w-full space-y-6"
-                style={{ "--reader-font-size": `${fontSizePx}px` } as React.CSSProperties}
+                style={
+                  {
+                    fontFamily:
+                      readingFont === "atkinson"
+                        ? "var(--font-atkinson-hyperlegible), sans-serif"
+                        : "var(--font-poppins), sans-serif",
+                    fontSize: `${fontSizePx}px`,
+                    lineHeight: lineHeight,
+                    "--reader-font-size": `${fontSizePx}px`,
+                    "--reader-line-height": `${lineHeight}`,
+                  } as React.CSSProperties
+                }
               >
                 {filteredBlocks.map((block, index) => {
                   const isCurrent = activeBlockId === block.id;
@@ -1051,7 +1064,7 @@ export function AccessibleReaderStudio({
                       {block.block_type === "paragraph" && (
                         <FormattedMathText
                           text={block.content_text}
-                          className="text-foreground leading-relaxed font-reader"
+                          className="text-foreground"
                         />
                       )}
 

@@ -352,22 +352,31 @@ html.dark[data-contrast="high"] {
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 35% 40%, #000 25%, transparent 80%);
 }
 
+/* Dynamic Reading Font Override across entire platform when Atkinson is active */
+html[data-reading-font="atkinson"],
+html[data-reading-font="atkinson"] body,
+html[data-reading-font="atkinson"] .font-sans,
+html[data-reading-font="atkinson"] .font-ui {
+  font-family: var(--font-atkinson-hyperlegible), ui-sans-serif, sans-serif !important;
+}
+
 /* Accessible Document Reader Surface Typography */
 .sonar-reader-prose {
-  font-family: var(--reader-font-family, var(--font-poppins), ui-sans-serif, sans-serif);
-  font-size: var(--reader-font-size, 1.125rem);
-  line-height: var(--reader-line-height, 1.72);
-  letter-spacing: var(--reader-letter-spacing, 0em);
+  font-family: var(--reader-font-family, var(--font-poppins), ui-sans-serif, sans-serif) !important;
+  font-size: var(--reader-font-size, 1.125rem) !important;
+  line-height: var(--reader-line-height, 1.72) !important;
+  letter-spacing: var(--reader-letter-spacing, 0em) !important;
   width: 100%;
 }
 
 .sonar-reader-prose p,
 .sonar-reader-prose li,
 .sonar-reader-prose blockquote,
+.sonar-reader-prose div,
 .sonar-reader-prose .font-reader {
   font-family: var(--reader-font-family, inherit) !important;
   font-size: var(--reader-font-size, inherit) !important;
-  line-height: var(--reader-line-height, inherit);
+  line-height: var(--reader-line-height, inherit) !important;
   letter-spacing: var(--reader-letter-spacing, inherit);
 }
 
