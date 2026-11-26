@@ -78,6 +78,13 @@ export async function POST(req: Request) {
 
     if (dbCourse) {
       targetCourseId = dbCourse.id;
+    } else {
+      return NextResponse.json(
+        {
+          error: `Mata kuliah '${targetCourseId}' tidak ditemukan di database Supabase. Jalankan script seed_courses_data.sql di Supabase SQL Editor untuk menghubungkan katalog mata kuliah.`,
+        },
+        { status: 400 }
+      );
     }
   }
 
