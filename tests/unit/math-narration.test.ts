@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   narrateLatexEquation,
   narrateMixedText,
+  narrateTableBlock,
 } from "@/features/math-ocr/math-narration";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
 import { parseTableData, narrateTable } from "@/lib/accessibility/table-narration";
+import { autoWrapUnescapedMath } from "@/lib/math/math-markdown-parser";
 
 describe("SONAR Deterministic Math Narration & MathML Engine", () => {
   it("narrates definite integrals accurately in English and Indonesian", () => {
@@ -131,5 +133,50 @@ describe("SONAR Deterministic Math Narration & MathML Engine", () => {
     expect(spoken).toContain("Terdiri dari 2 kolom: Vektor, Operasi");
     expect(spoken).toContain("Baris 1: Vektor: vektor a, Operasi: vektor a tambah vektor b");
     expect(spoken).toContain("Baris 2: Vektor: vektor u, Operasi: panjang vektor u dikali silang vektor v");
+  });
+
+  it("narrates structured table blocks directly with mathematical cell contents", () => {
+    const tableSpeech = narrateTableBlock(
+      "Kriteria Uji Matriks Hessian",
+      ["Kondisi", "Hasil"],
+      [
+        ["D > 0 dan f_xx > 0", "Minimum Lokal"],
+        ["\\|\\bar{u} \\times \\bar{v}\\| = 0", "\\bar{u} sejajar \\bar{v}"],
+      ],
+      "id"
+    );
+
+    expect(tableSpeech).toContain("Tabel: Kriteria Uji Matriks Hessian");
+    expect(tableSpeech).toContain("Memiliki 2 kolom dan 2 baris");
+    expect(tableSpeech).toContain("Judul kolom: Kondisi, Hasil");
+    expect(tableSpeech).toContain("Baris 1: Kondisi: D > 0 dan f indeks xx > 0; Hasil: Minimum Lokal");
+    expect(tableSpeech).toContain("Baris 2: Kondisi: panjang vektor u dikali silang vektor v = 0; Hasil: vektor u sejajar vektor v");
+  });
+
+  it("safely auto-wraps Indonesian vector and norm sentences without capturing prose words", () => {
+    const s1 = "Diketahui o{a} dan o{b} merupakan vektor di ruang (\\mathbb{R}^3) maka \\bar{a} = (a_1, a_2, a_3)";
+    const wrapped1 = autoWrapUnescapedMath(s1);
+    expect(wrapped1).toContain("\\(\\bar{a}\\)");
+    expect(wrapped1).toContain("\\(\\bar{b}\\)");
+    expect(wrapped1).toContain("\\((\\mathbb{R}^3)\\)");
+    expect(wrapped1).toContain("\\(\\bar{a} = (a_1, a_2, a_3)\\)");
+
+    const s4 = "Luas jajaran-genjang yang dibentuk oleh vektor \\bar{u} & \\bar{v} adalah \\|\\bar{u} \\times \\bar{v}\\|";
+    const wrapped4 = autoWrapUnescapedMath(s4);
+    expect(wrapped4).toContain("\\(\\|\\bar{u} \\times \\bar{v}\\|\\)");
+    expect(wrapped4).not.toContain("adalah \\|");
+    expect(wrapped4).not.toContain("vektor \\bar{u}");
+
+    const s5 = "Luas segitiga adalah \\frac{1}{2} \\|\\bar{u} \\times \\bar{v}\\|";
+    const wrapped5 = autoWrapUnescapedMath(s5);
+    expect(wrapped5).toContain("\\(\\frac{1}{2} \\|\\bar{u} \\times \\bar{v}\\|\\)");
+  });
+
+  it("narrates vector norms with \\bar without flagging them as unsupported", () => {
+    const res = narrateLatexEquation("\\frac{1}{2} \\|\\bar{u} \\times \\bar{v}\\|");
+    expect(res.supported).toBe(true);
+    expect(res.unsupportedConstructs).toHaveLength(0);
+    expect(res.narrationId).not.toContain("Peringatan:");
+    expect(res.narrationId).toContain("panjang vektor u dikali silang vektor v");
   });
 });

@@ -10,9 +10,8 @@ import {
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getDefaultOcrProvider, type ExtractedBlockOutput } from "@/features/ocr/ocr-provider";
-import { extractPdfTextPages } from "@/features/pdf-processing/text-extractor";
 import { latexToMathMl } from "@/features/math-ocr/latex-to-mathml";
-import { narrateLatexEquation, narrateMixedText } from "@/features/math-ocr/math-narration";
+import { narrateLatexEquation, narrateMixedText, narrateTableBlock } from "@/features/math-ocr/math-narration";
 import { normalizeMarkdownText } from "@/lib/math/math-markdown-parser";
 import {
   FALLBACK_COURSES,
@@ -129,6 +128,7 @@ export async function POST(req: Request) {
 
     try {
       if (cleanBase64.startsWith("JVBERi") || imageBase64.includes("pdf")) {
+        const { extractPdfTextPages } = await import("@/features/pdf-processing/text-extractor");
         const buffer = Buffer.from(cleanBase64, "base64");
         const pages = await extractPdfTextPages(new Uint8Array(buffer));
         const combined = pages
@@ -205,6 +205,21 @@ export async function POST(req: Request) {
           spokenText: spoken,
         };
       }
+
+      if (block.blockType === "table") {
+        const tableSpoken = narrateTableBlock(
+          normalizedText,
+          block.tableHeaders,
+          block.tableRows,
+          language
+        );
+        return {
+          ...block,
+          contentText: normalizedText,
+          spokenText: tableSpoken,
+        };
+      }
+
       return {
         ...block,
         contentText: normalizedText,

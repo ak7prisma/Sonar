@@ -535,9 +535,17 @@ export function narrateLatexEquation(latex: string): EquationNarrationResult {
     "\\rightarrow",
     "\\leftarrow",
     "\\vec",
+    "\\bar",
     "\\hat",
+    "\\tilde",
+    "\\dot",
+    "\\ddot",
     "\\circ",
     "\\Vert",
+    "\\mathbb",
+    "\\mathcal",
+    "\\bm",
+    "\\boldsymbol",
     "\\infty",
     "\\dots",
     "\\cdots",
@@ -657,3 +665,78 @@ export function narrateMixedText(
 
   return result;
 }
+
+/**
+ * Generates clear, accessible, and structured speech narration for academic tables,
+ * including table caption, row/column dimensions, column headers, and each cell's contents
+ * with embedded mathematical formula translation.
+ */
+export function narrateTableBlock(
+  caption: string,
+  tableHeaders?: string[],
+  tableRows?: string[][],
+  lang: ReaderLanguage = "id"
+): string {
+  const parts: string[] = [];
+  const cleanCaption = caption.replace(/^Tabel\s*:\s*/i, "").trim();
+
+  if (lang === "id") {
+    if (cleanCaption) {
+      parts.push(`Tabel: ${narrateMixedText(cleanCaption, "id")}.`);
+    } else {
+      parts.push("Tabel terstruktur.");
+    }
+
+    const rowCount = tableRows?.length ?? 0;
+    const colCount = tableHeaders?.length ?? (tableRows?.[0]?.length ?? 0);
+    if (colCount > 0) {
+      parts.push(`Memiliki ${colCount} kolom${rowCount > 0 ? ` dan ${rowCount} baris` : ""}.`);
+    }
+
+    if (tableHeaders && tableHeaders.length > 0) {
+      const narratedHeaders = tableHeaders.map((h) => narrateMixedText(h, "id"));
+      parts.push(`Judul kolom: ${narratedHeaders.join(", ")}.`);
+    }
+
+    if (tableRows && tableRows.length > 0) {
+      tableRows.forEach((row, rIdx) => {
+        const rowCells = row.map((cell, cIdx) => {
+          const headerPrefix = tableHeaders?.[cIdx] ? `${narrateMixedText(tableHeaders[cIdx], "id")}: ` : "";
+          return `${headerPrefix}${narrateMixedText(cell, "id")}`;
+        });
+        parts.push(`Baris ${rIdx + 1}: ${rowCells.join("; ")}.`);
+      });
+    }
+  } else {
+    // English narration
+    if (cleanCaption) {
+      parts.push(`Table: ${narrateMixedText(cleanCaption, "en")}.`);
+    } else {
+      parts.push("Structured table.");
+    }
+
+    const rowCount = tableRows?.length ?? 0;
+    const colCount = tableHeaders?.length ?? (tableRows?.[0]?.length ?? 0);
+    if (colCount > 0) {
+      parts.push(`Has ${colCount} columns${rowCount > 0 ? ` and ${rowCount} rows` : ""}.`);
+    }
+
+    if (tableHeaders && tableHeaders.length > 0) {
+      const narratedHeaders = tableHeaders.map((h) => narrateMixedText(h, "en"));
+      parts.push(`Column headers: ${narratedHeaders.join(", ")}.`);
+    }
+
+    if (tableRows && tableRows.length > 0) {
+      tableRows.forEach((row, rIdx) => {
+        const rowCells = row.map((cell, cIdx) => {
+          const headerPrefix = tableHeaders?.[cIdx] ? `${narrateMixedText(tableHeaders[cIdx], "en")}: ` : "";
+          return `${headerPrefix}${narrateMixedText(cell, "en")}`;
+        });
+        parts.push(`Row ${rIdx + 1}: ${rowCells.join("; ")}.`);
+      });
+    }
+  }
+
+  return parts.join(" ");
+}
+

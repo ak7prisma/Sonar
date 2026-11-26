@@ -36,7 +36,7 @@ import {
   FormattedMathText,
   MathEquationView,
 } from "@/components/document/FormattedMathText";
-import { narrateMixedText } from "@/features/math-ocr/math-narration";
+import { narrateMixedText, narrateTableBlock } from "@/features/math-ocr/math-narration";
 import { ScannedMaterialAiChat } from "@/components/scanner/ScannedMaterialAiChat";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { CourseRow } from "@/lib/data/workspace";
@@ -222,16 +222,18 @@ export function OcrDocumentScanner({
         });
       }, 400);
 
+      const formData = new FormData();
+      formData.append("image", selectedPdfFile);
+      formData.append("courseId", courseId);
+      formData.append("language", language);
+      formData.append(
+        "title",
+        documentTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, "")
+      );
+
       const response = await fetch("/api/ocr/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: pdfDataUrl,
-          courseId,
-          language,
-          title:
-            documentTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, ""),
-        }),
+        body: formData,
         signal: controller.signal,
       });
 
@@ -414,7 +416,12 @@ export function OcrDocumentScanner({
   const speakAllDocument = () => {
     if (!scanResult || scanResult.blocks.length === 0) return;
     const fullText = scanResult.blocks
-      .map((b) => narrateMixedText(b.spokenText || b.contentText, language))
+      .map((b) => {
+        if (b.blockType === "table" && (b.tableHeaders || b.tableRows)) {
+          return b.spokenText || narrateTableBlock(b.contentText, b.tableHeaders, b.tableRows, language);
+        }
+        return narrateMixedText(b.spokenText || b.contentText, language);
+      })
       .join(". ");
     speakText(fullText, -1);
   };
@@ -958,9 +965,18 @@ export function OcrDocumentScanner({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      onClick={() =>
-                        speakText(block.spokenText || block.contentText, idx)
-                      }
+                      onClick={() => {
+                        let spoken = block.spokenText;
+                        if (!spoken && block.blockType === "table" && (block.tableHeaders || block.tableRows)) {
+                          spoken = narrateTableBlock(
+                            block.contentText,
+                            block.tableHeaders,
+                            block.tableRows,
+                            language
+                          );
+                        }
+                        speakText(spoken || block.contentText, idx);
+                      }}
                       className="h-9 rounded-full px-3 text-xs"
                     >
                       {isPlayingThis ? (

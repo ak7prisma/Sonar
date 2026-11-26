@@ -14,33 +14,41 @@ export interface ExtractedPdfPage {
 export async function extractPdfTextPages(
   pdfBytes: Uint8Array
 ): Promise<ExtractedPdfPage[]> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const loadingTask = pdfjs.getDocument({
-    data: pdfBytes,
-    useWorkerFetch: false,
-    disableFontFace: true,
-  });
-
-  const doc = await loadingTask.promise;
-  const pages: ExtractedPdfPage[] = [];
-
   try {
-    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
-      const page = await doc.getPage(pageNumber);
-      const textContent = await page.getTextContent();
-      const strings = textContent.items
-        .map((item) => ("str" in item ? item.str : ""))
-        .filter(Boolean);
-      const rawText = strings.join(" ").replace(/\s+/g, " ").trim();
-      pages.push({
-        pageNumber,
-        rawText,
-        hasTextLayer: rawText.length >= 25,
-      });
-    }
-  } finally {
-    await loadingTask.destroy();
-  }
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({
+      data: pdfBytes,
+      useWorkerFetch: false,
+      disableFontFace: true,
+    });
 
-  return pages;
+    const doc = await loadingTask.promise;
+    const pages: ExtractedPdfPage[] = [];
+
+    try {
+      for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
+        const page = await doc.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        const strings = textContent.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .filter(Boolean);
+        const rawText = strings.join(" ").replace(/\s+/g, " ").trim();
+        pages.push({
+          pageNumber,
+          rawText,
+          hasTextLayer: rawText.length >= 25,
+        });
+      }
+    } finally {
+      await loadingTask.destroy();
+    }
+
+    return pages;
+  } catch (err) {
+    console.warn(
+      "[extractPdfTextPages] PDF text layer extraction skipped or unsupported in environment:",
+      err instanceof Error ? err.message : String(err)
+    );
+    return [];
+  }
 }

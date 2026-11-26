@@ -19,7 +19,9 @@ export function autoWrapUnescapedMath(text: string): string {
     return `___MATH_PLACEHOLDER_${idx}___`;
   };
 
-  let workingText = text.replace(mathRegex, (m) => protect(m));
+  let workingText = text
+    .replace(/(?<![a-zA-Z0-9\\])o\{([a-zA-Z0-9]+)\}/g, "\\bar{$1}")
+    .replace(mathRegex, (m) => protect(m));
 
   // 1. Set notation: e.g. \{(x, y), L - 3 \le x \le L, 0 \le y \le W\} or \{(x, y) \in S, ...\}
   workingText = workingText.replace(
@@ -27,13 +29,13 @@ export function autoWrapUnescapedMath(text: string): string {
     (_m, inner) => protect(`\\(\\{${inner}\\}\\)`)
   );
 
-  // 2. Norms / Double vertical bar magnitudes, with optional fraction or coefficient prefix
+  // 2. Norms / Double vertical bar magnitudes, with optional fraction or single scalar prefix
   // e.g. \frac{1}{2} \|\bar{u} \times \bar{v}\| or \|\bar{u} \times \bar{v}\|
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:(?:\\frac\{[^{}\n]+\}\{[^{}\n]+\}|-?[0-9a-zA-Z\/\.\-]+)\s*)?\\?\|([^|\n]+?)\\?\|/g,
+    /(?<![a-zA-Z0-9_\\])(?:(?:\\frac\{[^{}\n]+\}\{[^{}\n]+\}|-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?(?:\\\||\|)([^|\n]+?)(?:\\\||\|)/g,
     (m, inner) => {
       if (inner.includes("___MATH_PLACEHOLDER_") || inner.includes("\\")) {
-        const clean = m.replace(/^\\?\|/, "\\|").replace(/\\?\|$/, "\\|");
+        const clean = m.replace(/^(?:\\\||\|)/, "\\|").replace(/(?:\\\||\|)$/, "\\|");
         return protect(`\\(${clean}\\)`);
       }
       return m;
@@ -49,13 +51,13 @@ export function autoWrapUnescapedMath(text: string): string {
   // 4. Equations with vector operations and coordinate tuples or assignments
   // e.g. \bar{a} + \bar{b} = (a_1 + b_1, a_2 + b_2, a_3 + b_3), k\bar{a} = (ka_1, ka_2, ka_3), \bar{a} = (a_1, a_2, a_3)
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*[\+\-\*\/]\s*)*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*=\s*\([^\(\)\n]+\)/g,
+    /(?<![a-zA-Z0-9_\\])(?:(?:(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*[\+\-\*\/]\s*)*(?:(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)\s*=\s*\([^\(\)\n]+\)/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
   // 5. Vector expressions with arithmetic operators: e.g. \bar{a} + \bar{b}, \bar{u} - \bar{v}, \bar{a} \times \bar{b}
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\})\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)(?:\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:[a-zA-Z0-9]*\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+))*/g,
+    /(?<![a-zA-Z0-9_\\])(?:(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\})\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+)(?:\s*(?:[\+\-\*\/]|\\times|\\cdot)\s*(?:(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|mathbf)\{[a-zA-Z0-9]+\}|[a-zA-Z0-9_]+))*/g,
     (m) => {
       if (m.includes("\\")) {
         return protect(`\\(${m}\\)`);
@@ -72,7 +74,7 @@ export function autoWrapUnescapedMath(text: string): string {
 
   // 7. Vector/math accents and Blackboard/Mathbb: e.g. \bar{a}, \bar{b}, \bar{u}, \bar{v}, \mathbb{R}^3, k\bar{a}, 2\bar{a}
   workingText = workingText.replace(
-    /(?<![a-zA-Z0-9_\\])(?:-?[0-9a-zA-Z]+\s*)?\\(?:bar|vec|hat|tilde|dot|ddot|mathbf|mathcal|mathbb|mathrm)\{[^{}\n]+\}(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?/g,
+    /(?<![a-zA-Z0-9_\\])(?:(?:-?\d+(?:\.\d+)?|\b[a-zA-Z])\s*)?\\(?:bar|vec|hat|tilde|dot|ddot|mathbf|mathcal|mathbb|mathrm)\{[^{}\n]+\}(?:\^[0-9a-zA-Z]+|\^\{[^}]+\}|_[0-9a-zA-Z]+|_{[^}]+})?/g,
     (m) => protect(`\\(${m}\\)`)
   );
 
