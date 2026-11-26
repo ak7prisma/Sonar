@@ -16,6 +16,18 @@ const PROTECTED_PREFIXES = [
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const pathname = request.nextUrl.pathname;
+
+  // Intercept OAuth callback codes if they land on the root "/" or any other non-callback page
+  const authCode = request.nextUrl.searchParams.get("code");
+  if (authCode && !pathname.startsWith("/auth/callback")) {
+    const callbackRedirectUrl = request.nextUrl.clone();
+    callbackRedirectUrl.pathname = "/auth/callback";
+    if (!callbackRedirectUrl.searchParams.has("next")) {
+      callbackRedirectUrl.searchParams.set("next", "/dashboard");
+    }
+    return NextResponse.redirect(callbackRedirectUrl);
+  }
+
   const requiresAuth = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

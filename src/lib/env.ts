@@ -94,5 +94,20 @@ export function isInngestConfigured(): boolean {
 
 export function getAppUrl(): string {
   const env = getPublicEnv();
-  return env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  if (env.NEXT_PUBLIC_APP_URL) {
+    return env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    const host = process.env.NEXT_PUBLIC_VERCEL_URL.replace(/\/$/, "");
+    return host.startsWith("http") ? host : `https://${host}`;
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    const host = process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/$/, "");
+    return host.startsWith("http") ? host : `https://${host}`;
+  }
+  if (process.env.VERCEL_URL) {
+    const host = process.env.VERCEL_URL.replace(/\/$/, "");
+    return host.startsWith("http") ? host : `https://${host}`;
+  }
+  return "http://localhost:3000";
 }

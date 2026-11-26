@@ -120,6 +120,17 @@ export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const [activeTestimonialIdx, setActiveTestimonialIdx] = useState(0);
 
+  // Catch any OAuth code landing on the root landing page and forward to auth callback
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get("code");
+      if (code) {
+        window.location.replace(`/auth/callback${window.location.search}`);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
