@@ -19,7 +19,7 @@ async function ReviewQueueBody() {
   const snapshot = await loadWorkspaceSnapshot();
   const userRoles = snapshot.user?.roles ?? ["student"];
   const canReview = userRoles.some(
-    (role) => role === "reviewer" || role === "volunteer" || role === "admin"
+    (role) => role === "volunteer" || role === "admin"
   );
   if (!canReview) {
     redirect("/forbidden");

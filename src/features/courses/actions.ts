@@ -49,7 +49,7 @@ export async function toggleCourseEnrollmentAction(courseId: string): Promise<{
   // Enroll
   const role = auth.roles.includes("admin")
     ? "instructor"
-    : auth.roles.includes("reviewer")
+    : auth.roles.includes("volunteer")
     ? "reviewer"
     : "student";
 

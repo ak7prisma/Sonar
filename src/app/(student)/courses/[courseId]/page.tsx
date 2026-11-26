@@ -52,7 +52,6 @@ async function CourseDetailBody({
   const userRoles = currentUser?.roles ?? [];
   const canReview =
     userRoles.includes("admin") ||
-    userRoles.includes("reviewer") ||
     userRoles.includes("volunteer");
 
   return (

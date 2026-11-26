@@ -110,7 +110,7 @@ export async function registerAction(input: {
   password: string;
   fullName: string;
   studyProgram?: string;
-  role?: "student" | "volunteer" | "reviewer" | "admin";
+  role?: "student" | "volunteer" | "admin";
 }): Promise<AuthActionResult> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success) {

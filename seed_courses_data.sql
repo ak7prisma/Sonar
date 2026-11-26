@@ -56,7 +56,7 @@ BEGIN
         OR review_status = 'verified'
         OR public.is_course_member(course_id)
         OR public.has_role('admin')
-        OR public.has_role('reviewer')
+        OR public.has_role('volunteer')
       );
   END IF;
 END $$;

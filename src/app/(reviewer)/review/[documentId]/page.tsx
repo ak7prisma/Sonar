@@ -42,7 +42,7 @@ async function ReviewDetailBody({
   }
 
   const canReview = detail.viewerRoles.some(
-    (role) => role === "reviewer" || role === "volunteer" || role === "admin"
+    (role) => role === "volunteer" || role === "admin"
   );
 
   if (!canReview) {

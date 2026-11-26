@@ -23,7 +23,7 @@ function MobileBottomNavInner({
 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const isAdmin = userRoles.includes("admin");
-  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+  const isVolunteer = !isAdmin && userRoles.includes("volunteer");
 
   if (isVolunteer) {
     const volunteerItems = [

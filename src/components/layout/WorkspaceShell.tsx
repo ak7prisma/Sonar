@@ -27,9 +27,8 @@ const getWorkspaceViewer = cache(async function getWorkspaceViewer() {
   const userRoles: AppRole[] =
     auth?.roles ?? (demoUser ? [demoUser.role] : ["student"]);
   const isAdmin = userRoles.includes("admin");
-  const isReviewer =
-    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
-  const roleLabel = isAdmin ? "Administrator" : isReviewer ? "Volunteer" : "Mahasiswa";
+  const isVolunteer = isAdmin || userRoles.includes("volunteer");
+  const roleLabel = isAdmin ? "Administrator" : isVolunteer ? "Volunteer" : "Mahasiswa";
 
   return { userName, userEmail, userRoles, roleLabel };
 });

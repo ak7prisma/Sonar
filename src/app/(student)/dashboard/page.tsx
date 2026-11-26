@@ -83,7 +83,7 @@ async function DashboardBody() {
 
   const userRoles = snapshot.user?.roles ?? ["student"];
   const isAdmin = userRoles.includes("admin");
-  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+  const isVolunteer = !isAdmin && userRoles.includes("volunteer");
 
   // If user is an admin, redirect directly to the platform admin workspace
   if (isAdmin) {
@@ -103,7 +103,6 @@ async function DashboardBody() {
 
   const canReview =
     userRoles.includes("admin") ||
-    userRoles.includes("reviewer") ||
     userRoles.includes("volunteer");
 
   const readyItems: ReadyMaterialItem[] = verifiedDocs.map((doc) => {

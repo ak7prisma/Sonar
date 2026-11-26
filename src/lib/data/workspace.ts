@@ -518,7 +518,7 @@ export const loadDocumentDetail = cache(async function loadDocumentDetail(docume
       figures: scanned.figures,
       reviews: [],
       signedPdfUrl: scanned.signedPdfUrl ?? null,
-      viewerRoles: ["student", "volunteer", "reviewer", "admin"] as AppRole[],
+      viewerRoles: ["student", "volunteer", "admin"] as AppRole[],
     };
   }
   const demoUser = await getCurrentAppUser();

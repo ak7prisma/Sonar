@@ -59,7 +59,7 @@ export function AuthForm({
     password: string;
     fullName?: string;
     studyProgram?: string;
-    role?: "student" | "volunteer" | "reviewer" | "admin";
+    role?: "student" | "volunteer" | "admin";
   }>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -97,7 +97,7 @@ export function AuthForm({
     password: string;
     fullName?: string;
     studyProgram?: string;
-    role?: "student" | "volunteer" | "reviewer" | "admin";
+    role?: "student" | "volunteer" | "admin";
   }) => {
     setServerError(null);
     setSuccessMessage(null);
@@ -225,7 +225,7 @@ export function AuthForm({
                 onValueChange={(val) =>
                   setValue(
                     "role",
-                    val as "student" | "volunteer" | "reviewer" | "admin"
+                    val as "student" | "volunteer" | "admin"
                   )
                 }
               >

@@ -105,7 +105,7 @@ function NavListItems({
 function DynamicNavMenuItemsInner({ userRoles }: { userRoles: AppRole[] }) {
   const pathname = usePathname();
   const isAdmin = userRoles.includes("admin");
-  const isVolunteer = !isAdmin && (userRoles.includes("volunteer") || userRoles.includes("reviewer"));
+  const isVolunteer = !isAdmin && userRoles.includes("volunteer");
 
   const navItems = isAdmin
     ? ADMIN_MENU_ITEMS
@@ -259,9 +259,8 @@ export function AppShell({
   mobileNavSlot?: React.ReactNode;
 }) {
   const isAdmin = userRoles.includes("admin");
-  const isReviewer =
-    isAdmin || userRoles.includes("reviewer") || userRoles.includes("volunteer");
-  const roleLabel = isAdmin ? "Administrator" : isReviewer ? "Volunteer" : "Mahasiswa";
+  const isVolunteer = isAdmin || userRoles.includes("volunteer");
+  const roleLabel = isAdmin ? "Administrator" : isVolunteer ? "Volunteer" : "Mahasiswa";
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background lg:flex">
